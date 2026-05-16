@@ -26,6 +26,32 @@ class ProfileScreen extends ConsumerStatefulWidget {
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   // Mock User ID
   final String _mockUserId = "MWR-48291";
+  bool _isOpeningEditInfo = false;
+
+  Future<void> _openEditInfo() async {
+    if (_isOpeningEditInfo) return;
+    setState(() => _isOpeningEditInfo = true);
+
+    // Prevent stale snackbars from lingering during route transition.
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    final didUpdate = await context.push<bool>('/profile/edit');
+
+    if (!mounted) return;
+    setState(() => _isOpeningEditInfo = false);
+
+    if (didUpdate == true) {
+      final messenger = ScaffoldMessenger.of(context);
+      messenger
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(
+            content: Text('Profile info updated.'),
+            duration: Duration(milliseconds: 1400),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -108,7 +134,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           IconButton(
                             icon: const Icon(Icons.edit, color: Colors.white),
                             tooltip: 'Edit Info',
-                            onPressed: () => context.push('/profile/edit'),
+                            onPressed: _isOpeningEditInfo
+                                ? null
+                                : _openEditInfo,
                           ),
                           IconButton(
                             icon: const Icon(
@@ -162,6 +190,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
                         const SizedBox(height: 32),
                         const ReputationBadgeWidget(),
+
+                        const SizedBox(height: 32),
+                        OverallStatsWidget(user: user),
 
                         const SizedBox(height: 32),
                         const RoleStatsWidget(),

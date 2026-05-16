@@ -38,9 +38,16 @@ class UserIdCardWidget extends StatelessWidget {
               GestureDetector(
                 onTap: () {
                   Clipboard.setData(ClipboardData(text: userId));
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('ID Copied to clipboard!')),
-                  );
+                  final messenger = ScaffoldMessenger.of(context);
+                  messenger
+                    ..hideCurrentSnackBar()
+                    ..showSnackBar(
+                      const SnackBar(
+                        content: Text('ID copied to clipboard!'),
+                        duration: Duration(milliseconds: 1000),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
                 },
                 child: const Icon(
                   Icons.copy,

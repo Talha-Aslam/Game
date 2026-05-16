@@ -107,15 +107,21 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       setState(() {
         _usernameErrorText = error.contains('taken') ? error : _usernameErrorText;
       });
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error)));
+      final messenger = ScaffoldMessenger.of(context);
+      messenger
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(error),
+            duration: const Duration(milliseconds: 1600),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
       return;
     }
 
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Profile info updated.')),
-      );
-      context.pop();
+      context.pop(true);
     }
   }
 
