@@ -106,6 +106,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             onPressed: () {},
                           ),
                           IconButton(
+                            icon: const Icon(Icons.edit, color: Colors.white),
+                            tooltip: 'Edit Info',
+                            onPressed: () => context.push('/profile/edit'),
+                          ),
+                          IconButton(
                             icon: const Icon(
                               Icons.settings,
                               color: Colors.white,
@@ -138,7 +143,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          '"Trust nobody in the City of Lies."',
+                          (user.bio != null && user.bio!.trim().isNotEmpty)
+                              ? user.bio!
+                              : '"Trust nobody in the City of Lies."',
                           style: AppTextStyles.bodyMedium.copyWith(
                             color: AppColors.white70,
                             fontStyle: FontStyle.italic,
