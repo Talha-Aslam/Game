@@ -1,0 +1,55 @@
+/// Game timing and configuration constants
+class AppConstants {
+  AppConstants._();
+
+  // ── Game Config ──
+  static const int maxPlayersPerGame = 10;
+  static const int minPlayersToStart = 6;
+
+  // ── Phase Durations (seconds) ──
+  static const int nightPhaseDuration = 30;
+  static const int dayDiscussionDuration = 90;
+  static const int votingDuration = 20;
+  static const int runoffDuration = 10;
+  static const int roleRevealDuration = 5;
+
+  // ── Matchmaking ──
+  static const int matchmakingTimeout = 120;
+  static const int matchAcceptTimeout = 15;
+
+  // ── Animation Durations (ms) ──
+  static const int quickAnimation = 200;
+  static const int normalAnimation = 400;
+  static const int slowAnimation = 800;
+  static const int phaseTransition = 1200;
+  static const int eliminationAnimation = 1500;
+
+  // ── Audio ──
+  static const double defaultMusicVolume = 0.5;
+  static const double defaultSfxVolume = 0.8;
+  static const double defaultVoiceVolume = 1.0;
+
+  // ── Voice ──
+  static const String agoraAppId = 'YOUR_AGORA_APP_ID';
+
+  // ── WebSocket ──
+  static const String wsUrl = 'wss://api.mafiawars.game/ws';
+  static const String apiBaseUrl = 'https://api.mafiawars.game/v1';
+
+  // ── Ranks ──
+  static const List<String> rankNames = [
+    'Bronze',
+    'Silver',
+    'Gold',
+    'Diamond',
+    'Syndicate Boss',
+  ];
+
+  // ── Family Roles ──
+  static const List<String> familyRoles = [
+    'Boss',
+    'Underboss',
+    'Capo',
+    'Associate',
+  ];
+}
