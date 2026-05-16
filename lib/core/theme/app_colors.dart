@@ -50,4 +50,12 @@ class AppColors {
   static const Color online = Color(0xFF00E676);
   static const Color offline = Color(0xFF616161);
   static const Color inGame = Color(0xFFFF9100);
+
+  // ── Social ──
+  static const Color partyBlue = Color(0xFF448AFF);
+  static const Color popularityGold = Color(0xFFFFAB00);
+  static const Color giftPink = Color(0xFFFF4081);
+  static const Color inviteGreen = Color(0xFF00E676);
+  static const Color busyRed = Color(0xFFFF1744);
+  static const Color idleYellow = Color(0xFFFFC107);
 }

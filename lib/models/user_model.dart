@@ -21,6 +21,10 @@ class UserModel {
   final List<String> equippedCosmetics;
   final bool hasBattlePass;
   final int battlePassTier;
+  final int popularityScore;
+  final String popularityRank;
+  final int friendCount;
+  final int onlineFriendCount;
 
   const UserModel({
     required this.id,
@@ -44,6 +48,10 @@ class UserModel {
     this.equippedCosmetics = const [],
     this.hasBattlePass = false,
     this.battlePassTier = 0,
+    this.popularityScore = 0,
+    this.popularityRank = 'Rising Star',
+    this.friendCount = 0,
+    this.onlineFriendCount = 0,
   });
 
   double get winRate => totalGames > 0 ? (wins / totalGames * 100) : 0;
@@ -75,6 +83,10 @@ class UserModel {
     List<String>? equippedCosmetics,
     bool? hasBattlePass,
     int? battlePassTier,
+    int? popularityScore,
+    String? popularityRank,
+    int? friendCount,
+    int? onlineFriendCount,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -98,6 +110,10 @@ class UserModel {
       equippedCosmetics: equippedCosmetics ?? this.equippedCosmetics,
       hasBattlePass: hasBattlePass ?? this.hasBattlePass,
       battlePassTier: battlePassTier ?? this.battlePassTier,
+      popularityScore: popularityScore ?? this.popularityScore,
+      popularityRank: popularityRank ?? this.popularityRank,
+      friendCount: friendCount ?? this.friendCount,
+      onlineFriendCount: onlineFriendCount ?? this.onlineFriendCount,
     );
   }
 
@@ -127,6 +143,10 @@ class UserModel {
       familyRole: json['familyRole'] as String?,
       hasBattlePass: json['hasBattlePass'] as bool? ?? false,
       battlePassTier: json['battlePassTier'] as int? ?? 0,
+      popularityScore: json['popularityScore'] as int? ?? 0,
+      popularityRank: json['popularityRank'] as String? ?? 'Rising Star',
+      friendCount: json['friendCount'] as int? ?? 0,
+      onlineFriendCount: json['onlineFriendCount'] as int? ?? 0,
     );
   }
 
@@ -151,5 +171,9 @@ class UserModel {
     'familyRole': familyRole,
     'hasBattlePass': hasBattlePass,
     'battlePassTier': battlePassTier,
+    'popularityScore': popularityScore,
+    'popularityRank': popularityRank,
+    'friendCount': friendCount,
+    'onlineFriendCount': onlineFriendCount,
   };
 }

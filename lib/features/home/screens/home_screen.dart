@@ -10,6 +10,7 @@ import '../../../widgets/particle_field.dart';
 import '../../../widgets/rank_badge.dart';
 import '../widgets/animated_play_button.dart';
 import '../widgets/home_menu_card.dart';
+import '../widgets/friends_menu_card.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -228,12 +229,7 @@ class HomeScreen extends ConsumerWidget {
                         color: AppColors.gold,
                         onTap: () => context.push('/leaderboard'),
                       ),
-                      HomeMenuCard(
-                        title: 'Profile',
-                        icon: Icons.person,
-                        color: AppColors.purpleGlow,
-                        onTap: () => context.push('/profile'),
-                      ),
+                      FriendsMenuCard(onTap: () => context.push('/friends')),
                     ],
                   ),
                   const SizedBox(height: 32),

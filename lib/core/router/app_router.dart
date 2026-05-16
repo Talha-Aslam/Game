@@ -12,6 +12,7 @@ import '../../features/leaderboard/screens/leaderboard_screen.dart';
 import '../../features/profile/screens/profile_screen.dart';
 import '../../features/profile/screens/edit_profile_screen.dart';
 import '../../features/settings/screens/settings_screen.dart';
+import '../../features/social/screens/friends_hub_screen.dart';
 
 class AppRouter {
   static final GoRouter router = GoRouter(
@@ -42,6 +43,7 @@ class AppRouter {
         builder: (c, s) => const EditProfileScreen(),
       ),
       GoRoute(path: '/settings', builder: (c, s) => const SettingsScreen()),
+      GoRoute(path: '/friends', builder: (c, s) => const FriendsHubScreen()),
     ],
   );
 }

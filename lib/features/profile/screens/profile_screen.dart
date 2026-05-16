@@ -188,6 +188,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         // Rank Emblems
                         _buildRankBadge(rank),
 
+                        const SizedBox(height: 24),
+                        // Popularity Section
+                        _buildPopularitySection(user),
+
                         const SizedBox(height: 32),
                         const ReputationBadgeWidget(),
 
@@ -249,6 +253,116 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 style: TextStyle(color: Colors.white54, fontSize: 12),
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPopularitySection(dynamic user) {
+    final popRank = user.popularityRank;
+    final popScore = user.popularityScore;
+    final popColor = popScore >= 5000
+        ? AppColors.crimsonRed
+        : popScore >= 2000
+            ? AppColors.gold
+            : popScore >= 500
+                ? AppColors.purpleNeon
+                : popScore >= 100
+                    ? AppColors.cyan
+                    : const Color(0xFFC0C0C0);
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        color: AppColors.glassBackground,
+        border: Border.all(color: popColor.withValues(alpha: 0.3)),
+        boxShadow: [
+          BoxShadow(
+            color: popColor.withValues(alpha: 0.08),
+            blurRadius: 20,
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          // Popularity icon
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: LinearGradient(
+                colors: [popColor, popColor.withValues(alpha: 0.5)],
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: popColor.withValues(alpha: 0.3),
+                  blurRadius: 12,
+                ),
+              ],
+            ),
+            child: const Icon(Icons.star, color: Colors.white, size: 26),
+          ),
+          const SizedBox(width: 16),
+          // Score + rank
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'POPULARITY',
+                  style: TextStyle(
+                    color: AppColors.white30,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '$popScore',
+                  style: TextStyle(
+                    color: popColor,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                Text(
+                  popRank,
+                  style: TextStyle(
+                    color: popColor.withValues(alpha: 0.7),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Send popularity button (visible when viewing other profiles)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(10),
+              color: popColor.withValues(alpha: 0.12),
+              border: Border.all(color: popColor.withValues(alpha: 0.3)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.card_giftcard, color: popColor, size: 16),
+                const SizedBox(width: 4),
+                Text(
+                  'Gift',
+                  style: TextStyle(
+                    color: popColor,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
