@@ -1,143 +1,310 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/theme/app_gradients.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../models/rank_model.dart';
-import '../../../widgets/rank_badge.dart';
+// Note: We avoid importing neon_text.dart since we just use it if it exists or use fallback.
+// Actually neon_text.dart was imported in the old version, so it's around.
+import '../../../widgets/neon_text.dart';
 
-class ProfileScreen extends ConsumerWidget {
+import '../widgets/profile_header.dart';
+import '../widgets/profile_stats.dart';
+import '../widgets/user_id_card.dart';
+
+class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends ConsumerState<ProfileScreen> {
+  // Mock User ID
+  final String _mockUserId = "MWR-48291";
+
+  @override
+  Widget build(BuildContext context) {
     final user = ref.watch(authProvider).user;
-    if (user == null) return const Scaffold(body: Center(child: Text('Not logged in')));
+    if (user == null) {
+      return const Scaffold(
+        body: Center(
+          child: Text('Not logged in', style: TextStyle(color: Colors.white)),
+        ),
+      );
+    }
+
     final rank = RankModel.fromTier(user.rankTier);
 
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(gradient: AppGradients.backgroundGradient),
-        child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
+      backgroundColor: AppColors.background,
+      body: Stack(
+        children: [
+          // Animated / Glowing Background Layer
+          Positioned.fill(
+            child: Container(
+              decoration: const BoxDecoration(
+                gradient: AppGradients.backgroundGradient,
+              ),
+            ),
+          ),
+          Positioned(
+            top: -100,
+            right: -50,
+            child: Container(
+              width: 300,
+              height: 300,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: rank.glowColor.withValues(alpha: 0.2),
+                    blurRadius: 100,
+                    spreadRadius: 50,
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          SafeArea(
             child: Column(
               children: [
-                Row(
-                  children: [
-                    GestureDetector(onTap: () => context.pop(), child: const Icon(Icons.arrow_back, color: AppColors.white70)),
-                    const Spacer(),
-                    GestureDetector(
-                      onTap: () async {
-                        await ref.read(authProvider.notifier).signOut();
-                        if (context.mounted) context.go('/login');
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(borderRadius: BorderRadius.circular(8), border: Border.all(color: AppColors.crimsonRed.withValues(alpha: 0.4))),
-                        child: const Text('Sign Out', style: TextStyle(color: AppColors.crimsonRed, fontSize: 12, fontWeight: FontWeight.w600)),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-
-                // Avatar
-                Container(
-                  width: 90, height: 90,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: rank.color, width: 3),
-                    color: AppColors.surfaceLight,
-                    boxShadow: [BoxShadow(color: rank.glowColor, blurRadius: 20)],
-                  ),
-                  child: Center(child: Text(user.username[0].toUpperCase(), style: TextStyle(color: rank.color, fontSize: 36, fontWeight: FontWeight.w800))),
-                ),
-                const SizedBox(height: 12),
-                Text(user.username, style: AppTextStyles.headlineLarge),
-                if (user.familyName != null)
-                  Text(user.familyName!, style: AppTextStyles.labelSmall.copyWith(color: AppColors.gold)),
-                const SizedBox(height: 8),
-                RankBadge(tier: user.rankTier, size: 28),
-                const SizedBox(height: 24),
-
-                // Stats grid
-                Row(
-                  children: [
-                    Expanded(child: _StatBox(label: 'Games', value: '${user.totalGames}', color: AppColors.cyan)),
-                    const SizedBox(width: 8),
-                    Expanded(child: _StatBox(label: 'Wins', value: '${user.wins}', color: AppColors.mintGreen)),
-                    const SizedBox(width: 8),
-                    Expanded(child: _StatBox(label: 'Win Rate', value: '${user.winRate.toStringAsFixed(1)}%', color: AppColors.gold)),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(child: _StatBox(label: 'Rank Points', value: '${user.rankPoints}', color: rank.color)),
-                    const SizedBox(width: 8),
-                    Expanded(child: _StatBox(label: 'Influence', value: '${user.influencePoints}', color: AppColors.cyan)),
-                    const SizedBox(width: 8),
-                    Expanded(child: _StatBox(label: 'Syndicate', value: '${user.syndicateCoins}', color: AppColors.gold)),
-                  ],
-                ),
-
-                const SizedBox(height: 24),
-                // Battle pass
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(14),
-                    color: AppColors.gold.withValues(alpha: 0.06),
-                    border: Border.all(color: AppColors.gold.withValues(alpha: 0.2)),
+                // Top App Bar
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16.0,
+                    vertical: 8.0,
                   ),
                   child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Icon(Icons.stars, color: AppColors.gold),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(user.hasBattlePass ? 'Premium Battle Pass' : 'Free Battle Pass', style: AppTextStyles.labelLarge.copyWith(color: AppColors.gold)),
-                            Text('Tier ${user.battlePassTier}', style: AppTextStyles.labelSmall),
-                          ],
+                      GestureDetector(
+                        onTap: () => context.pop(),
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: AppColors.glassBackgroundDark,
+                            border: Border.all(color: AppColors.glassBorder),
+                          ),
+                          child: const Icon(
+                            Icons.arrow_back,
+                            color: Colors.white,
+                            size: 20,
+                          ),
                         ),
                       ),
+                      Row(
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.share, color: Colors.white),
+                            onPressed: () {},
+                          ),
+                          IconButton(
+                            icon: const Icon(
+                              Icons.settings,
+                              color: Colors.white,
+                            ),
+                            onPressed: () => context.push('/settings'),
+                          ),
+                        ],
+                      ),
                     ],
+                  ),
+                ),
+
+                Expanded(
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                    child: Column(
+                      children: [
+                        const SizedBox(height: 20),
+                        // Avatar Header
+                        AnimatedProfileHeader(user: user),
+                        const SizedBox(height: 16),
+
+                        // Username & Bio
+                        NeonText(
+                          text: user.username,
+                          fontSize: 28,
+                          color: Colors.white,
+                          glowRadius: 4,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '"Trust nobody in the City of Lies."',
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            color: AppColors.white70,
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+
+                        // ID & Sharing
+                        UserIdCardWidget(userId: _mockUserId),
+                        const SizedBox(height: 24),
+
+                        // Rank Emblems
+                        _buildRankBadge(rank),
+
+                        const SizedBox(height: 32),
+                        const ReputationBadgeWidget(),
+
+                        const SizedBox(height: 32),
+                        const RoleStatsWidget(),
+
+                        const SizedBox(height: 32),
+                        _buildMatchHistory(),
+
+                        const SizedBox(height: 100), // Padding
+                      ],
+                    ),
                   ),
                 ),
               ],
             ),
           ),
-        ),
+        ],
       ),
     );
   }
-}
 
-class _StatBox extends StatelessWidget {
-  final String label, value;
-  final Color color;
-  const _StatBox({required this.label, required this.value, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildRankBadge(RankModel rank) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        color: color.withValues(alpha: 0.06),
-        border: Border.all(color: color.withValues(alpha: 0.2)),
+        color: AppColors.glassBackground,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: rank.color.withValues(alpha: 0.5)),
+        boxShadow: [
+          BoxShadow(
+            color: rank.glowColor.withValues(alpha: 0.1),
+            blurRadius: 20,
+          ),
+        ],
       ),
-      child: Column(
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Text(value, style: TextStyle(color: color, fontSize: 18, fontWeight: FontWeight.w800)),
-          const SizedBox(height: 2),
-          Text(label, style: AppTextStyles.labelSmall),
+          Icon(Icons.shield, color: rank.color, size: 40),
+          const SizedBox(width: 16),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                rank.name.toUpperCase(),
+                style: TextStyle(
+                  color: rank.color,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 18,
+                  letterSpacing: 2,
+                ),
+              ),
+              const Text(
+                'Competitive Rank',
+                style: TextStyle(color: Colors.white54, fontSize: 12),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMatchHistory() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text('Recent Operations'),
+            const Text(
+              'View All',
+              style: TextStyle(
+                color: AppColors.cyan,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        _historyTile(
+          'Victory',
+          'Mafia',
+          '+24 Rank Points',
+          AppColors.mafiaColor,
+        ),
+        const SizedBox(height: 8),
+        _historyTile(
+          'Defeat',
+          'Doctor',
+          '-12 Rank Points',
+          AppColors.doctorColor,
+        ),
+      ],
+    );
+  }
+
+  Widget _historyTile(
+    String result,
+    String role,
+    String desc,
+    Color roleColor,
+  ) {
+    bool isWin = result == 'Victory';
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.glassBackground,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.glassBorder),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 4,
+            height: 40,
+            decoration: BoxDecoration(
+              color: isWin ? AppColors.gold : AppColors.charcoal,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  result,
+                  style: TextStyle(
+                    color: isWin ? AppColors.gold : Colors.white54,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                Text(
+                  role,
+                  style: TextStyle(
+                    color: roleColor,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Text(
+            desc,
+            style: const TextStyle(color: Colors.white70, fontSize: 12),
+          ),
         ],
       ),
     );

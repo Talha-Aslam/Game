@@ -4,6 +4,10 @@ class UserModel {
   final String username;
   final String email;
   final String avatarUrl;
+  final String? premiumAvatarId;
+  final String? bio;
+  final String? equippedTitle;
+  final List<String> ownedAvatars;
   final int rankTier;
   final int rankPoints;
   final int influencePoints; // free currency
@@ -23,6 +27,10 @@ class UserModel {
     required this.username,
     this.email = '',
     this.avatarUrl = '',
+    this.premiumAvatarId,
+    this.bio,
+    this.equippedTitle,
+    this.ownedAvatars = const [],
     this.rankTier = 0,
     this.rankPoints = 0,
     this.influencePoints = 0,
@@ -38,8 +46,7 @@ class UserModel {
     this.battlePassTier = 0,
   });
 
-  double get winRate =>
-      totalGames > 0 ? (wins / totalGames * 100) : 0;
+  double get winRate => totalGames > 0 ? (wins / totalGames * 100) : 0;
 
   String get rankName {
     const ranks = ['Bronze', 'Silver', 'Gold', 'Diamond', 'Syndicate Boss'];
@@ -51,6 +58,10 @@ class UserModel {
     String? username,
     String? email,
     String? avatarUrl,
+    String? premiumAvatarId,
+    String? bio,
+    String? equippedTitle,
+    List<String>? ownedAvatars,
     int? rankTier,
     int? rankPoints,
     int? influencePoints,
@@ -70,6 +81,10 @@ class UserModel {
       username: username ?? this.username,
       email: email ?? this.email,
       avatarUrl: avatarUrl ?? this.avatarUrl,
+      premiumAvatarId: premiumAvatarId ?? this.premiumAvatarId,
+      bio: bio ?? this.bio,
+      equippedTitle: equippedTitle ?? this.equippedTitle,
+      ownedAvatars: ownedAvatars ?? this.ownedAvatars,
       rankTier: rankTier ?? this.rankTier,
       rankPoints: rankPoints ?? this.rankPoints,
       influencePoints: influencePoints ?? this.influencePoints,
@@ -92,6 +107,14 @@ class UserModel {
       username: json['username'] as String,
       email: json['email'] as String? ?? '',
       avatarUrl: json['avatarUrl'] as String? ?? '',
+      premiumAvatarId: json['premiumAvatarId'] as String?,
+      bio: json['bio'] as String?,
+      equippedTitle: json['equippedTitle'] as String?,
+      ownedAvatars:
+          (json['ownedAvatars'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [],
       rankTier: json['rankTier'] as int? ?? 0,
       rankPoints: json['rankPoints'] as int? ?? 0,
       influencePoints: json['influencePoints'] as int? ?? 0,
@@ -108,21 +131,25 @@ class UserModel {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'username': username,
-        'email': email,
-        'avatarUrl': avatarUrl,
-        'rankTier': rankTier,
-        'rankPoints': rankPoints,
-        'influencePoints': influencePoints,
-        'syndicateCoins': syndicateCoins,
-        'totalGames': totalGames,
-        'wins': wins,
-        'losses': losses,
-        'familyId': familyId,
-        'familyName': familyName,
-        'familyRole': familyRole,
-        'hasBattlePass': hasBattlePass,
-        'battlePassTier': battlePassTier,
-      };
+    'id': id,
+    'username': username,
+    'email': email,
+    'avatarUrl': avatarUrl,
+    'premiumAvatarId': premiumAvatarId,
+    'bio': bio,
+    'equippedTitle': equippedTitle,
+    'ownedAvatars': ownedAvatars,
+    'rankTier': rankTier,
+    'rankPoints': rankPoints,
+    'influencePoints': influencePoints,
+    'syndicateCoins': syndicateCoins,
+    'totalGames': totalGames,
+    'wins': wins,
+    'losses': losses,
+    'familyId': familyId,
+    'familyName': familyName,
+    'familyRole': familyRole,
+    'hasBattlePass': hasBattlePass,
+    'battlePassTier': battlePassTier,
+  };
 }
