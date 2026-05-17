@@ -145,7 +145,7 @@ class WebSocketService {
       players: players,
       localPlayerId: 'player_0',
       roundNumber: 1,
-      timeRemaining: 5,
+      timeRemaining: 10,
     );
 
     _emit(WsEvent.roleAssigned, {
@@ -154,9 +154,15 @@ class WebSocketService {
       'localPlayerId': 'player_0',
     });
 
-    // After role reveal, start night phase
-    Future.delayed(const Duration(seconds: 5), () {
-      _startPhase(GamePhase.night);
+    // Countdown the 10-second role reveal timer
+    int roleTimer = 10;
+    _timer = Timer.periodic(const Duration(seconds: 1), (t) {
+      roleTimer--;
+      _emit(WsEvent.timerTick, {'remaining': roleTimer});
+      if (roleTimer <= 0) {
+        t.cancel();
+        _startPhase(GamePhase.night);
+      }
     });
 
     // Simulate random voice activity
@@ -246,36 +252,44 @@ class WebSocketService {
     // 30% chance doctor saves
     final saved = rng.nextDouble() < 0.3;
 
-    if (saved) {
-      _emit(WsEvent.phaseChange, {
-        'phase': 'day',
-        'message': 'No one was eliminated last night!',
-      });
-    } else {
-      // Eliminate
-      final updatedPlayers = _currentState.players.map((p) {
-        if (p.id == victim.id) {
-          return p.copyWith(status: PlayerStatus.eliminated);
-        }
-        return p;
-      }).toList();
+    // Morning reveal phase — cinematic announcement
+    _currentState = _currentState.copyWith(
+      phase: GamePhase.morningReveal,
+      timeRemaining: 4,
+    );
+    _emit(WsEvent.phaseChange, {
+      'phase': 'morningReveal',
+      'duration': 4,
+      'morningMessage': saved
+          ? 'No one was eliminated last night!'
+          : '${victim.name} was found dead...',
+    });
 
-      _currentState = _currentState.copyWith(
-        players: updatedPlayers,
-        eliminatedPlayerId: victim.id,
-      );
+    if (!saved) {
+      // Eliminate after short reveal delay
+      Future.delayed(const Duration(seconds: 2), () {
+        final updatedPlayers = _currentState.players.map((p) {
+          if (p.id == victim.id) {
+            return p.copyWith(status: PlayerStatus.eliminated, voiceState: VoiceState.muted);
+          }
+          return p;
+        }).toList();
 
-      _emit(WsEvent.playerEliminated, {
-        'playerId': victim.id,
-        'playerName': victim.name,
+        _currentState = _currentState.copyWith(
+          players: updatedPlayers,
+          eliminatedPlayerId: victim.id,
+        );
+
+        _emit(WsEvent.playerEliminated, {
+          'playerId': victim.id,
+          'playerName': victim.name,
+        });
       });
     }
 
-    // Check win condition
-    if (_checkWinCondition()) return;
-
-    // Start day after delay
-    Future.delayed(const Duration(seconds: 3), () {
+    // Check win condition after morning
+    Future.delayed(const Duration(seconds: 4), () {
+      if (_checkWinCondition()) return;
       _startPhase(GamePhase.day);
     });
   }
@@ -438,6 +452,12 @@ class WebSocketService {
     );
     _emit(WsEvent.gameResult, {
       'winner': winner.name,
+      'xpGained': 150,
+      'rankDelta': winner == WinningSide.civilians ? 12 : -8,
+      'bpXpGained': 80,
+      'influenceGained': 25,
+      'popularityGained': 5,
+      'mvpPlayerId': _currentState.localPlayerId,
     });
   }
 

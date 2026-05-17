@@ -24,25 +24,29 @@ class GlassButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = glowColor ?? AppColors.purpleNeon;
+    final isDisabled = onPressed == null;
+    final color = isDisabled ? AppColors.white30 : (glowColor ?? AppColors.purpleNeon);
+    final opacity = isDisabled ? 0.4 : 1.0;
 
     return GestureDetector(
       onTap: onPressed,
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
         width: width,
         height: height,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(14),
-          gradient: isOutlined
+          gradient: isOutlined || isDisabled
               ? null
               : LinearGradient(
                   colors: [color, color.withValues(alpha: 0.7)],
                 ),
+          color: isDisabled && !isOutlined ? AppColors.white05 : null,
           border: Border.all(
-            color: isOutlined ? color : color.withValues(alpha: 0.3),
+            color: isOutlined ? color : color.withValues(alpha: isDisabled ? 0.1 : 0.3),
             width: isOutlined ? 1.5 : 1,
           ),
-          boxShadow: [
+          boxShadow: isDisabled ? [] : [
             BoxShadow(
               color: color.withValues(alpha: 0.3),
               blurRadius: 12,
@@ -51,23 +55,26 @@ class GlassButton extends StatelessWidget {
           ],
         ),
         child: Center(
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (icon != null) ...[
-                Icon(icon, color: Colors.white, size: 18),
-                const SizedBox(width: 8),
-              ],
-              Text(
-                label,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14,
-                  letterSpacing: 0.5,
+          child: Opacity(
+            opacity: opacity,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (icon != null) ...[
+                  Icon(icon, color: Colors.white, size: 18),
+                  const SizedBox(width: 8),
+                ],
+                Text(
+                  label,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                    letterSpacing: 0.5,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
