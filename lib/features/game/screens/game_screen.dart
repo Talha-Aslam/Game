@@ -35,6 +35,15 @@ class _GameScreenState extends ConsumerState<GameScreen>
     final phase = gameState.phase;
     final localPlayer = gameState.localPlayer;
 
+    ref.listen(gameProvider.select((state) => state.phase), (prev, next) {
+      if (prev != next && prev != null) {
+        setState(() {
+          _selectedVoteTarget = null;
+          _nightActionTarget = null;
+        });
+      }
+    });
+
     return Scaffold(
       body: Stack(children: [
         // ── Phase-reactive background ──
@@ -144,7 +153,6 @@ class _GameScreenState extends ConsumerState<GameScreen>
                 ? () {
                     ref.read(gameProvider.notifier)
                         .submitVote(_selectedVoteTarget!);
-                    setState(() => _selectedVoteTarget = null);
                   }
                 : null,
             onSkipVote: () =>
@@ -266,7 +274,6 @@ class _GameScreenState extends ConsumerState<GameScreen>
     } else if (lp.role == GameRole.detective) {
       notifier.submitDetectiveAction(_nightActionTarget!);
     }
-    setState(() => _nightActionTarget = null);
   }
 
   void _sendEmoji(String? playerId, String emoji) {

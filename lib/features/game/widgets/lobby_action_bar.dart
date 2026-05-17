@@ -138,22 +138,26 @@ class LobbyActionBar extends StatelessWidget {
     String buttonLabel;
     Color buttonColor;
     IconData actionIcon;
+    bool isConfirmed = false;
 
     if (lp.isMafia) {
       actionLabel = 'Choose a target to eliminate';
       buttonLabel = 'ELIMINATE';
       buttonColor = AppColors.crimsonRed;
       actionIcon = Icons.dangerous;
+      if (gameState.mafiaTargetId != null && gameState.mafiaTargetId == nightActionTarget) isConfirmed = true;
     } else if (lp.role == GameRole.doctor) {
       actionLabel = 'Choose a player to protect';
       buttonLabel = 'PROTECT';
       buttonColor = AppColors.mintGreen;
       actionIcon = Icons.healing;
+      if (gameState.doctorTargetId != null && gameState.doctorTargetId == nightActionTarget) isConfirmed = true;
     } else if (lp.role == GameRole.detective) {
       actionLabel = 'Choose a player to investigate';
       buttonLabel = 'INVESTIGATE';
       buttonColor = AppColors.purpleNeon;
       actionIcon = Icons.search;
+      if (gameState.detectiveTargetId != null && gameState.detectiveTargetId == nightActionTarget) isConfirmed = true;
     } else {
       return Row(children: [
         Icon(Icons.nightlight_round,
@@ -164,6 +168,11 @@ class LobbyActionBar extends StatelessWidget {
       ]);
     }
 
+    if (isConfirmed) {
+      buttonLabel = 'CONFIRMED';
+      actionLabel = 'Target confirmed. Waiting...';
+    }
+
     return Row(children: [
       Icon(actionIcon, color: buttonColor.withValues(alpha: 0.5), size: 14),
       const SizedBox(width: 6),
@@ -172,7 +181,7 @@ class LobbyActionBar extends StatelessWidget {
       GlassButton(
         label: buttonLabel, glowColor: buttonColor,
         width: 110, height: 36,
-        onPressed: nightActionTarget != null ? onConfirmNightAction : null),
+        onPressed: isConfirmed ? () {} : (nightActionTarget != null ? onConfirmNightAction : null)),
     ]);
   }
 
@@ -204,20 +213,22 @@ class LobbyActionBar extends StatelessWidget {
   // ── VOTING / RUNOFF ──
   Widget _votingBar() {
     final hasVote = selectedVoteTarget != null;
+    final isConfirmed = hasVote && gameState.votes[gameState.localPlayerId] == selectedVoteTarget;
+
     return Row(children: [
       Expanded(child: Text(
-        hasVote
+        isConfirmed ? 'Vote confirmed. Waiting for others...' : (hasVote
             ? 'Vote selected — confirm or change'
-            : 'Tap a player to cast your vote',
+            : 'Tap a player to cast your vote'),
         style: AppTextStyles.bodySmall)),
       GlassButton(
         label: 'SKIP', isOutlined: true,
         width: 60, height: 34, onPressed: onSkipVote),
       const SizedBox(width: 6),
       GlassButton(
-        label: 'VOTE', glowColor: AppColors.gold,
-        width: 80, height: 34,
-        onPressed: hasVote ? onConfirmVote : null),
+        label: isConfirmed ? 'CONFIRMED' : 'VOTE', glowColor: AppColors.gold,
+        width: 100, height: 34,
+        onPressed: isConfirmed ? () {} : (hasVote ? onConfirmVote : null)),
     ]);
   }
 
