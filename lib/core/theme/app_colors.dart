@@ -58,4 +58,12 @@ class AppColors {
   static const Color inviteGreen = Color(0xFF00E676);
   static const Color busyRed = Color(0xFFFF1744);
   static const Color idleYellow = Color(0xFFFFC107);
+
+  // ── Family ──
+  static const Color familyBoss = Color(0xFFFFD700);
+  static const Color familyUnderboss = Color(0xFF9B59FF);
+  static const Color familyCapo = Color(0xFF00E5FF);
+  static const Color treasuryGold = Color(0xFFFFAB00);
+  static const Color warRed = Color(0xFFFF1744);
+  static const Color xpGreen = Color(0xFF00E676);
 }
