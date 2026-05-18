@@ -1,0 +1,5 @@
+AUDIO PLACEHOLDER: lobby_ambience
+Replace this file with lobby_ambience.mp3
+Expected: Loopable ambient/SFX audio for City of Lies game
+
+This .txt file acts as a template. Drop your .mp3 file here with the same base name.

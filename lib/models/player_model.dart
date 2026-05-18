@@ -51,6 +51,9 @@ class PlayerModel {
   final String? voteTargetId; // player ID they voted for (local only)
   final bool isProtected; // Doctor saved this round
   final bool isInvestigated; // Detective checked this round
+  final int avatarIndex; // distinct avatar color/letter combo index
+  final bool isEliminating; // triggers shatter animation
+  final int commendations; // commendation count
 
   const PlayerModel({
     required this.id,
@@ -64,6 +67,9 @@ class PlayerModel {
     this.voteTargetId,
     this.isProtected = false,
     this.isInvestigated = false,
+    this.avatarIndex = 0,
+    this.isEliminating = false,
+    this.commendations = 0,
   });
 
   PlayerModel copyWith({
@@ -78,6 +84,9 @@ class PlayerModel {
     String? voteTargetId,
     bool? isProtected,
     bool? isInvestigated,
+    int? avatarIndex,
+    bool? isEliminating,
+    int? commendations,
   }) {
     return PlayerModel(
       id: id ?? this.id,
@@ -91,6 +100,9 @@ class PlayerModel {
       voteTargetId: voteTargetId ?? this.voteTargetId,
       isProtected: isProtected ?? this.isProtected,
       isInvestigated: isInvestigated ?? this.isInvestigated,
+      avatarIndex: avatarIndex ?? this.avatarIndex,
+      isEliminating: isEliminating ?? this.isEliminating,
+      commendations: commendations ?? this.commendations,
     );
   }
 
@@ -111,6 +123,8 @@ class PlayerModel {
           VoiceState.values.byName(json['voiceState'] as String? ?? 'idle'),
       familyTag: json['familyTag'] as String?,
       rankTier: json['rankTier'] as int? ?? 0,
+      avatarIndex: json['avatarIndex'] as int? ?? 0,
+      commendations: json['commendations'] as int? ?? 0,
     );
   }
 
@@ -124,6 +138,8 @@ class PlayerModel {
       'voiceState': voiceState.name,
       'familyTag': familyTag,
       'rankTier': rankTier,
+      'avatarIndex': avatarIndex,
+      'commendations': commendations,
     };
   }
 }

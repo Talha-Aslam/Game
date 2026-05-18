@@ -51,16 +51,16 @@ class LobbyActionBar extends StatelessWidget {
             border: Border(
               top: BorderSide(color: AppColors.glassBorder, width: 0.5)),
           ),
-          child: SafeArea(top: false, child: _buildContent()),
+          child: SafeArea(top: false, child: _buildContent(context)),
         ),
       ),
     );
   }
 
-  Widget _buildContent() {
+  Widget _buildContent(BuildContext context) {
     switch (phase) {
       case GamePhase.lobby:
-        return _lobbyBar();
+        return _lobbyBar(context);
       case GamePhase.matchmaking:
         return _matchmakingBar();
       case GamePhase.roleAssignment:
@@ -82,28 +82,62 @@ class LobbyActionBar extends StatelessWidget {
   }
 
   // ── LOBBY ──
-  Widget _lobbyBar() {
+  Widget _lobbyBar(BuildContext context) {
     final isReady = gameState.isLocalPlayerReady;
     final readyCount = gameState.readyPlayers.length;
     final totalCount = gameState.players.length;
 
-    return Row(children: [
-      GlassButton(
-        label: 'LEAVE',
-        isOutlined: true,
-        width: 70, height: 36,
-        onPressed: onLeaveLobby),
-      const SizedBox(width: 8),
-      Expanded(child: Text(
-        '$readyCount/$totalCount ready',
-        style: AppTextStyles.bodySmall.copyWith(color: AppColors.white50),
-        textAlign: TextAlign.center)),
-      GlassButton(
-        label: isReady ? 'UNREADY' : 'READY',
-        glowColor: isReady ? AppColors.crimsonRed : AppColors.mintGreen,
-        icon: isReady ? Icons.close : Icons.check,
-        width: 110, height: 36,
-        onPressed: onReady),
+    return Column(mainAxisSize: MainAxisSize.min, children: [
+      // Main row: Leave, status, Ready
+      Row(children: [
+        GlassButton(
+          label: 'LEAVE',
+          isOutlined: true,
+          width: 70, height: 36,
+          onPressed: onLeaveLobby),
+        const SizedBox(width: 8),
+        Expanded(child: Text(
+          '$readyCount/$totalCount ready',
+          style: AppTextStyles.bodySmall.copyWith(color: AppColors.white50),
+          textAlign: TextAlign.center)),
+        GlassButton(
+          label: isReady ? 'UNREADY' : 'READY',
+          glowColor: isReady ? AppColors.crimsonRed : AppColors.mintGreen,
+          icon: isReady ? Icons.close : Icons.check,
+          width: 110, height: 36,
+          onPressed: onReady),
+      ]),
+      const SizedBox(height: 6),
+      // Secondary row: Invite Friends, Family Invite
+      Row(children: [
+        Expanded(child: _LobbySecondaryButton(
+          icon: Icons.person_add,
+          label: 'Invite Friends',
+          onTap: () {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Friend invite sent!'),
+                backgroundColor: AppColors.surface,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          },
+        )),
+        const SizedBox(width: 8),
+        Expanded(child: _LobbySecondaryButton(
+          icon: Icons.groups,
+          label: 'Family Invite',
+          onTap: () {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Family invite sent!'),
+                backgroundColor: AppColors.surface,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          },
+        )),
+      ]),
     ]);
   }
 
@@ -134,6 +168,25 @@ class LobbyActionBar extends StatelessWidget {
     final lp = localPlayer;
     if (lp == null || !lp.isAlive) return _spectatorBar();
 
+    // Check if it's this player's turn
+    final subPhase = gameState.nightSubPhase;
+    final isMyTurn = subPhase != null && lp.role == subPhase.activeRole;
+
+    if (!isMyTurn && !lp.isMafia) {
+      // Not my turn and not mafia — show waiting
+      return Row(children: [
+        Icon(Icons.nightlight_round,
+          color: AppColors.purpleGlow.withValues(alpha: 0.5), size: 14),
+        const SizedBox(width: 8),
+        Expanded(child: Text(
+          subPhase != null
+              ? '${subPhase.displayName} is acting...'
+              : 'Night falls... close your eyes',
+          style: AppTextStyles.bodySmall.copyWith(color: AppColors.white30))),
+      ]);
+    }
+
+    // Mafia during mafia turn, or special role during their turn
     String actionLabel;
     String buttonLabel;
     Color buttonColor;
@@ -187,10 +240,10 @@ class LobbyActionBar extends StatelessWidget {
 
   // ── MORNING REVEAL ──
   Widget _morningBar() {
-    final msg = gameState.morningMessage ?? 'The city awakens...';
-    final isDeath = msg.contains('dead');
+    final msg = gameState.morningMessage ?? gameState.dawnMessage ?? 'The city awakens...';
+    final isDeath = msg.contains('eliminated') || msg.contains('tragedy');
     return Center(child: NeonText(
-      text: msg, fontSize: 14,
+      text: msg, fontSize: 12,
       color: isDeath ? AppColors.crimsonRed : AppColors.mintGreen,
       glowRadius: 10));
   }
@@ -217,7 +270,7 @@ class LobbyActionBar extends StatelessWidget {
 
     return Row(children: [
       Expanded(child: Text(
-        isConfirmed ? 'Vote confirmed. Waiting for others...' : (hasVote
+        isConfirmed ? 'Vote confirmed. Waiting...' : (hasVote
             ? 'Vote selected — confirm or change'
             : 'Tap a player to cast your vote'),
         style: AppTextStyles.bodySmall)),
@@ -238,8 +291,8 @@ class LobbyActionBar extends StatelessWidget {
         .where((p) => p.id == gameState.eliminatedPlayerId)
         .map((p) => p.name).firstOrNull ?? 'Unknown';
     return Center(child: NeonText(
-      text: '$name has been eliminated',
-      fontSize: 14, color: AppColors.crimsonRed));
+      text: 'The city has spoken. $name is exiled.',
+      fontSize: 12, color: AppColors.crimsonRed));
   }
 
   // ── RESULT ──
@@ -283,6 +336,35 @@ class LobbyActionBar extends StatelessWidget {
       Text('You are spectating',
         style: AppTextStyles.bodySmall.copyWith(color: AppColors.white30)),
     ]);
+  }
+}
+
+// ── Sub-widgets ──
+
+class _LobbySecondaryButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback? onTap;
+  const _LobbySecondaryButton({required this.icon, required this.label, this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 30,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(8),
+          color: AppColors.white05,
+          border: Border.all(color: AppColors.glassBorder)),
+        child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+          Icon(icon, color: AppColors.white30, size: 12),
+          const SizedBox(width: 4),
+          Text(label, style: TextStyle(
+            color: AppColors.white30, fontSize: 9, fontWeight: FontWeight.w600)),
+        ]),
+      ),
+    );
   }
 }
 

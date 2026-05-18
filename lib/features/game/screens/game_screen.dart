@@ -16,6 +16,10 @@ import '../widgets/lobby_header_pill.dart';
 import '../widgets/role_reveal_panel.dart';
 import '../widgets/mic_emoji_controls.dart';
 import '../widgets/lobby_action_bar.dart';
+import '../widgets/night_overlay_panel.dart';
+import '../widgets/lobby_countdown_overlay.dart';
+import '../widgets/graveyard_panel.dart';
+import '../widgets/elimination_animation.dart';
 
 class GameScreen extends ConsumerStatefulWidget {
   const GameScreen({super.key});
@@ -35,11 +39,21 @@ class _GameScreenState extends ConsumerState<GameScreen>
     final phase = gameState.phase;
     final localPlayer = gameState.localPlayer;
 
+    // Reset selections on phase change
     ref.listen(gameProvider.select((state) => state.phase), (prev, next) {
       if (prev != next && prev != null) {
         setState(() {
           _selectedVoteTarget = null;
           _nightActionTarget = null;
+        });
+      }
+    });
+
+    // Navigate to result screen when game ends
+    ref.listen(gameProvider.select((state) => state.phase), (prev, next) {
+      if (next == GamePhase.result && prev != GamePhase.result) {
+        Future.microtask(() {
+          if (mounted) context.go('/game/result');
         });
       }
     });
@@ -81,38 +95,47 @@ class _GameScreenState extends ConsumerState<GameScreen>
           Expanded(child: LayoutBuilder(
             builder: (context, constraints) {
               return Stack(alignment: Alignment.center, children: [
-                // Circular player layout — uses LayoutBuilder for responsive sizing
+                // Circular player layout
                 _buildPlayerCircle(
                   gameState, constraints.maxWidth, constraints.maxHeight),
 
-                // Center timer
+                // Center timer (not during lobby countdown, result, or morning)
                 if (gameState.timeRemaining > 0 &&
                     phase != GamePhase.result &&
-                    phase != GamePhase.morningReveal)
+                    phase != GamePhase.morningReveal &&
+                    phase != GamePhase.lobby)
                   LobbyTimerWidget(
                     seconds: gameState.timeRemaining,
-                    maxSeconds: _maxSecondsForPhase(phase),
+                    maxSeconds: _maxSecondsForPhase(phase, gameState),
                     phase: phase),
 
-                // Morning reveal cinematic
+                // ── LOBBY COUNTDOWN OVERLAY ──
+                if (phase == GamePhase.lobby)
+                  LobbyCountdownOverlay(
+                    countdown: gameState.lobbyCountdown,
+                    tickingActive: gameState.lobbyTickingActive,
+                    showBeginsCinematic: gameState.showBeginsCinematic),
+
+                // ── NIGHT PHASE OVERLAY ──
+                if (phase.isNight)
+                  NightOverlayPanel(
+                    subPhase: gameState.nightSubPhase,
+                    localPlayer: localPlayer,
+                    detectiveResult: gameState.detectiveResult,
+                    detectiveTargetId: gameState.detectiveTargetId,
+                    detectiveResultRevealed: gameState.detectiveResultRevealed,
+                    mafiaChannelOpen: gameState.mafiaChannelOpen,
+                    players: gameState.players),
+
+                // ── MORNING / DAWN REVEAL ──
                 if (phase.isMorning)
-                  _buildMorningOverlay(gameState),
+                  _buildDawnOverlay(gameState),
 
-                // Night civilian overlay
-                if (phase.isNight && localPlayer != null &&
-                    !localPlayer.isMafia &&
-                    localPlayer.role == GameRole.civilian)
-                  _buildNightOverlay(),
-
-                // Runoff overlay
+                // ── RUNOFF OVERLAY ──
                 if (phase.isRunoff && gameState.tiedPlayerIds.isNotEmpty)
                   _buildRunoffOverlay(gameState),
 
-                // Result overlay
-                if (phase == GamePhase.result)
-                  _buildResultOverlay(gameState),
-
-                // Mic + Emoji (bottom-right, outside overlays)
+                // ── MIC + EMOJI controls ──
                 if (_showMicControls(phase))
                   Positioned(
                     bottom: 4, right: 12,
@@ -128,6 +151,13 @@ class _GameScreenState extends ConsumerState<GameScreen>
               ]);
             },
           )),
+
+          // ═══ GRAVEYARD PANEL ═══
+          if (gameState.deadPlayers.isNotEmpty &&
+              phase != GamePhase.lobby &&
+              phase != GamePhase.matchmaking &&
+              phase != GamePhase.result)
+            GraveyardPanel(deadPlayers: gameState.deadPlayers),
 
           // ═══ ROLE REVEAL (during role assignment) ═══
           if (phase == GamePhase.roleAssignment && localPlayer?.role != null)
@@ -175,7 +205,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
   }
 
   // ────────────────────────────────────────────────────────────────────────
-  // DYNAMIC CIRCULAR LAYOUT — responsive, edge-aligned, adaptive radius
+  // DYNAMIC CIRCULAR LAYOUT
   // ────────────────────────────────────────────────────────────────────────
 
   Widget _buildPlayerCircle(
@@ -183,12 +213,10 @@ class _GameScreenState extends ConsumerState<GameScreen>
     final players = gs.players;
     if (players.isEmpty) return const SizedBox.shrink();
 
-    // Dynamic radius based on player count and available space
     final minDim = min(areaW, areaH);
     final cardSize = _cardSizeForCount(players.length);
-    final safeMargin = cardSize / 2 + 10; // prevent edge clipping
+    final safeMargin = cardSize / 2 + 10;
 
-    // Scale radius: more players → larger radius (closer to edges)
     double baseRadiusFactor;
     if (players.length <= 6) {
       baseRadiusFactor = 0.32;
@@ -198,7 +226,6 @@ class _GameScreenState extends ConsumerState<GameScreen>
       baseRadiusFactor = 0.40;
     }
 
-    // Ensure radius fits within safe margins
     final maxRadius = (minDim / 2) - safeMargin;
     final radius = min(minDim * baseRadiusFactor, maxRadius);
 
@@ -215,7 +242,6 @@ class _GameScreenState extends ConsumerState<GameScreen>
               _nightActionTarget == player.id;
           final isTied = gs.phase.isRunoff &&
               gs.tiedPlayerIds.contains(player.id);
-          // In runoff, fade non-tied alive players
           final isFaded = gs.phase.isRunoff &&
               gs.tiedPlayerIds.isNotEmpty &&
               !gs.tiedPlayerIds.contains(player.id) &&
@@ -224,15 +250,19 @@ class _GameScreenState extends ConsumerState<GameScreen>
           return Transform.translate(
             offset: Offset(x, y),
             child: RepaintBoundary(
-              child: LobbyPlayerCard(
-                player: player,
-                isSelected: isSelected,
-                isLocalPlayer: player.id == gs.localPlayerId,
-                isTied: isTied,
-                isFaded: isFaded,
-                floatingEmoji: _playerEmojis[player.id],
+              child: EliminationAnimation(
+                isEliminating: player.isEliminating,
                 size: cardSize,
-                onTap: () => _onPlayerTap(player, gs),
+                child: LobbyPlayerCard(
+                  player: player,
+                  isSelected: isSelected,
+                  isLocalPlayer: player.id == gs.localPlayerId,
+                  isTied: isTied,
+                  isFaded: isFaded,
+                  floatingEmoji: _playerEmojis[player.id],
+                  size: cardSize,
+                  onTap: () => _onPlayerTap(player, gs),
+                ),
               ),
             ),
           );
@@ -241,7 +271,6 @@ class _GameScreenState extends ConsumerState<GameScreen>
     );
   }
 
-  /// Smaller cards when more players to avoid overlap
   double _cardSizeForCount(int count) {
     if (count <= 6) return 52;
     if (count <= 10) return 46;
@@ -260,7 +289,10 @@ class _GameScreenState extends ConsumerState<GameScreen>
     if (gs.phase == GamePhase.voting || gs.phase == GamePhase.runoff) {
       setState(() => _selectedVoteTarget = player.id);
     } else if (gs.phase == GamePhase.night) {
-      setState(() => _nightActionTarget = player.id);
+      // Only allow selection during local player's turn
+      if (gs.isLocalPlayerNightTurn) {
+        setState(() => _nightActionTarget = player.id);
+      }
     }
   }
 
@@ -293,22 +325,27 @@ class _GameScreenState extends ConsumerState<GameScreen>
         phase == GamePhase.lobby;
   }
 
-  int _maxSecondsForPhase(GamePhase phase) {
+  int _maxSecondsForPhase(GamePhase phase, GameStateModel gs) {
     switch (phase) {
       case GamePhase.roleAssignment:
         return 10;
       case GamePhase.night:
-        return 15;
+        // Max depends on sub-phase
+        final sub = gs.nightSubPhase;
+        if (sub == NightSubPhase.mafiaActing) return 20;
+        if (sub == NightSubPhase.doctorActing) return 10;
+        if (sub == NightSubPhase.detectiveActing) return 10;
+        return 40;
       case GamePhase.day:
-        return 30;
+        return 60;
       case GamePhase.voting:
-        return 15;
+        return 10;
       case GamePhase.runoff:
         return 10;
       case GamePhase.elimination:
         return 5;
       case GamePhase.morningReveal:
-        return 4;
+        return 5;
       default:
         return 60;
     }
@@ -318,53 +355,54 @@ class _GameScreenState extends ConsumerState<GameScreen>
   // OVERLAYS
   // ────────────────────────────────────────────────────────────────────────
 
-  Widget _buildMorningOverlay(GameStateModel gs) {
-    final msg = gs.morningMessage ?? 'The city awakens...';
-    final isDeath = msg.contains('dead');
-    return Container(
-      color: Colors.black.withValues(alpha: 0.5),
-      child: Center(
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Icon(
-            isDeath ? Icons.dangerous : Icons.wb_sunny,
-            color: (isDeath ? AppColors.crimsonRed : AppColors.gold)
-                .withValues(alpha: 0.5),
-            size: 40),
-          const SizedBox(height: 10),
-          NeonText(
-            text: isDeath ? 'SOMEONE FELL' : 'ALL SURVIVED',
-            fontSize: 20,
-            color: isDeath ? AppColors.crimsonRed : AppColors.mintGreen,
-            glowRadius: 15),
-          const SizedBox(height: 6),
-          Text(msg, style: AppTextStyles.bodySmall.copyWith(
-            color: AppColors.white50)),
-        ]),
-      ),
-    );
-  }
+  /// ── Dawn / Morning Reveal — cinematic Game Master text ──
+  Widget _buildDawnOverlay(GameStateModel gs) {
+    final msg = gs.morningMessage ?? gs.dawnMessage ?? 'The city awakens...';
+    final isDeath = msg.contains('eliminated') || msg.contains('tragedy');
 
-  Widget _buildNightOverlay() {
-    return Container(
-      color: Colors.black.withValues(alpha: 0.5),
-      child: Center(
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Icon(Icons.nightlight_round,
-            color: AppColors.purpleGlow.withValues(alpha: 0.5), size: 40),
-          const SizedBox(height: 8),
-          NeonText(text: 'NIGHT FALLS', fontSize: 18,
-            color: AppColors.purpleGlow.withValues(alpha: 0.6)),
-          const SizedBox(height: 4),
-          Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-            Icon(Icons.mic_off,
-              color: AppColors.crimsonRed.withValues(alpha: 0.5), size: 12),
-            const SizedBox(width: 4),
-            Text('Microphone muted',
-              style: AppTextStyles.labelSmall.copyWith(
-                color: AppColors.crimsonRed.withValues(alpha: 0.5))),
-          ]),
-        ]),
-      ),
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.0, end: 1.0),
+      duration: const Duration(milliseconds: 800),
+      builder: (_, t, __) {
+        return Container(
+          color: Colors.black.withValues(alpha: 0.5 * t),
+          child: Center(
+            child: Opacity(
+              opacity: t.clamp(0.0, 1.0),
+              child: Transform.translate(
+                offset: Offset(0, 20 * (1 - t)),
+                child: Column(mainAxisSize: MainAxisSize.min, children: [
+                  // Sun/skull icon
+                  Icon(
+                    isDeath ? Icons.dangerous : Icons.wb_sunny,
+                    color: (isDeath ? AppColors.crimsonRed : AppColors.gold)
+                        .withValues(alpha: 0.6),
+                    size: 44),
+                  const SizedBox(height: 12),
+                  // Label
+                  NeonText(
+                    text: isDeath ? 'A TRAGEDY' : 'ALL SURVIVED',
+                    fontSize: 22,
+                    color: isDeath ? AppColors.crimsonRed : AppColors.mintGreen,
+                    glowRadius: 16),
+                  const SizedBox(height: 10),
+                  // Game Master message
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 32),
+                    child: Text(msg,
+                      textAlign: TextAlign.center,
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.white50,
+                        fontSize: 13,
+                        fontStyle: FontStyle.italic,
+                        height: 1.5)),
+                  ),
+                ]),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -383,33 +421,6 @@ class _GameScreenState extends ConsumerState<GameScreen>
                 color: AppColors.crimsonRed.withValues(alpha: 0.6))),
           ]),
         ),
-      ),
-    );
-  }
-
-  Widget _buildResultOverlay(GameStateModel gs) {
-    final isWinner = gs.winner == WinningSide.civilians
-        ? !(gs.localPlayer?.isMafia ?? false)
-        : (gs.localPlayer?.isMafia ?? false);
-    return Container(
-      color: Colors.black.withValues(alpha: 0.7),
-      child: Center(
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          NeonText(
-            text: gs.winner == WinningSide.mafia
-                ? 'MAFIA WINS'
-                : 'CIVILIANS WIN',
-            fontSize: 28,
-            color: gs.winner == WinningSide.mafia
-                ? AppColors.crimsonRed
-                : AppColors.mintGreen,
-            glowRadius: 28),
-          const SizedBox(height: 12),
-          Text(
-            isWinner ? '🎉 VICTORY!' : '💀 DEFEAT',
-            style: AppTextStyles.headlineLarge.copyWith(
-              color: isWinner ? AppColors.gold : AppColors.white50)),
-        ]),
       ),
     );
   }
