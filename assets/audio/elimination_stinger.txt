@@ -1,5 +1,0 @@
-AUDIO PLACEHOLDER: elimination_stinger
-Replace this file with elimination_stinger.mp3
-Expected: Loopable ambient/SFX audio for City of Lies game
-
-This .txt file acts as a template. Drop your .mp3 file here with the same base name.
