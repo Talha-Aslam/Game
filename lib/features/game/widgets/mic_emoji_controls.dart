@@ -39,14 +39,14 @@ class _MicEmojiControlsState extends State<MicEmojiControls>
 
   @override
   Widget build(BuildContext context) {
-    return Row(mainAxisSize: MainAxisSize.min, children: [
+    return Column(mainAxisSize: MainAxisSize.min, children: [
       // Emoji button + wheel
       Stack(clipBehavior: Clip.none, children: [
         // Emoji wheel (radial)
         if (_showEmojis)
           ...List.generate(_emojis.length, (i) {
-            final angle = -(pi / 2) - (i / (_emojis.length - 1)) * pi;
-            final radius = 56.0;
+            final angle = -(pi / 2) - (i / (_emojis.length - 1)) * (pi / 1.5);
+            final radius = 64.0;
             return Positioned(
               left: 20 + cos(angle) * radius - 16,
               top: 20 + sin(angle) * radius - 16,
@@ -94,7 +94,7 @@ class _MicEmojiControlsState extends State<MicEmojiControls>
           ),
         ),
       ]),
-      const SizedBox(width: 10),
+      const SizedBox(height: 10),
       // Master mic button
       AnimatedBuilder(animation: _micPulse, builder: (_, __) {
         final p = _micPulse.value;

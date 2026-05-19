@@ -43,16 +43,21 @@ class _NightOverlayPanelState extends State<NightOverlayPanel>
   void initState() {
     super.initState();
     _pulse = AnimationController(
-      duration: const Duration(milliseconds: 1200), vsync: this)
-      ..repeat(reverse: true);
+      duration: const Duration(milliseconds: 1200),
+      vsync: this,
+    )..repeat(reverse: true);
     _heartbeat = AnimationController(
-      duration: const Duration(milliseconds: 800), vsync: this)
-      ..repeat(reverse: true);
+      duration: const Duration(milliseconds: 800),
+      vsync: this,
+    )..repeat(reverse: true);
     _scanLine = AnimationController(
-      duration: const Duration(seconds: 3), vsync: this)
-      ..repeat();
+      duration: const Duration(seconds: 3),
+      vsync: this,
+    )..repeat();
     _glitch = AnimationController(
-      duration: const Duration(milliseconds: 200), vsync: this);
+      duration: const Duration(milliseconds: 200),
+      vsync: this,
+    );
   }
 
   @override
@@ -116,51 +121,82 @@ class _NightOverlayPanelState extends State<NightOverlayPanel>
       animation: _pulse,
       builder: (_, __) => IgnorePointer(
         child: Container(
+          padding: const EdgeInsets.only(bottom: 24),
+          alignment: Alignment.bottomCenter,
           decoration: BoxDecoration(
             gradient: RadialGradient(
+              center: const Alignment(0, 0.5),
               colors: [
                 Colors.transparent,
-                AppColors.crimsonRed.withValues(alpha: 0.04 + _pulse.value * 0.03),
+                AppColors.crimsonRed.withValues(
+                  alpha: 0.04 + _pulse.value * 0.03,
+                ),
               ],
               radius: 1.2,
             ),
           ),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
             children: [
               // Mafia channel indicator
               if (widget.mafiaChannelOpen)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(20),
                     color: AppColors.crimsonRed.withValues(alpha: 0.08),
                     border: Border.all(
-                      color: AppColors.crimsonRed.withValues(alpha: 0.2 + _pulse.value * 0.1)),
+                      color: AppColors.crimsonRed.withValues(
+                        alpha: 0.2 + _pulse.value * 0.1,
+                      ),
+                    ),
                   ),
-                  child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    Icon(Icons.mic, color: AppColors.crimsonRed.withValues(alpha: 0.7), size: 14),
-                    const SizedBox(width: 6),
-                    Text('PRIVATE CHANNEL',
-                      style: TextStyle(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.mic,
                         color: AppColors.crimsonRed.withValues(alpha: 0.7),
-                        fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 1.5)),
-                  ]),
+                        size: 14,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        'PRIVATE CHANNEL',
+                        style: TextStyle(
+                          color: AppColors.crimsonRed.withValues(alpha: 0.7),
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 1.5,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               const SizedBox(height: 16),
-              Icon(Icons.dangerous,
-                color: AppColors.crimsonRed.withValues(alpha: 0.5 + _pulse.value * 0.3),
-                size: 36),
+              Icon(
+                Icons.dangerous,
+                color: AppColors.crimsonRed.withValues(
+                  alpha: 0.5 + _pulse.value * 0.3,
+                ),
+                size: 36,
+              ),
               const SizedBox(height: 8),
               NeonText(
                 text: 'YOUR SYNDICATE IS PLANNING...',
                 fontSize: 14,
                 color: AppColors.crimsonRed,
-                glowRadius: 8 + _pulse.value * 6),
+                glowRadius: 8 + _pulse.value * 6,
+              ),
               const SizedBox(height: 4),
-              Text('Select a target to eliminate',
+              Text(
+                'Select a target to eliminate',
                 style: AppTextStyles.bodySmall.copyWith(
-                  color: AppColors.crimsonRed.withValues(alpha: 0.5))),
+                  color: AppColors.crimsonRed.withValues(alpha: 0.5),
+                ),
+              ),
             ],
           ),
         ),
@@ -176,34 +212,47 @@ class _NightOverlayPanelState extends State<NightOverlayPanel>
         final scale = 1.0 + _heartbeat.value * 0.1;
         return IgnorePointer(
           child: Container(
+            padding: const EdgeInsets.only(bottom: 24),
+            alignment: Alignment.bottomCenter,
             decoration: BoxDecoration(
               gradient: RadialGradient(
+                center: const Alignment(0, 0.5),
                 colors: [
                   Colors.transparent,
-                  AppColors.mintGreen.withValues(alpha: 0.03 + _heartbeat.value * 0.02),
+                  AppColors.mintGreen.withValues(
+                    alpha: 0.03 + _heartbeat.value * 0.02,
+                  ),
                 ],
                 radius: 1.2,
               ),
             ),
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Transform.scale(
                   scale: scale,
-                  child: Icon(Icons.favorite,
-                    color: AppColors.mintGreen.withValues(alpha: 0.5 + _heartbeat.value * 0.3),
-                    size: 36),
+                  child: Icon(
+                    Icons.favorite,
+                    color: AppColors.mintGreen.withValues(
+                      alpha: 0.5 + _heartbeat.value * 0.3,
+                    ),
+                    size: 36,
+                  ),
                 ),
                 const SizedBox(height: 10),
                 NeonText(
                   text: 'CHOOSE WHO TO SAVE',
                   fontSize: 14,
                   color: AppColors.mintGreen,
-                  glowRadius: 6 + _heartbeat.value * 5),
+                  glowRadius: 6 + _heartbeat.value * 5,
+                ),
                 const SizedBox(height: 4),
-                Text('Select a player to protect tonight',
+                Text(
+                  'Select a player to protect tonight',
                   style: AppTextStyles.bodySmall.copyWith(
-                    color: AppColors.mintGreen.withValues(alpha: 0.5))),
+                    color: AppColors.mintGreen.withValues(alpha: 0.5),
+                  ),
+                ),
               ],
             ),
           ),
@@ -217,53 +266,94 @@ class _NightOverlayPanelState extends State<NightOverlayPanel>
     return AnimatedBuilder(
       animation: _scanLine,
       builder: (_, __) => IgnorePointer(
-        child: Stack(children: [
-          // Scanning line effect
-          Positioned(
-            top: _scanLine.value * MediaQuery.of(context).size.height,
-            left: 0, right: 0,
-            child: Container(
-              height: 2,
+        child: Stack(
+          children: [
+            // Scanning line effect
+            Positioned(
+              top: _scanLine.value * MediaQuery.of(context).size.height,
+              left: 0,
+              right: 0,
+              child: Container(
+                height: 2,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Colors.transparent,
+                      AppColors.purpleNeon.withValues(alpha: 0.4),
+                      Colors.transparent,
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            // Content
+            Container(
+              padding: const EdgeInsets.only(bottom: 24),
+              alignment: Alignment.bottomCenter,
               decoration: BoxDecoration(
-                gradient: LinearGradient(colors: [
-                  Colors.transparent,
-                  AppColors.purpleNeon.withValues(alpha: 0.4),
-                  Colors.transparent,
-                ]),
+                gradient: RadialGradient(
+                  center: const Alignment(0, 0.5),
+                  colors: [
+                    Colors.transparent,
+                    AppColors.purpleNeon.withValues(alpha: 0.03),
+                  ],
+                  radius: 1.2,
+                ),
               ),
-            ),
-          ),
-          // Content
-          Container(
-            decoration: BoxDecoration(
-              gradient: RadialGradient(
-                colors: [
-                  Colors.transparent,
-                  AppColors.purpleNeon.withValues(alpha: 0.03),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Detective channel indicator
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      color: AppColors.purpleNeon.withValues(alpha: 0.08),
+                      border: Border.all(
+                        color: AppColors.purpleNeon.withValues(alpha: 0.3)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.mic, color: AppColors.purpleNeon.withValues(alpha: 0.7), size: 14),
+                        const SizedBox(width: 6),
+                        Text(
+                          'PRIVATE CHANNEL',
+                          style: TextStyle(
+                            color: AppColors.purpleNeon.withValues(alpha: 0.7),
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Icon(
+                    Icons.search,
+                    color: AppColors.purpleNeon.withValues(alpha: 0.6),
+                    size: 36,
+                  ),
+                  const SizedBox(height: 10),
+                  NeonText(
+                    text: 'INVESTIGATE A SUSPECT',
+                    fontSize: 14,
+                    color: AppColors.purpleNeon,
+                    glowRadius: 10,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Select a player to uncover their identity',
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.purpleNeon.withValues(alpha: 0.5),
+                    ),
+                  ),
                 ],
-                radius: 1.2,
               ),
             ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.search,
-                  color: AppColors.purpleNeon.withValues(alpha: 0.6),
-                  size: 36),
-                const SizedBox(height: 10),
-                NeonText(
-                  text: 'INVESTIGATE A SUSPECT',
-                  fontSize: 14,
-                  color: AppColors.purpleNeon,
-                  glowRadius: 10),
-                const SizedBox(height: 4),
-                Text('Select a player to uncover their identity',
-                  style: AppTextStyles.bodySmall.copyWith(
-                    color: AppColors.purpleNeon.withValues(alpha: 0.5))),
-              ],
-            ),
-          ),
-        ]),
+          ],
+        ),
       ),
     );
   }
@@ -271,10 +361,12 @@ class _NightOverlayPanelState extends State<NightOverlayPanel>
   /// ── Detective Result: PRIVATE reveal ──
   Widget _detectiveResultOverlay() {
     final isMafia = widget.detectiveResult ?? false;
-    final targetName = widget.players
-        .where((p) => p.id == widget.detectiveTargetId)
-        .map((p) => p.name)
-        .firstOrNull ?? 'Unknown';
+    final targetName =
+        widget.players
+            .where((p) => p.id == widget.detectiveTargetId)
+            .map((p) => p.name)
+            .firstOrNull ??
+        'Unknown';
     final color = isMafia ? AppColors.crimsonRed : AppColors.mintGreen;
     final label = isMafia ? 'TARGET IS MAFIA' : 'TARGET IS CIVILIAN';
     final icon = isMafia ? Icons.dangerous : Icons.verified_user;
@@ -294,39 +386,63 @@ class _NightOverlayPanelState extends State<NightOverlayPanel>
                   child: BackdropFilter(
                     filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 20),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 28,
+                        vertical: 20,
+                      ),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(16),
                         color: color.withValues(alpha: 0.08),
                         border: Border.all(color: color.withValues(alpha: 0.3)),
                         boxShadow: [
-                          BoxShadow(color: color.withValues(alpha: 0.2), blurRadius: 24),
+                          BoxShadow(
+                            color: color.withValues(alpha: 0.2),
+                            blurRadius: 24,
+                          ),
                         ],
                       ),
-                      child: Column(mainAxisSize: MainAxisSize.min, children: [
-                        Text('INVESTIGATION RESULT',
-                          style: TextStyle(
-                            color: AppColors.white30, fontSize: 9,
-                            fontWeight: FontWeight.w700, letterSpacing: 2)),
-                        const SizedBox(height: 10),
-                        Icon(icon, color: color, size: 40),
-                        const SizedBox(height: 8),
-                        Text(targetName,
-                          style: TextStyle(
-                            color: AppColors.white70, fontSize: 16,
-                            fontWeight: FontWeight.w600)),
-                        const SizedBox(height: 6),
-                        NeonText(
-                          text: label,
-                          fontSize: 18,
-                          color: color,
-                          glowRadius: 14),
-                        const SizedBox(height: 8),
-                        Text('This information is private',
-                          style: TextStyle(
-                            color: AppColors.white30, fontSize: 9,
-                            fontWeight: FontWeight.w500, fontStyle: FontStyle.italic)),
-                      ]),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'INVESTIGATION RESULT',
+                            style: TextStyle(
+                              color: AppColors.white30,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 2,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          Icon(icon, color: color, size: 40),
+                          const SizedBox(height: 8),
+                          Text(
+                            targetName,
+                            style: TextStyle(
+                              color: AppColors.white70,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          NeonText(
+                            text: label,
+                            fontSize: 18,
+                            color: color,
+                            glowRadius: 14,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'This information is private',
+                            style: TextStyle(
+                              color: AppColors.white30,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w500,
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -345,30 +461,50 @@ class _NightOverlayPanelState extends State<NightOverlayPanel>
         animation: _pulse,
         builder: (_, __) => Container(
           color: Colors.black.withValues(alpha: 0.45),
-          child: Center(
-            child: Column(mainAxisSize: MainAxisSize.min, children: [
-              Icon(Icons.nightlight_round,
-                color: AppColors.purpleGlow.withValues(alpha: 0.4 + _pulse.value * 0.2),
-                size: 36),
+          padding: const EdgeInsets.only(bottom: 24),
+          alignment: Alignment.bottomCenter,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.nightlight_round,
+                color: AppColors.purpleGlow.withValues(
+                  alpha: 0.4 + _pulse.value * 0.2,
+                ),
+                size: 36,
+              ),
               const SizedBox(height: 10),
               NeonText(
                 text: 'NIGHT FALLS',
                 fontSize: 16,
-                color: AppColors.purpleGlow.withValues(alpha: 0.5)),
+                color: AppColors.purpleGlow.withValues(alpha: 0.5),
+              ),
               const SizedBox(height: 6),
-              Text('${subPhase.displayName} is acting...',
+              Text(
+                '${subPhase.displayName} is acting...',
                 style: AppTextStyles.bodySmall.copyWith(
-                  color: AppColors.white30)),
+                  color: AppColors.white30,
+                ),
+              ),
               const SizedBox(height: 10),
-              Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                Icon(Icons.mic_off,
-                  color: AppColors.crimsonRed.withValues(alpha: 0.4), size: 12),
-                const SizedBox(width: 4),
-                Text('Microphone muted',
-                  style: AppTextStyles.labelSmall.copyWith(
-                    color: AppColors.crimsonRed.withValues(alpha: 0.4))),
-              ]),
-            ]),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.mic_off,
+                    color: AppColors.crimsonRed.withValues(alpha: 0.4),
+                    size: 12,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Microphone muted',
+                    style: AppTextStyles.labelSmall.copyWith(
+                      color: AppColors.crimsonRed.withValues(alpha: 0.4),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
       ),
@@ -382,30 +518,50 @@ class _NightOverlayPanelState extends State<NightOverlayPanel>
         animation: _pulse,
         builder: (_, __) => Container(
           color: Colors.black.withValues(alpha: 0.5),
-          child: Center(
-            child: Column(mainAxisSize: MainAxisSize.min, children: [
-              Icon(Icons.nightlight_round,
-                color: AppColors.purpleGlow.withValues(alpha: 0.4 + _pulse.value * 0.15),
-                size: 40),
+          padding: const EdgeInsets.only(bottom: 24),
+          alignment: Alignment.bottomCenter,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.nightlight_round,
+                color: AppColors.purpleGlow.withValues(
+                  alpha: 0.4 + _pulse.value * 0.15,
+                ),
+                size: 40,
+              ),
               const SizedBox(height: 10),
               NeonText(
                 text: 'NIGHT FALLS',
                 fontSize: 18,
-                color: AppColors.purpleGlow.withValues(alpha: 0.5)),
+                color: AppColors.purpleGlow.withValues(alpha: 0.5),
+              ),
               const SizedBox(height: 4),
-              Text('Close your eyes... the night hides secrets',
+              Text(
+                'Close your eyes... the night hides secrets',
                 style: AppTextStyles.bodySmall.copyWith(
-                  color: AppColors.white30)),
+                  color: AppColors.white30,
+                ),
+              ),
               const SizedBox(height: 10),
-              Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                Icon(Icons.mic_off,
-                  color: AppColors.crimsonRed.withValues(alpha: 0.4), size: 12),
-                const SizedBox(width: 4),
-                Text('Microphone muted',
-                  style: AppTextStyles.labelSmall.copyWith(
-                    color: AppColors.crimsonRed.withValues(alpha: 0.4))),
-              ]),
-            ]),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.mic_off,
+                    color: AppColors.crimsonRed.withValues(alpha: 0.4),
+                    size: 12,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Microphone muted',
+                    style: AppTextStyles.labelSmall.copyWith(
+                      color: AppColors.crimsonRed.withValues(alpha: 0.4),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
       ),

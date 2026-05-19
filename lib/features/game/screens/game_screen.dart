@@ -59,148 +59,207 @@ class _GameScreenState extends ConsumerState<GameScreen>
     });
 
     return Scaffold(
-      body: Stack(children: [
-        // ── Phase-reactive background ──
-        AnimatedContainer(
-          duration: const Duration(milliseconds: 800),
-          decoration: BoxDecoration(
-            gradient: phase.isNight || phase.isMorning
-                ? AppGradients.nightOverlay
-                : AppGradients.backgroundGradient),
-        ),
-
-        // ── Ambient particles ──
-        RepaintBoundary(child: ParticleField(
-          particleCount: phase.isNight ? 10 : 18,
-          particleColor: phase.isNight
-              ? AppColors.purpleDeep
-              : AppColors.purpleNeon,
-        )),
-
-        SafeArea(child: Column(children: [
-          const SizedBox(height: 6),
-
-          // ═══ HEADER PILL ═══
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: LobbyHeaderPill(
-              phase: phase,
-              roundNumber: gameState.roundNumber,
-              aliveCount: gameState.alivePlayers.length),
-          ),
-
-          const SizedBox(height: 4),
-
-          // ═══ PLAYER CIRCLE + TIMER + OVERLAYS ═══
-          Expanded(child: LayoutBuilder(
-            builder: (context, constraints) {
-              return Stack(alignment: Alignment.center, children: [
-                // Circular player layout
-                _buildPlayerCircle(
-                  gameState, constraints.maxWidth, constraints.maxHeight),
-
-                // Center timer (not during lobby countdown, result, or morning)
-                if (gameState.timeRemaining > 0 &&
-                    phase != GamePhase.result &&
-                    phase != GamePhase.morningReveal &&
-                    phase != GamePhase.lobby)
-                  LobbyTimerWidget(
-                    seconds: gameState.timeRemaining,
-                    maxSeconds: _maxSecondsForPhase(phase, gameState),
-                    phase: phase),
-
-                // ── LOBBY COUNTDOWN OVERLAY ──
-                if (phase == GamePhase.lobby)
-                  LobbyCountdownOverlay(
-                    countdown: gameState.lobbyCountdown,
-                    tickingActive: gameState.lobbyTickingActive,
-                    showBeginsCinematic: gameState.showBeginsCinematic),
-
-                // ── NIGHT PHASE OVERLAY ──
-                if (phase.isNight)
-                  NightOverlayPanel(
-                    subPhase: gameState.nightSubPhase,
-                    localPlayer: localPlayer,
-                    detectiveResult: gameState.detectiveResult,
-                    detectiveTargetId: gameState.detectiveTargetId,
-                    detectiveResultRevealed: gameState.detectiveResultRevealed,
-                    mafiaChannelOpen: gameState.mafiaChannelOpen,
-                    players: gameState.players),
-
-                // ── MORNING / DAWN REVEAL ──
-                if (phase.isMorning)
-                  _buildDawnOverlay(gameState),
-
-                // ── RUNOFF OVERLAY ──
-                if (phase.isRunoff && gameState.tiedPlayerIds.isNotEmpty)
-                  _buildRunoffOverlay(gameState),
-
-                // ── MIC + EMOJI controls ──
-                if (_showMicControls(phase))
-                  Positioned(
-                    bottom: 4, right: 12,
-                    child: MicEmojiControls(
-                      isMuted: localPlayer?.voiceState == VoiceState.muted,
-                      isSpeaking: localPlayer?.isSpeaking ?? false,
-                      onToggleMic: () =>
-                          ref.read(gameProvider.notifier).toggleMute(),
-                      onEmojiSend: (emoji) =>
-                          _sendEmoji(gameState.localPlayerId, emoji),
-                    ),
-                  ),
-              ]);
-            },
-          )),
-
-          // ═══ GRAVEYARD PANEL ═══
-          if (gameState.deadPlayers.isNotEmpty &&
-              phase != GamePhase.lobby &&
-              phase != GamePhase.matchmaking &&
-              phase != GamePhase.result)
-            GraveyardPanel(deadPlayers: gameState.deadPlayers),
-
-          // ═══ ROLE REVEAL (during role assignment) ═══
-          if (phase == GamePhase.roleAssignment && localPlayer?.role != null)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 2),
-              child: RoleRevealPanel(role: localPlayer!.role),
+      body: Stack(
+        children: [
+          // ── Phase-reactive background ──
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 800),
+            decoration: BoxDecoration(
+              gradient: phase.isNight || phase.isMorning
+                  ? AppGradients.nightOverlay
+                  : AppGradients.backgroundGradient,
             ),
-
-          // ═══ ACTION BAR ═══
-          LobbyActionBar(
-            phase: phase,
-            gameState: gameState,
-            localPlayer: localPlayer,
-            selectedVoteTarget: _selectedVoteTarget,
-            nightActionTarget: _nightActionTarget,
-            onReady: () =>
-                ref.read(gameProvider.notifier).toggleReady(),
-            onLeaveLobby: () {
-              ref.read(gameProvider.notifier).leaveLobby();
-              context.go('/home');
-            },
-            onConfirmVote: _selectedVoteTarget != null
-                ? () {
-                    ref.read(gameProvider.notifier)
-                        .submitVote(_selectedVoteTarget!);
-                  }
-                : null,
-            onSkipVote: () =>
-                setState(() => _selectedVoteTarget = null),
-            onConfirmNightAction: _nightActionTarget != null
-                ? () => _submitNightAction(localPlayer)
-                : null,
-            onQueueAgain: () {
-              ref.read(gameProvider.notifier).resetGame();
-              ref.read(gameProvider.notifier).startMatchmaking();
-            },
-            onReturnHome: () {
-              ref.read(gameProvider.notifier).resetGame();
-              context.go('/home');
-            },
           ),
-        ])),
-      ]),
+
+          // ── Ambient particles ──
+          RepaintBoundary(
+            child: ParticleField(
+              particleCount: phase.isNight ? 10 : 18,
+              particleColor: phase.isNight
+                  ? AppColors.purpleDeep
+                  : AppColors.purpleNeon,
+            ),
+          ),
+
+          SafeArea(
+            child: Column(
+              children: [
+                const SizedBox(height: 6),
+
+                // ═══ HEADER PILL ═══
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: LobbyHeaderPill(
+                    phase: phase,
+                    roundNumber: gameState.roundNumber,
+                    aliveCount: gameState.alivePlayers.length,
+                  ),
+                ),
+
+                const SizedBox(height: 4),
+
+                // ═══ PLAYER CIRCLE + TIMER + OVERLAYS ═══
+                Expanded(
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      return Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          // Circular player layout
+                          _buildPlayerCircle(
+                            gameState,
+                            constraints.maxWidth,
+                            constraints.maxHeight,
+                          ),
+
+                          // Center timer (not during lobby countdown, result, or morning)
+                          if (gameState.timeRemaining > 0 &&
+                              phase != GamePhase.result &&
+                              phase != GamePhase.morningReveal &&
+                              phase != GamePhase.lobby)
+                            LobbyTimerWidget(
+                              seconds: gameState.timeRemaining,
+                              maxSeconds: _maxSecondsForPhase(phase, gameState),
+                              phase: phase,
+                            ),
+
+                          // ── LOBBY COUNTDOWN OVERLAY ──
+                          if (phase == GamePhase.lobby)
+                            Positioned.fill(
+                              child: LobbyCountdownOverlay(
+                                countdown: gameState.lobbyCountdown,
+                                tickingActive: gameState.lobbyTickingActive,
+                                showBeginsCinematic:
+                                    gameState.showBeginsCinematic,
+                              ),
+                            ),
+
+                          // ── NIGHT PHASE OVERLAY ──
+                          if (phase.isNight)
+                            Positioned.fill(
+                              child: NightOverlayPanel(
+                                subPhase: gameState.nightSubPhase,
+                                localPlayer: localPlayer,
+                                detectiveResult: gameState.detectiveResult,
+                                detectiveTargetId: gameState.detectiveTargetId,
+                                detectiveResultRevealed:
+                                    gameState.detectiveResultRevealed,
+                                mafiaChannelOpen: gameState.mafiaChannelOpen,
+                                players: gameState.players,
+                              ),
+                            ),
+
+                          // ── MORNING / DAWN REVEAL ──
+                          if (phase.isMorning)
+                            Positioned.fill(
+                              child: _buildDawnOverlay(gameState),
+                            ),
+
+                          // ── RUNOFF OVERLAY ──
+                          if (phase.isRunoff &&
+                              gameState.tiedPlayerIds.isNotEmpty)
+                            Positioned.fill(
+                              child: _buildRunoffOverlay(gameState),
+                            ),
+
+                          if (_showMicControls(phase))
+                            Builder(
+                              builder: (context) {
+                                final isForcedMuted =
+                                    phase == GamePhase.roleAssignment ||
+                                    (phase.isNight &&
+                                        !(localPlayer?.isMafia == true &&
+                                            gameState.mafiaChannelOpen) &&
+                                        !(localPlayer?.role ==
+                                                GameRole.detective &&
+                                            gameState.nightSubPhase ==
+                                                NightSubPhase.detectiveActing));
+                                final effectivelyMuted =
+                                    localPlayer?.voiceState ==
+                                        VoiceState.muted ||
+                                    isForcedMuted;
+
+                                return Positioned(
+                                  bottom: 4,
+                                  right: 12,
+                                  child: MicEmojiControls(
+                                    isMuted: effectivelyMuted,
+                                    isSpeaking:
+                                        localPlayer?.isSpeaking ?? false,
+                                    onToggleMic: isForcedMuted
+                                        ? null
+                                        : () => ref
+                                              .read(gameProvider.notifier)
+                                              .toggleMute(),
+                                    onEmojiSend: (emoji) => _sendEmoji(
+                                      gameState.localPlayerId,
+                                      emoji,
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                        ],
+                      );
+                    },
+                  ),
+                ),
+
+                // ═══ GRAVEYARD PANEL ═══
+                if (gameState.deadPlayers.isNotEmpty &&
+                    phase != GamePhase.lobby &&
+                    phase != GamePhase.matchmaking &&
+                    phase != GamePhase.result)
+                  GraveyardPanel(deadPlayers: gameState.deadPlayers),
+
+                // ═══ ROLE REVEAL (during role assignment) ═══
+                if (phase == GamePhase.roleAssignment &&
+                    localPlayer?.role != null)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 2,
+                    ),
+                    child: RoleRevealPanel(role: localPlayer!.role),
+                  ),
+
+                // ═══ ACTION BAR ═══
+                LobbyActionBar(
+                  phase: phase,
+                  gameState: gameState,
+                  localPlayer: localPlayer,
+                  selectedVoteTarget: _selectedVoteTarget,
+                  nightActionTarget: _nightActionTarget,
+                  onReady: () => ref.read(gameProvider.notifier).toggleReady(),
+                  onLeaveLobby: () {
+                    ref.read(gameProvider.notifier).leaveLobby();
+                    context.go('/home');
+                  },
+                  onConfirmVote: _selectedVoteTarget != null
+                      ? () {
+                          ref
+                              .read(gameProvider.notifier)
+                              .submitVote(_selectedVoteTarget!);
+                        }
+                      : null,
+                  onSkipVote: () => setState(() => _selectedVoteTarget = null),
+                  onConfirmNightAction: _nightActionTarget != null
+                      ? () => _submitNightAction(localPlayer)
+                      : null,
+                  onQueueAgain: () {
+                    ref.read(gameProvider.notifier).resetGame();
+                    ref.read(gameProvider.notifier).startMatchmaking();
+                  },
+                  onReturnHome: () {
+                    ref.read(gameProvider.notifier).resetGame();
+                    context.go('/home');
+                  },
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -208,8 +267,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
   // DYNAMIC CIRCULAR LAYOUT
   // ────────────────────────────────────────────────────────────────────────
 
-  Widget _buildPlayerCircle(
-      GameStateModel gs, double areaW, double areaH) {
+  Widget _buildPlayerCircle(GameStateModel gs, double areaW, double areaH) {
     final players = gs.players;
     if (players.isEmpty) return const SizedBox.shrink();
 
@@ -233,16 +291,17 @@ class _GameScreenState extends ConsumerState<GameScreen>
       child: Stack(
         alignment: Alignment.center,
         children: List.generate(players.length, (i) {
-          final angle =
-              (2 * pi * i / players.length) - (pi / 2);
+          final angle = (2 * pi * i / players.length) - (pi / 2);
           final x = cos(angle) * radius;
           final y = sin(angle) * radius;
           final player = players[i];
-          final isSelected = _selectedVoteTarget == player.id ||
+          final isSelected =
+              _selectedVoteTarget == player.id ||
               _nightActionTarget == player.id;
-          final isTied = gs.phase.isRunoff &&
-              gs.tiedPlayerIds.contains(player.id);
-          final isFaded = gs.phase.isRunoff &&
+          final isTied =
+              gs.phase.isRunoff && gs.tiedPlayerIds.contains(player.id);
+          final isFaded =
+              gs.phase.isRunoff &&
               gs.tiedPlayerIds.isNotEmpty &&
               !gs.tiedPlayerIds.contains(player.id) &&
               player.isAlive;
@@ -371,33 +430,43 @@ class _GameScreenState extends ConsumerState<GameScreen>
               opacity: t.clamp(0.0, 1.0),
               child: Transform.translate(
                 offset: Offset(0, 20 * (1 - t)),
-                child: Column(mainAxisSize: MainAxisSize.min, children: [
-                  // Sun/skull icon
-                  Icon(
-                    isDeath ? Icons.dangerous : Icons.wb_sunny,
-                    color: (isDeath ? AppColors.crimsonRed : AppColors.gold)
-                        .withValues(alpha: 0.6),
-                    size: 44),
-                  const SizedBox(height: 12),
-                  // Label
-                  NeonText(
-                    text: isDeath ? 'A TRAGEDY' : 'ALL SURVIVED',
-                    fontSize: 22,
-                    color: isDeath ? AppColors.crimsonRed : AppColors.mintGreen,
-                    glowRadius: 16),
-                  const SizedBox(height: 10),
-                  // Game Master message
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 32),
-                    child: Text(msg,
-                      textAlign: TextAlign.center,
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: AppColors.white50,
-                        fontSize: 13,
-                        fontStyle: FontStyle.italic,
-                        height: 1.5)),
-                  ),
-                ]),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Sun/skull icon
+                    Icon(
+                      isDeath ? Icons.dangerous : Icons.wb_sunny,
+                      color: (isDeath ? AppColors.crimsonRed : AppColors.gold)
+                          .withValues(alpha: 0.6),
+                      size: 44,
+                    ),
+                    const SizedBox(height: 12),
+                    // Label
+                    NeonText(
+                      text: isDeath ? 'A TRAGEDY' : 'ALL SURVIVED',
+                      fontSize: 22,
+                      color: isDeath
+                          ? AppColors.crimsonRed
+                          : AppColors.mintGreen,
+                      glowRadius: 16,
+                    ),
+                    const SizedBox(height: 10),
+                    // Game Master message
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 32),
+                      child: Text(
+                        msg,
+                        textAlign: TextAlign.center,
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: AppColors.white50,
+                          fontSize: 13,
+                          fontStyle: FontStyle.italic,
+                          height: 1.5,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -410,16 +479,24 @@ class _GameScreenState extends ConsumerState<GameScreen>
     return IgnorePointer(
       child: Container(
         color: Colors.black.withValues(alpha: 0.25),
-        child: Center(
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            NeonText(text: 'SUDDEN DEATH', fontSize: 20,
-              color: AppColors.crimsonRed),
+        padding: const EdgeInsets.only(bottom: 24),
+        alignment: Alignment.bottomCenter,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            NeonText(
+              text: 'SUDDEN DEATH',
+              fontSize: 20,
+              color: AppColors.crimsonRed,
+            ),
             const SizedBox(height: 4),
             Text(
               '${gs.tiedPlayerIds.length} players tied — vote again',
               style: AppTextStyles.bodySmall.copyWith(
-                color: AppColors.crimsonRed.withValues(alpha: 0.6))),
-          ]),
+                color: AppColors.crimsonRed.withValues(alpha: 0.6),
+              ),
+            ),
+          ],
         ),
       ),
     );
