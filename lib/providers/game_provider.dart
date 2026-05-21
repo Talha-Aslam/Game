@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/game_state_model.dart';
 import '../models/player_model.dart';
 import '../services/websocket_service.dart';
+import '../services/audio/audio_service.dart';
 
 /// WebSocket service provider
 final wsServiceProvider = Provider<WebSocketService>((ref) {
@@ -14,6 +15,9 @@ final wsServiceProvider = Provider<WebSocketService>((ref) {
 /// Game state notifier using Riverpod 3.x Notifier
 class GameNotifier extends Notifier<GameStateModel> {
   StreamSubscription? _sub;
+
+  /// Quick accessor to the singleton AudioService
+  AudioService get _audio => AudioService.instance;
 
   @override
   GameStateModel build() {
@@ -49,11 +53,90 @@ class GameNotifier extends Notifier<GameStateModel> {
           _handleResult(msg.data);
           break;
         case WsEvent.voiceStateChange:
-          _syncVoiceStates();
+          _syncVoiceStates(msg.data);
+          break;
+        case WsEvent.lobbyUpdate:
+          _handleLobbyUpdate(msg.data);
+          break;
+        case WsEvent.lobbyCountdown:
+          _handleLobbyCountdown(msg.data);
+          break;
+        case WsEvent.showBegins:
+          _handleShowBegins();
+          break;
+        case WsEvent.nightSubPhase:
+          _handleNightSubPhase(msg.data);
+          break;
+        case WsEvent.investigationResult:
+          _handleInvestigationResult(msg.data);
+          break;
+        case WsEvent.dawnAnnounce:
+          _handleDawnAnnounce(msg.data);
+          break;
+        case WsEvent.mafiaChannel:
+          _handleMafiaChannel(msg.data);
           break;
       }
     });
   }
+
+  // ══════════════════════════════════════════════════════════════════════
+  // LOBBY PHASE
+  // ══════════════════════════════════════════════════════════════════════
+
+  void _handleLobbyUpdate(Map<String, dynamic> data) {
+    if (data.containsKey('readyPlayers')) {
+      final ready = Set<String>.from(data['readyPlayers'] as List? ?? []);
+      state = state.copyWith(readyPlayers: ready);
+    }
+    if (data.containsKey('players')) {
+      final players = (data['players'] as List)
+          .map((p) => PlayerModel.fromJson(p as Map<String, dynamic>))
+          .toList();
+      state = state.copyWith(
+        players: players,
+        phase: GamePhase.lobby,
+      );
+    }
+    if (data.containsKey('localPlayerId')) {
+      state = state.copyWith(
+        localPlayerId: data['localPlayerId'] as String?,
+      );
+    }
+
+  }
+
+  void _handleLobbyCountdown(Map<String, dynamic> data) {
+    final remaining = data['remaining'] as int? ?? 0;
+    final ticking = data['tickingActive'] as bool? ?? false;
+
+    state = state.copyWith(
+      lobbyCountdown: remaining,
+      lobbyTickingActive: ticking,
+      timeRemaining: remaining,
+    );
+
+    // ── AUDIO: Trigger "Trust no one..." when countdown starts at 10
+    if (remaining == 10) {
+      _audio.playLobbyIntro();
+    }
+  }
+
+  void _handleShowBegins() {
+    state = state.copyWith(showBeginsCinematic: true);
+
+    // ── AUDIO: play "The show begins." cinematic VO
+    _audio.playGameStart();
+
+    // Reset cinematic flag after animation
+    Future.delayed(const Duration(seconds: 2), () {
+      state = state.copyWith(showBeginsCinematic: false);
+    });
+  }
+
+  // ══════════════════════════════════════════════════════════════════════
+  // ROLE ASSIGNMENT
+  // ══════════════════════════════════════════════════════════════════════
 
   void _handleRoleAssigned(Map<String, dynamic> data) {
     final players = (data['players'] as List)
@@ -63,9 +146,15 @@ class GameNotifier extends Notifier<GameStateModel> {
       phase: GamePhase.roleAssignment,
       players: players,
       localPlayerId: data['localPlayerId'] as String?,
-      timeRemaining: 5,
+      timeRemaining: 10,
+      lobbyTickingActive: false,
+      showBeginsCinematic: false,
     );
   }
+
+  // ══════════════════════════════════════════════════════════════════════
+  // PHASE CHANGES
+  // ══════════════════════════════════════════════════════════════════════
 
   void _handlePhaseChange(Map<String, dynamic> data) {
     final phaseName = data['phase'] as String?;
@@ -74,8 +163,105 @@ class GameNotifier extends Notifier<GameStateModel> {
       state = state.copyWith(
         phase: phase,
         timeRemaining: data['duration'] as int? ?? state.timeRemaining,
+        morningMessage: data['morningMessage'] as String?,
       );
+
+      // ── AUDIO: Phase-specific narration triggers
+      switch (phase) {
+        case GamePhase.night:
+          // Narrator: "The shadows..."
+          _audio.playNightStart();
+          break;
+        case GamePhase.morningReveal:
+          // Narrator plays morning results (handled in _handleDawnAnnounce)
+          break;
+        case GamePhase.day:
+          break;
+        case GamePhase.voting:
+          // Narrator: "Cast your votes"
+          _audio.playVotingStart();
+          break;
+        default:
+          break;
+      }
     }
+  }
+
+  // ══════════════════════════════════════════════════════════════════════
+  // NIGHT SUB-PHASES (Sequential: Mafia → Doctor → Detective)
+  // ══════════════════════════════════════════════════════════════════════
+
+  void _handleNightSubPhase(Map<String, dynamic> data) {
+    final subPhaseName = data['subPhase'] as String?;
+    final duration = data['duration'] as int?;
+    if (subPhaseName != null) {
+      final subPhase = NightSubPhase.values.byName(subPhaseName);
+      state = state.copyWith(
+        nightSubPhase: subPhase,
+        timeRemaining: duration ?? state.timeRemaining,
+      );
+
+      // ── AUDIO: Sub-phase narration
+      switch (subPhase) {
+        case NightSubPhase.mafiaActing:
+          // Narrator: "Mafia, choose your prey..."
+          _audio.playMafiaTurn();
+          break;
+        case NightSubPhase.doctorActing:
+          // Narrator: "Doctor, listen... save a life"
+          _audio.playDoctorTurn();
+          break;
+        case NightSubPhase.detectiveActing:
+          // Narrator: "Detective, the streets are lying..."
+          _audio.playDetectiveTurn();
+          break;
+      }
+    }
+  }
+
+  // ══════════════════════════════════════════════════════════════════════
+  // INVESTIGATION RESULT (Private — detective only)
+  // ══════════════════════════════════════════════════════════════════════
+
+  void _handleInvestigationResult(Map<String, dynamic> data) {
+    final targetId = data['targetId'] as String?;
+    final isMafia = data['isMafia'] as bool? ?? false;
+
+    // PRIVATE — only update state if local player is detective
+    final lp = state.localPlayer;
+    if (lp?.role == GameRole.detective) {
+      state = state.copyWith(
+        detectiveTargetId: targetId,
+        detectiveResult: isMafia,
+        detectiveResultRevealed: true,
+      );
+
+      // ── AUDIO: "Investigation complete."
+      _audio.playDetectiveLocked();
+    }
+  }
+
+  // ══════════════════════════════════════════════════════════════════════
+  // DAWN ANNOUNCE
+  // ══════════════════════════════════════════════════════════════════════
+
+  void _handleDawnAnnounce(Map<String, dynamic> data) {
+    final message = data['message'] as String?;
+    final saved = data['saved'] as bool? ?? false;
+
+    state = state.copyWith(
+      dawnMessage: message,
+      morningMessage: message,
+      phase: GamePhase.morningReveal,
+    );
+
+    // ── AUDIO: "Everyone open your eyes" → then death/save result
+    _audio.playMorningResults(someoneDied: !saved);
+  }
+
+  void _handleMafiaChannel(Map<String, dynamic> data) {
+    final open = data['open'] as bool? ?? false;
+    state = state.copyWith(mafiaChannelOpen: open);
   }
 
   void _handleTimerTick(Map<String, dynamic> data) {
@@ -84,11 +270,19 @@ class GameNotifier extends Notifier<GameStateModel> {
     );
   }
 
+  // ══════════════════════════════════════════════════════════════════════
+  // ELIMINATION
+  // ══════════════════════════════════════════════════════════════════════
+
   void _handleElimination(Map<String, dynamic> data) {
     final playerId = data['playerId'] as String;
     final updatedPlayers = state.players.map((p) {
       if (p.id == playerId) {
-        return p.copyWith(status: PlayerStatus.eliminated);
+        return p.copyWith(
+          status: PlayerStatus.eliminated,
+          voiceState: VoiceState.muted,
+          isEliminating: true,
+        );
       }
       return p;
     }).toList();
@@ -97,6 +291,18 @@ class GameNotifier extends Notifier<GameStateModel> {
       eliminatedPlayerId: playerId,
       phase: GamePhase.elimination,
     );
+
+    // ── AUDIO: "A citizen has been eliminated" VO
+    _audio.playVotingResult(resultType: 'exile');
+
+    // Reset isEliminating after animation
+    Future.delayed(const Duration(seconds: 2), () {
+      final reset = state.players.map((p) {
+        if (p.id == playerId) return p.copyWith(isEliminating: false);
+        return p;
+      }).toList();
+      state = state.copyWith(players: reset);
+    });
   }
 
   void _handleVotesRevealed(Map<String, dynamic> data) {
@@ -106,21 +312,77 @@ class GameNotifier extends Notifier<GameStateModel> {
     state = state.copyWith(votes: votes);
   }
 
+  // ══════════════════════════════════════════════════════════════════════
+  // RUNOFF
+  // ══════════════════════════════════════════════════════════════════════
+
   void _handleRunoff(Map<String, dynamic> data) {
     final tied = List<String>.from(data['tiedPlayers'] as List? ?? []);
     state = state.copyWith(tiedPlayerIds: tied);
+
+    // ── AUDIO: "No one is eliminated" — tied vote VO
+    _audio.playVotingResult(resultType: 'tie');
   }
+
+  // ══════════════════════════════════════════════════════════════════════
+  // GAME RESULT
+  // ══════════════════════════════════════════════════════════════════════
 
   void _handleResult(Map<String, dynamic> data) {
     final winner = WinningSide.values.byName(data['winner'] as String);
+    final mafiaWon = winner == WinningSide.mafia;
+
+    // ── AUDIO: Stop everything, play game over narration
+    _audio.stopAll();
+    _audio.playGameOver(mafiaWon: mafiaWon);
+
     state = state.copyWith(
       phase: GamePhase.result,
       winner: winner,
+      resultData: MatchResultData(
+        xpGained: data['xpGained'] as int? ?? 150,
+        rankDelta: data['rankDelta'] as int? ?? 12,
+        bpXpGained: data['bpXpGained'] as int? ?? 80,
+        influenceGained: data['influenceGained'] as int? ?? 25,
+        popularityGained: data['popularityGained'] as int? ?? 5,
+        mvpPlayerId: data['mvpPlayerId'] as String?,
+      ),
     );
   }
 
-  void _syncVoiceStates() {
-    state = state.copyWith(players: List.from(state.players));
+  void _syncVoiceStates(Map<String, dynamic> data) {
+    if (data.containsKey('players')) {
+      final voiceMap = Map<String, String>.from(data['players'] as Map? ?? {});
+      final updatedPlayers = state.players.map((p) {
+        if (voiceMap.containsKey(p.id)) {
+          return p.copyWith(voiceState: VoiceState.values.byName(voiceMap[p.id]!));
+        }
+        return p;
+      }).toList();
+      state = state.copyWith(players: updatedPlayers);
+    } else {
+      state = state.copyWith(players: List.from(state.players));
+    }
+  }
+
+  // ══════════════════════════════════════════════════════════════════════
+  // PLAYER ACTIONS
+  // ══════════════════════════════════════════════════════════════════════
+
+  /// Toggle ready in lobby
+  void toggleReady() {
+    final pid = state.localPlayerId ?? '';
+    final ready = Set<String>.from(state.readyPlayers);
+    ready.contains(pid) ? ready.remove(pid) : ready.add(pid);
+    state = state.copyWith(readyPlayers: ready);
+    ref.read(wsServiceProvider).send('toggle_ready', {'playerId': pid});
+  }
+
+  /// Leave lobby
+  void leaveLobby() {
+    _audio.stopAll();
+    ref.read(wsServiceProvider).send('leave_lobby');
+    resetGame();
   }
 
   /// Submit vote
@@ -131,19 +393,50 @@ class GameNotifier extends Notifier<GameStateModel> {
     ref.read(wsServiceProvider).send('submit_vote', {'targetId': targetId});
   }
 
-  /// Mafia action
+  /// Clear vote (change mind before timer)
+  void clearVote() {
+    final votes = Map<String, String>.from(state.votes);
+    votes.remove(state.localPlayerId ?? '');
+    state = state.copyWith(votes: votes);
+    ref.read(wsServiceProvider).send('clear_vote');
+  }
+
+  /// Mafia action — select target
   void submitMafiaAction(String targetId) {
+    state = state.copyWith(mafiaTargetId: targetId);
     ref.read(wsServiceProvider).send('mafia_action', {'targetId': targetId});
+
+    // ── AUDIO: "Prey locked."
+    _audio.playMafiaLocked();
   }
 
-  /// Doctor action
+  /// Doctor action — select target
   void submitDoctorAction(String targetId) {
+    state = state.copyWith(doctorTargetId: targetId);
     ref.read(wsServiceProvider).send('doctor_action', {'targetId': targetId});
+
+    // ── AUDIO: "A life locked."
+    _audio.playDoctorLocked();
   }
 
-  /// Detective action
+  /// Detective action — select target
   void submitDetectiveAction(String targetId) {
+    state = state.copyWith(detectiveTargetId: targetId);
     ref.read(wsServiceProvider).send('detective_action', {'targetId': targetId});
+    // Note: audio for detective confirm is played in _handleInvestigationResult
+  }
+
+  /// Change night target before confirmation
+  void changeNightTarget(String newTargetId) {
+    final lp = state.localPlayer;
+    if (lp == null) return;
+    if (lp.isMafia) {
+      state = state.copyWith(mafiaTargetId: newTargetId);
+    } else if (lp.role == GameRole.doctor) {
+      state = state.copyWith(doctorTargetId: newTargetId);
+    } else if (lp.role == GameRole.detective) {
+      state = state.copyWith(detectiveTargetId: newTargetId);
+    }
   }
 
   /// Start matchmaking
@@ -155,8 +448,60 @@ class GameNotifier extends Notifier<GameStateModel> {
     });
   }
 
+  /// Toggle mic mute (local state only)
+  void toggleMute() {
+    final lp = state.localPlayer;
+    if (lp == null) return;
+    final newVoice = lp.voiceState == VoiceState.muted ? VoiceState.idle : VoiceState.muted;
+    final updated = state.players.map((p) {
+      if (p.id == lp.id) return p.copyWith(voiceState: newVoice);
+      return p;
+    }).toList();
+    state = state.copyWith(players: updated);
+  }
+
+  /// Send emoji (broadcast to other players)
+  void sendEmoji(String emoji) {
+    ref.read(wsServiceProvider).send('send_emoji', {
+      'playerId': state.localPlayerId, 'emoji': emoji,
+    });
+  }
+
+  /// Send commendation to a player
+  void sendCommendation(String targetPlayerId) {
+    ref.read(wsServiceProvider).send('send_commendation', {
+      'targetPlayerId': targetPlayerId,
+    });
+    // Optimistic: increment target's commendations locally
+    final updated = state.players.map((p) {
+      if (p.id == targetPlayerId) {
+        return p.copyWith(commendations: p.commendations + 1);
+      }
+      return p;
+    }).toList();
+    state = state.copyWith(players: updated);
+  }
+
+  /// Add friend request
+  void addFriend(String targetPlayerId) {
+    ref.read(wsServiceProvider).send('add_friend', {
+      'targetPlayerId': targetPlayerId,
+    });
+  }
+
+  /// Invite friend (stub — would open friend list)
+  void inviteFriend() {
+    // In production: opens friend picker dialog
+  }
+
+  /// Invite family members (stub)
+  void inviteFamily() {
+    // In production: sends invite to family members
+  }
+
   /// Reset game
   void resetGame() {
+    _audio.stopAll();
     state = const GameStateModel(gameId: '');
   }
 }
@@ -180,4 +525,12 @@ final localPlayerProvider = Provider<PlayerModel?>((ref) {
 
 final timeRemainingProvider = Provider<int>((ref) {
   return ref.watch(gameProvider).timeRemaining;
+});
+
+final nightSubPhaseProvider = Provider<NightSubPhase?>((ref) {
+  return ref.watch(gameProvider).nightSubPhase;
+});
+
+final deadPlayersProvider = Provider<List<PlayerModel>>((ref) {
+  return ref.watch(gameProvider).deadPlayers;
 });

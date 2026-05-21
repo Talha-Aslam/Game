@@ -2,12 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_text_styles.dart';
 import '../../../core/theme/app_gradients.dart';
 import '../../../providers/battle_pass_provider.dart';
 import '../../../models/battle_pass_model.dart';
-import '../../../widgets/neon_text.dart';
-import '../../../widgets/glass_button.dart';
+import '../../../widgets/particle_field.dart';
+import '../widgets/bp_header.dart';
+import '../widgets/reward_track_widget.dart';
+import '../widgets/reward_preview_modal.dart';
+import '../widgets/reward_claim_animation.dart';
+import '../widgets/tier_purchase_dialog.dart';
+import '../widgets/premium_upsell_widget.dart';
+import '../widgets/xp_progress_bar.dart';
 
 class BattlePassScreen extends ConsumerWidget {
   const BattlePassScreen({super.key});
@@ -17,164 +22,183 @@ class BattlePassScreen extends ConsumerWidget {
     final bp = ref.watch(battlePassProvider);
 
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(gradient: AppGradients.backgroundGradient),
-        child: SafeArea(
-          child: Column(
-            children: [
-              // Header
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    GestureDetector(
-                      onTap: () => context.pop(),
-                      child: const Icon(Icons.arrow_back, color: AppColors.white70),
-                    ),
-                    const SizedBox(width: 16),
-                    const Expanded(child: NeonText(text: 'BATTLE PASS', fontSize: 20, color: AppColors.gold, glowRadius: 15)),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
-                        color: bp.isPremium ? AppColors.gold.withValues(alpha: 0.15) : AppColors.white05,
-                        border: Border.all(color: bp.isPremium ? AppColors.gold.withValues(alpha: 0.4) : AppColors.glassBorder),
-                      ),
-                      child: Text(
-                        bp.isPremium ? '⭐ PREMIUM' : 'FREE',
-                        style: TextStyle(color: bp.isPremium ? AppColors.gold : AppColors.white50, fontSize: 11, fontWeight: FontWeight.w600),
-                      ),
-                    ),
-                  ],
-                ),
+      body: Stack(children: [
+        Container(decoration: const BoxDecoration(gradient: AppGradients.backgroundGradient)),
+        const ParticleField(particleCount: 12),
+        SafeArea(child: Column(children: [
+          // Back button row
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            child: Row(children: [
+              GestureDetector(
+                onTap: () => context.pop(),
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle, color: AppColors.white05,
+                    border: Border.all(color: AppColors.glassBorder)),
+                  child: const Icon(Icons.arrow_back, color: Colors.white, size: 20)),
               ),
-
-              // Progress
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('Tier ${bp.currentTier}', style: AppTextStyles.headlineSmall.copyWith(color: AppColors.gold)),
-                        Text('${bp.currentXP} / ${bp.xpToNextTier} XP', style: AppTextStyles.labelSmall),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
-                      child: LinearProgressIndicator(
-                        value: bp.progress,
-                        backgroundColor: AppColors.white10,
-                        valueColor: const AlwaysStoppedAnimation(AppColors.gold),
-                        minHeight: 6,
-                      ),
-                    ),
-                  ],
-                ),
+              const SizedBox(width: 12),
+              ShaderMask(
+                shaderCallback: (bounds) => const LinearGradient(
+                  colors: [AppColors.gold, Color(0xFFFF8F00)]).createShader(bounds),
+                child: const Text('BATTLE PASS', style: TextStyle(
+                  color: Colors.white, fontSize: 20, fontWeight: FontWeight.w900, letterSpacing: 2)),
               ),
-
-              const SizedBox(height: 16),
-
-              // Tiers list
-              Expanded(
-                child: ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: bp.tiers.length,
-                  itemBuilder: (context, i) {
-                    final tier = bp.tiers[i];
-                    return _TierRow(tier: tier, isPremium: bp.isPremium, onClaim: () {
-                      ref.read(battlePassProvider.notifier).claimReward(tier.tier);
-                    });
-                  },
-                ),
-              ),
-            ],
+            ]),
           ),
-        ),
+          const SizedBox(height: 8),
+          // Header
+          BPHeader(
+            bp: bp,
+            onBuyPremium: () => _showPremiumSheet(context, ref, bp),
+            onBuyTiers: () => TierPurchaseDialog.show(context,
+              currentTier: bp.currentTier, maxTier: bp.maxTier,
+              costPerTier: bp.tierSkipCost,
+              onPurchase: (count) => ref.read(battlePassProvider.notifier).purchaseTiers(count)),
+            onBoost: () => _showBoostSheet(context, ref),
+          ),
+          const SizedBox(height: 8),
+          // Horizontal track
+          Expanded(child: RewardTrackWidget(
+            bp: bp,
+            onTapReward: (tier, isPremium) => _showPreview(context, ref, tier, isPremium, bp),
+            onClaimReward: (tierNum, isPremium) => _claimReward(context, ref, tierNum, isPremium, bp),
+          )),
+          // Bottom XP bar
+          Container(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+            decoration: BoxDecoration(
+              color: AppColors.background.withValues(alpha: 0.9),
+              border: Border(top: BorderSide(color: AppColors.glassBorder))),
+            child: XPProgressBar(
+              currentXP: bp.currentXP, maxXP: bp.xpToNextTier,
+              currentTier: bp.currentTier, hasBoost: bp.hasActiveBoost),
+          ),
+        ])),
+      ]),
+    );
+  }
+
+  void _showPreview(BuildContext context, WidgetRef ref, BattlePassTier tier, bool isPremium, BattlePassModel bp) {
+    final reward = isPremium ? tier.premiumReward! : tier.freeReward;
+    final claimState = isPremium ? tier.premiumClaimState(bp.isPremium) : tier.freeClaimState();
+    RewardPreviewModal.show(context,
+      reward: reward, tier: tier.tier,
+      claimState: claimState,
+      isPremiumTrack: isPremium,
+      hasPremium: bp.isPremium,
+      premiumCost: bp.premiumCost,
+      onClaim: () => _claimReward(context, ref, tier.tier, isPremium, bp),
+      onBuyPremium: () => _showPremiumSheet(context, ref, bp),
+    );
+  }
+
+  void _claimReward(BuildContext context, WidgetRef ref, int tierNum, bool isPremium, BattlePassModel bp) {
+    final tier = bp.tiers.firstWhere((t) => t.tier == tierNum);
+    final reward = isPremium ? tier.premiumReward! : tier.freeReward;
+
+    if (isPremium) {
+      ref.read(battlePassProvider.notifier).claimPremiumReward(tierNum);
+    } else {
+      ref.read(battlePassProvider.notifier).claimFreeReward(tierNum);
+    }
+    RewardClaimAnimation.play(context, rarity: reward.rarity);
+  }
+
+  void _showPremiumSheet(BuildContext context, WidgetRef ref, BattlePassModel bp) {
+    showModalBottomSheet(
+      context: context, backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => Container(
+        margin: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(28),
+          color: AppColors.surface.withValues(alpha: 0.95),
+          border: Border.all(color: AppColors.gold.withValues(alpha: 0.2))),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Container(width: 40, height: 4, decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(2), color: AppColors.white30)),
+          const SizedBox(height: 16),
+          ShaderMask(
+            shaderCallback: (bounds) => const LinearGradient(
+              colors: [AppColors.gold, Color(0xFFFF8F00)]).createShader(bounds),
+            child: const Text('UPGRADE PASS', style: TextStyle(
+              color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900, letterSpacing: 2)),
+          ),
+          const SizedBox(height: 16),
+          PremiumUpsellWidget(
+            premiumCost: bp.premiumCost,
+            premiumPlusCost: bp.premiumPlusCost,
+            onBuyPremium: () {
+              ref.read(battlePassProvider.notifier).purchasePremium();
+              Navigator.of(context).pop();
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                content: Text('⭐ Premium Pass Activated!'), behavior: SnackBarBehavior.floating));
+            },
+            onBuyPremiumPlus: () {
+              ref.read(battlePassProvider.notifier).purchasePremiumPlus();
+              Navigator.of(context).pop();
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                content: Text('⭐ Premium+ Bundle Activated! +20 Tiers!'), behavior: SnackBarBehavior.floating));
+            },
+          ),
+          const SizedBox(height: 8),
+        ]),
       ),
     );
   }
-}
 
-class _TierRow extends StatelessWidget {
-  final BattlePassTier tier;
-  final bool isPremium;
-  final VoidCallback onClaim;
-
-  const _TierRow({required this.tier, required this.isPremium, required this.onClaim});
-
-  @override
-  Widget build(BuildContext context) {
-    final isUnlocked = tier.isUnlocked;
-    final isClaimed = tier.isClaimed;
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        color: isUnlocked ? AppColors.white05 : AppColors.glassBackgroundDark,
-        border: Border.all(
-          color: isUnlocked && !isClaimed ? AppColors.gold.withValues(alpha: 0.4) : AppColors.glassBorder,
-        ),
-      ),
-      child: Row(
-        children: [
-          // Tier number
-          Container(
-            width: 36, height: 36,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: isUnlocked ? AppColors.gold.withValues(alpha: 0.15) : AppColors.white05,
-              border: Border.all(color: isUnlocked ? AppColors.gold.withValues(alpha: 0.3) : AppColors.white10),
+  void _showBoostSheet(BuildContext context, WidgetRef ref) {
+    showModalBottomSheet(
+      context: context, backgroundColor: Colors.transparent,
+      builder: (_) => Container(
+        margin: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(28),
+          color: AppColors.surface.withValues(alpha: 0.95),
+          border: Border.all(color: AppColors.mintGreen.withValues(alpha: 0.2))),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Container(width: 40, height: 4, decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(2), color: AppColors.white30)),
+          const SizedBox(height: 16),
+          const Text('XP BOOSTS', style: TextStyle(
+            color: AppColors.mintGreen, fontSize: 16, fontWeight: FontWeight.w800, letterSpacing: 1)),
+          const SizedBox(height: 16),
+          ...XPBoostType.values.map((type) => GestureDetector(
+            onTap: () {
+              ref.read(battlePassProvider.notifier).activateBoost(type);
+              Navigator.of(context).pop();
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                content: Text('⚡ ${type.displayName} activated!'),
+                behavior: SnackBarBehavior.floating));
+            },
+            child: Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(14),
+                color: AppColors.mintGreen.withValues(alpha: 0.05),
+                border: Border.all(color: AppColors.mintGreen.withValues(alpha: 0.2))),
+              child: Row(children: [
+                Icon(type.icon, color: AppColors.mintGreen, size: 22),
+                const SizedBox(width: 12),
+                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(type.displayName, style: const TextStyle(
+                    color: AppColors.mintGreen, fontSize: 13, fontWeight: FontWeight.w700)),
+                  Text('Duration: ${type.duration.inHours}h', style: const TextStyle(
+                    color: AppColors.white30, fontSize: 10)),
+                ])),
+                Text('${type.cost} SC', style: const TextStyle(
+                  color: AppColors.gold, fontSize: 12, fontWeight: FontWeight.w700)),
+              ]),
             ),
-            child: Center(
-              child: Text('${tier.tier}', style: TextStyle(
-                color: isUnlocked ? AppColors.gold : AppColors.white30,
-                fontWeight: FontWeight.w700, fontSize: 13,
-              )),
-            ),
-          ),
-          const SizedBox(width: 12),
-
-          // Free reward
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('FREE', style: AppTextStyles.labelSmall.copyWith(color: AppColors.white30)),
-                Text(tier.freeReward.name, style: AppTextStyles.labelMedium.copyWith(
-                  color: isUnlocked ? AppColors.white : AppColors.white30,
-                )),
-              ],
-            ),
-          ),
-
-          // Premium reward
-          if (tier.premiumReward != null) ...[
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('⭐ PREMIUM', style: AppTextStyles.labelSmall.copyWith(color: AppColors.gold.withValues(alpha: 0.6))),
-                  Text(tier.premiumReward!.name, style: AppTextStyles.labelMedium.copyWith(
-                    color: isPremium && isUnlocked ? AppColors.gold : AppColors.white30,
-                  )),
-                ],
-              ),
-            ),
-          ],
-
-          // Claim button
-          if (isUnlocked && !isClaimed)
-            GlassButton(label: 'CLAIM', glowColor: AppColors.gold, width: 70, height: 32, onPressed: onClaim)
-          else if (isClaimed)
-            const Icon(Icons.check_circle, color: AppColors.online, size: 22)
-          else
-            Icon(Icons.lock, color: AppColors.white10, size: 18),
-        ],
+          )),
+          const SizedBox(height: 8),
+        ]),
       ),
     );
   }

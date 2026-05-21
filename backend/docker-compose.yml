@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  backend:
+    build: .
+    container_name: city_of_lies_api
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    networks:
+      - game_network
+
+  # Optional local dev database (If not using MongoDB Atlas)
+  # mongodb:
+  #   image: mongo:latest
+  #   container_name: city_of_lies_db
+  #   restart: always
+  #   ports:
+  #     - "27017:27017"
+  #   volumes:
+  #     - mongo_data:/data/db
+  #   networks:
+  #     - game_network
+
+  # Future-ready Redis for pub/sub matching horizontally scaled workers
+  # redis:
+  #   image: redis:alpine
+  #   container_name: city_of_lies_redis
+  #   restart: always
+  #   ports:
+  #     - "6379:6379"
+  #   networks:
+  #     - game_network
+
+networks:
+  game_network:
+    driver: bridge
+
+volumes:
+  mongo_data:

@@ -7,9 +7,12 @@ import '../models/player_model.dart';
 /// WebSocket event types
 class WsEvent {
   static const String lobbyUpdate = 'lobby_update';
+  static const String lobbyCountdown = 'lobby_countdown';
+  static const String showBegins = 'show_begins';
   static const String matchFound = 'match_found';
   static const String roleAssigned = 'role_assigned';
   static const String phaseChange = 'phase_change';
+  static const String nightSubPhase = 'night_sub_phase';
   static const String timerTick = 'timer_tick';
   static const String voteSubmitted = 'vote_submitted';
   static const String votesRevealed = 'votes_revealed';
@@ -20,6 +23,9 @@ class WsEvent {
   static const String playerJoined = 'player_joined';
   static const String playerLeft = 'player_left';
   static const String chatMessage = 'chat_message';
+  static const String investigationResult = 'investigation_result';
+  static const String dawnAnnounce = 'dawn_announce';
+  static const String mafiaChannel = 'mafia_channel';
   static const String error = 'error';
 }
 
@@ -70,8 +76,6 @@ class WebSocketService {
 
   /// Send event to server (mock)
   void send(String event, [Map<String, dynamic>? data]) {
-    // In production, this would send via WebSocket
-    // For mock, we handle it locally
     switch (event) {
       case 'join_matchmaking':
         _simulateMatchmaking();
@@ -87,6 +91,12 @@ class WebSocketService {
         break;
       case 'detective_action':
         _handleDetectiveAction(data ?? {});
+        break;
+      case 'send_commendation':
+        // stub — in production, server handles this
+        break;
+      case 'add_friend':
+        // stub — in production, server handles this
         break;
     }
   }
@@ -104,14 +114,14 @@ class WebSocketService {
       countdown--;
       if (countdown <= 0) {
         t.cancel();
-        _startGame();
+        _startLobbyPhase();
       }
     });
     _emit(WsEvent.matchFound, {'countdown': 3});
   }
 
-  /// ─── Game Simulation ───
-  void _startGame() {
+  /// ─── Lobby Phase with 10s countdown ───
+  void _startLobbyPhase() {
     final rng = Random();
     final names = [
       'ShadowKing', 'NightViper', 'IronFist', 'GhostWalker',
@@ -136,16 +146,56 @@ class WebSocketService {
         role: roles[i],
         rankTier: rng.nextInt(5),
         familyTag: i % 3 == 0 ? '[COBRA]' : (i % 3 == 1 ? '[VENOM]' : null),
+        avatarIndex: i,
       );
     });
 
     _currentState = GameStateModel(
       gameId: 'game_${DateTime.now().millisecondsSinceEpoch}',
-      phase: GamePhase.roleAssignment,
+      phase: GamePhase.lobby,
       players: players,
       localPlayerId: 'player_0',
       roundNumber: 1,
-      timeRemaining: 5,
+      timeRemaining: 10,
+      lobbyCountdown: 10,
+    );
+
+    _emit(WsEvent.lobbyUpdate, {
+      'players': players.map((p) => p.toJson()).toList(),
+      'localPlayerId': 'player_0',
+    });
+
+    // Lobby open-mic countdown: 10 → 0
+    int lobbyTime = 10;
+    _timer = Timer.periodic(const Duration(seconds: 1), (t) {
+      lobbyTime--;
+
+      _emit(WsEvent.lobbyCountdown, {
+        'remaining': lobbyTime,
+        'tickingActive': lobbyTime <= 5 && lobbyTime > 0,
+      });
+
+      if (lobbyTime <= 0) {
+        t.cancel();
+        // "The Show Begins." cinematic
+        _emit(WsEvent.showBegins, {});
+        // After 2s cinematic, transition to role assignment
+        Future.delayed(const Duration(seconds: 2), () {
+          _startRoleAssignment();
+        });
+      }
+    });
+
+    // Start voice simulation during lobby
+    _startVoiceSimulation();
+  }
+
+  void _startRoleAssignment() {
+    final players = _currentState.players;
+
+    _currentState = _currentState.copyWith(
+      phase: GamePhase.roleAssignment,
+      timeRemaining: 10,
     );
 
     _emit(WsEvent.roleAssigned, {
@@ -154,26 +204,208 @@ class WebSocketService {
       'localPlayerId': 'player_0',
     });
 
-    // After role reveal, start night phase
-    Future.delayed(const Duration(seconds: 5), () {
-      _startPhase(GamePhase.night);
+    // Countdown the 10-second role reveal timer
+    int roleTimer = 10;
+    _timer = Timer.periodic(const Duration(seconds: 1), (t) {
+      roleTimer--;
+      _emit(WsEvent.timerTick, {'remaining': roleTimer});
+      if (roleTimer <= 0) {
+        t.cancel();
+        _startNightPhase();
+      }
+    });
+  }
+
+  /// ─── Night Phase — Sequential Role Turns ───
+  void _startNightPhase() {
+    _currentState = _currentState.copyWith(
+      phase: GamePhase.night,
+      votes: {},
+      mafiaTargetId: null,
+      doctorTargetId: null,
+      detectiveTargetId: null,
+      detectiveResult: null,
+    );
+
+    _emit(WsEvent.phaseChange, {
+      'phase': 'night',
+      'duration': 40, // total night = 20 + 10 + 10
     });
 
-    // Simulate random voice activity
-    _startVoiceSimulation();
+    // Sequential: Mafia (20s) → Doctor (10s) → Detective (10s)
+    _startNightSubPhase(NightSubPhase.mafiaActing, 20);
+  }
+
+  void _startNightSubPhase(NightSubPhase subPhase, int duration) {
+    _currentState = _currentState.copyWith(
+      nightSubPhase: subPhase,
+      timeRemaining: duration,
+    );
+
+    // Open mafia channel during mafia turn
+    if (subPhase == NightSubPhase.mafiaActing) {
+      _emit(WsEvent.mafiaChannel, {'open': true});
+    } else {
+      _emit(WsEvent.mafiaChannel, {'open': false});
+    }
+
+    _emit(WsEvent.nightSubPhase, {
+      'subPhase': subPhase.name,
+      'duration': duration,
+      'activeRole': subPhase.activeRole.name,
+    });
+
+    _timer?.cancel();
+    int remaining = duration;
+    _timer = Timer.periodic(const Duration(seconds: 1), (t) {
+      remaining--;
+      _currentState = _currentState.copyWith(timeRemaining: remaining);
+      _emit(WsEvent.timerTick, {'remaining': remaining});
+
+      if (remaining <= 0) {
+        t.cancel();
+        _onNightSubPhaseEnd(subPhase);
+      }
+    });
+  }
+
+  void _onNightSubPhaseEnd(NightSubPhase subPhase) {
+    switch (subPhase) {
+      case NightSubPhase.mafiaActing:
+        // If mafia didn't pick, auto-pick
+        if (_currentState.mafiaTargetId == null) {
+          final rng = Random();
+          final civilians = _currentState.alivePlayers
+              .where((p) => !p.isMafia).toList();
+          if (civilians.isNotEmpty) {
+            _currentState = _currentState.copyWith(
+              mafiaTargetId: civilians[rng.nextInt(civilians.length)].id,
+            );
+          }
+        }
+        _startNightSubPhase(NightSubPhase.doctorActing, 10);
+        break;
+      case NightSubPhase.doctorActing:
+        // If doctor didn't pick, no protection
+        _startNightSubPhase(NightSubPhase.detectiveActing, 10);
+        break;
+      case NightSubPhase.detectiveActing:
+        // If detective didn't pick, auto-pick for investigation
+        if (_currentState.detectiveTargetId == null) {
+          final rng = Random();
+          final alive = _currentState.alivePlayers
+              .where((p) => p.role != GameRole.detective).toList();
+          if (alive.isNotEmpty) {
+            final target = alive[rng.nextInt(alive.length)];
+            _currentState = _currentState.copyWith(
+              detectiveTargetId: target.id,
+              detectiveResult: target.isMafia,
+            );
+            _emit(WsEvent.investigationResult, {
+              'targetId': target.id,
+              'targetName': target.name,
+              'isMafia': target.isMafia,
+            });
+          }
+        }
+        // All night actions done → resolve night
+        _resolveNight();
+        break;
+    }
+  }
+
+  void _resolveNight() {
+    final mafiaTarget = _currentState.mafiaTargetId;
+    final doctorTarget = _currentState.doctorTargetId;
+
+    if (mafiaTarget == null) {
+      // No target — nobody dies
+      _emitDawn(saved: true, victimName: null);
+      return;
+    }
+
+    final saved = mafiaTarget == doctorTarget;
+    final victim = _currentState.players.firstWhere(
+      (p) => p.id == mafiaTarget,
+      orElse: () => _currentState.players.first,
+    );
+
+    _emitDawn(saved: saved, victimName: saved ? null : victim.name);
+
+    if (!saved) {
+      // Eliminate after short reveal delay
+      Future.delayed(const Duration(seconds: 2), () {
+        final updatedPlayers = _currentState.players.map((p) {
+          if (p.id == victim.id) {
+            return p.copyWith(
+              status: PlayerStatus.eliminated,
+              voiceState: VoiceState.muted,
+              isEliminating: true,
+            );
+          }
+          return p;
+        }).toList();
+
+        _currentState = _currentState.copyWith(
+          players: updatedPlayers,
+          eliminatedPlayerId: victim.id,
+        );
+
+        _emit(WsEvent.playerEliminated, {
+          'playerId': victim.id,
+          'playerName': victim.name,
+        });
+
+        // Reset isEliminating flag after animation
+        Future.delayed(const Duration(seconds: 1), () {
+          final reset = _currentState.players.map((p) {
+            if (p.id == victim.id) return p.copyWith(isEliminating: false);
+            return p;
+          }).toList();
+          _currentState = _currentState.copyWith(players: reset);
+        });
+      });
+    }
+
+    // After dawn phase, check win or start day
+    Future.delayed(const Duration(seconds: 5), () {
+      if (_checkWinCondition()) return;
+      _startPhase(GamePhase.day);
+    });
+  }
+
+  void _emitDawn({required bool saved, String? victimName}) {
+    final dawnMsg = saved
+        ? 'The Syndicate attempted a hit, but no one died last night.'
+        : 'The city wakes up to a tragedy. $victimName was eliminated.';
+
+    _currentState = _currentState.copyWith(
+      phase: GamePhase.morningReveal,
+      timeRemaining: 5,
+      nightSubPhase: null,
+    );
+
+    _emit(WsEvent.dawnAnnounce, {
+      'message': dawnMsg,
+      'saved': saved,
+      'victimName': victimName,
+    });
+
+    _emit(WsEvent.phaseChange, {
+      'phase': 'morningReveal',
+      'duration': 5,
+      'morningMessage': dawnMsg,
+    });
   }
 
   void _startPhase(GamePhase phase) {
     int duration;
     switch (phase) {
-      case GamePhase.night:
-        duration = 15; // shortened for demo
-        break;
       case GamePhase.day:
-        duration = 30;
+        duration = 60;
         break;
       case GamePhase.voting:
-        duration = 15;
+        duration = 10;
         break;
       case GamePhase.runoff:
         duration = 10;
@@ -186,6 +418,7 @@ class WebSocketService {
       phase: phase,
       timeRemaining: duration,
       votes: {},
+      nightSubPhase: null,
     );
 
     _emit(WsEvent.phaseChange, {
@@ -212,9 +445,6 @@ class WebSocketService {
 
   void _onPhaseEnd(GamePhase phase) {
     switch (phase) {
-      case GamePhase.night:
-        _resolveNight();
-        break;
       case GamePhase.day:
         _startPhase(GamePhase.voting);
         break;
@@ -227,57 +457,6 @@ class WebSocketService {
       default:
         break;
     }
-  }
-
-  void _resolveNight() {
-    final rng = Random();
-    final alive = _currentState.alivePlayers;
-    final civilians =
-        alive.where((p) => p.role != GameRole.mafia).toList();
-
-    if (civilians.isEmpty) {
-      _endGame(WinningSide.mafia);
-      return;
-    }
-
-    // Pick random victim (simulate mafia choice)
-    final victim = civilians[rng.nextInt(civilians.length)];
-
-    // 30% chance doctor saves
-    final saved = rng.nextDouble() < 0.3;
-
-    if (saved) {
-      _emit(WsEvent.phaseChange, {
-        'phase': 'day',
-        'message': 'No one was eliminated last night!',
-      });
-    } else {
-      // Eliminate
-      final updatedPlayers = _currentState.players.map((p) {
-        if (p.id == victim.id) {
-          return p.copyWith(status: PlayerStatus.eliminated);
-        }
-        return p;
-      }).toList();
-
-      _currentState = _currentState.copyWith(
-        players: updatedPlayers,
-        eliminatedPlayerId: victim.id,
-      );
-
-      _emit(WsEvent.playerEliminated, {
-        'playerId': victim.id,
-        'playerName': victim.name,
-      });
-    }
-
-    // Check win condition
-    if (_checkWinCondition()) return;
-
-    // Start day after delay
-    Future.delayed(const Duration(seconds: 3), () {
-      _startPhase(GamePhase.day);
-    });
   }
 
   void _handleVote(Map<String, dynamic> data) {
@@ -309,9 +488,11 @@ class WebSocketService {
         detectiveTargetId: targetId,
         detectiveResult: target.isMafia,
       );
-      _emit(WsEvent.phaseChange, {
-        'detectiveResult': target.isMafia,
+      // Private result — only sent to detective's client
+      _emit(WsEvent.investigationResult, {
         'targetId': targetId,
+        'targetName': target.name,
+        'isMafia': target.isMafia,
       });
     }
   }
@@ -344,7 +525,7 @@ class WebSocketService {
 
     if (voteCounts.isEmpty) {
       Future.delayed(const Duration(seconds: 2), () {
-        _startPhase(GamePhase.night);
+        _startNightPhase();
       });
       return;
     }
@@ -383,7 +564,10 @@ class WebSocketService {
   void _eliminatePlayer(String playerId) {
     final updatedPlayers = _currentState.players.map((p) {
       if (p.id == playerId) {
-        return p.copyWith(status: PlayerStatus.eliminated);
+        return p.copyWith(
+          status: PlayerStatus.eliminated,
+          isEliminating: true,
+        );
       }
       return p;
     }).toList();
@@ -406,10 +590,16 @@ class WebSocketService {
 
     // After elimination animation, go to next night
     Future.delayed(const Duration(seconds: 3), () {
+      // Reset isEliminating
+      final reset = _currentState.players.map((p) {
+        if (p.id == playerId) return p.copyWith(isEliminating: false);
+        return p;
+      }).toList();
       _currentState = _currentState.copyWith(
+        players: reset,
         roundNumber: _currentState.roundNumber + 1,
       );
-      _startPhase(GamePhase.night);
+      _startNightPhase();
     });
   }
 
@@ -432,12 +622,27 @@ class WebSocketService {
   void _endGame(WinningSide winner) {
     _timer?.cancel();
     _voiceSimTimer?.cancel();
+
+    // Determine MVP (most active player, simplified: random alive player)
+    final rng = Random();
+    final alive = _currentState.alivePlayers;
+    final mvpId = alive.isNotEmpty
+        ? alive[rng.nextInt(alive.length)].id
+        : _currentState.localPlayerId;
+
     _currentState = _currentState.copyWith(
       phase: GamePhase.result,
       winner: winner,
     );
     _emit(WsEvent.gameResult, {
       'winner': winner.name,
+      'xpGained': 150,
+      'rankDelta': winner == WinningSide.civilians ? 12 : -8,
+      'bpXpGained': 80,
+      'influenceGained': 25,
+      'popularityGained': 5,
+      'mvpPlayerId': mvpId,
+      'players': _currentState.players.map((p) => p.toJson()).toList(),
     });
   }
 
@@ -446,7 +651,8 @@ class WebSocketService {
     _voiceSimTimer?.cancel();
     _voiceSimTimer = Timer.periodic(const Duration(milliseconds: 800), (_) {
       if (_currentState.phase == GamePhase.day ||
-          _currentState.phase == GamePhase.voting) {
+          _currentState.phase == GamePhase.lobby ||
+          _currentState.phase == GamePhase.runoff) {
         final alive = _currentState.alivePlayers;
         if (alive.isEmpty) return;
 

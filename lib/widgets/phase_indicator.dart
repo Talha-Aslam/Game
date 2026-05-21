@@ -12,6 +12,7 @@ class PhaseIndicator extends StatelessWidget {
   Color get _phaseColor {
     switch (phase) {
       case GamePhase.night: return AppColors.purpleDeep;
+      case GamePhase.morningReveal: return AppColors.gold;
       case GamePhase.day: return AppColors.gold;
       case GamePhase.voting: return AppColors.cyan;
       case GamePhase.runoff: return AppColors.crimsonRed;

@@ -1,93 +1,98 @@
-/// Voice channel service architecture (Agora/LiveKit integration)
-/// Manages voice channels for game phases, private mafia channels, and graveyard
+import 'dart:async';
+import 'package:agora_rtc_engine/agora_rtc_engine.dart';
+import 'package:permission_handler/permission_handler.dart';
+
 class VoiceService {
-  bool _isConnected = false;
-  bool _isMuted = false;
-  String? _currentChannel;
-  bool _pushToTalk = false;
-  double _micSensitivity = 0.5;
+  late RtcEngine _engine;
+  final String appId = "faee0e101a9a48338663b3fc493b14a4";
+  bool _isInitialized = false;
 
-  bool get isConnected => _isConnected;
-  bool get isMuted => _isMuted;
-  String? get currentChannel => _currentChannel;
-  bool get pushToTalk => _pushToTalk;
-  double get micSensitivity => _micSensitivity;
+  final _activeSpeakersController = StreamController<List<int>>.broadcast();
+  Stream<List<int>> get activeSpeakers => _activeSpeakersController.stream;
 
-  /// Initialize voice engine
-  Future<void> init() async {
-    // In production:
-    // await AgoraRtcEngine.create(AppConstants.agoraAppId);
-    // await _engine.enableAudio();
-    // await _engine.setChannelProfile(ChannelProfile.Communication);
+  Future<void> initAgora() async {
+    if (_isInitialized) return;
+    
+    await [Permission.microphone].request();
+
+    _engine = createAgoraRtcEngine();
+    await _engine.initialize(RtcEngineContext(appId: appId));
+
+    _engine.registerEventHandler(
+      RtcEngineEventHandler(
+        onJoinChannelSuccess: (RtcConnection connection, int elapsed) {
+          print("Joined channel: ${connection.channelId}");
+        },
+        onUserJoined: (RtcConnection connection, int remoteUid, int elapsed) {
+          print("User joined: $remoteUid");
+        },
+        onUserOffline: (RtcConnection connection, int remoteUid, UserOfflineReasonType reason) {
+          print("User offline: $remoteUid");
+        },
+        onAudioVolumeIndication: (RtcConnection connection, List<AudioVolumeInfo> speakers, int speakerNumber, int totalVolume) {
+          final activeIds = speakers.where((s) => s.volume! > 10).map((s) => s.uid!).toList();
+          _activeSpeakersController.add(activeIds);
+        },
+      ),
+    );
+
+    // Enable audio volume indication every 200ms
+    await _engine.enableAudioVolumeIndication(interval: 200, smooth: 3, reportVad: true);
+    await _engine.setClientRole(role: ClientRoleType.clientRoleBroadcaster);
+    await _engine.enableAudio();
+
+    _isInitialized = true;
   }
 
-  /// Join a voice channel
-  Future<void> joinChannel(String channelName, {String? token}) async {
-    _currentChannel = channelName;
-    _isConnected = true;
-    // await _engine.joinChannel(token, channelName, null, uid);
+  Future<void> joinChannel(String token, String channelName, String userId) async {
+    if (!_isInitialized) await initAgora();
+    
+    int uid = userId.hashCode.abs(); // Agora uses int uid, we hash the string ID
+
+    await _engine.joinChannel(
+      token: token,
+      channelId: channelName,
+      uid: uid,
+      options: const ChannelMediaOptions(
+        clientRoleType: ClientRoleType.clientRoleBroadcaster,
+        autoSubscribeAudio: true,
+        publishMicrophoneTrack: true,
+      ),
+    );
   }
 
-  /// Leave current channel
   Future<void> leaveChannel() async {
-    _currentChannel = null;
-    _isConnected = false;
-    // await _engine.leaveChannel();
-  }
-
-  /// Switch to a different channel (e.g., mafia private channel at night)
-  Future<void> switchChannel(String channelName, {String? token}) async {
-    await leaveChannel();
-    await joinChannel(channelName, token: token);
-  }
-
-  /// Mute/unmute local microphone
-  void setMuted(bool muted) {
-    _isMuted = muted;
-    // _engine.muteLocalAudioStream(muted);
-  }
-
-  /// Toggle mute
-  void toggleMute() {
-    setMuted(!_isMuted);
-  }
-
-  /// Set push-to-talk mode
-  void setPushToTalk(bool enabled) {
-    _pushToTalk = enabled;
-    if (enabled) {
-      setMuted(true); // Mute by default in PTT mode
+    if (_isInitialized) {
+      await _engine.leaveChannel();
     }
   }
 
-  /// Set microphone sensitivity
-  void setMicSensitivity(double sensitivity) {
-    _micSensitivity = sensitivity;
+  Future<void> switchChannel(String token, String channelName, String userId) async {
+    await leaveChannel();
+    await joinChannel(token, channelName, userId);
   }
 
-  /// Join game main channel
-  Future<void> joinGameChannel(String gameId) async {
-    await joinChannel('game_$gameId');
+  Future<void> muteMicrophone(bool mute) async {
+    if (_isInitialized) {
+      await _engine.muteLocalAudioStream(mute);
+    }
+  }
+  
+  // Ambient noise for civilians at night
+  void setAmbientAudioMode(bool enable) {
+    if (!_isInitialized) return;
+    if (enable) {
+      _engine.muteLocalAudioStream(true);
+      // In a real app, play local ambient rain/heartbeat loop using audioplayers package here
+    } else {
+      _engine.muteLocalAudioStream(false);
+    }
   }
 
-  /// Join mafia private channel (night phase)
-  Future<void> joinMafiaChannel(String gameId) async {
-    await switchChannel('mafia_$gameId');
-  }
-
-  /// Join graveyard channel (after elimination)
-  Future<void> joinGraveyardChannel(String gameId) async {
-    await switchChannel('graveyard_$gameId');
-  }
-
-  /// Return to main game channel
-  Future<void> returnToGameChannel(String gameId) async {
-    await switchChannel('game_$gameId');
-  }
-
-  /// Dispose
   void dispose() {
-    leaveChannel();
-    // _engine.destroy();
+    _activeSpeakersController.close();
+    if (_isInitialized) {
+      _engine.release();
+    }
   }
 }

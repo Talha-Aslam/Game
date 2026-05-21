@@ -12,8 +12,6 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  double _musicVolume = 0.5;
-  double _sfxVolume = 0.8;
   double _micSensitivity = 0.5;
   bool _pushToTalk = false;
   bool _notifications = true;
@@ -42,10 +40,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   children: [
                     _SectionHeader(title: 'AUDIO'),
-                    _SliderTile(label: 'Music Volume', value: _musicVolume, color: AppColors.purpleNeon,
-                      onChanged: (v) => setState(() => _musicVolume = v)),
-                    _SliderTile(label: 'SFX Volume', value: _sfxVolume, color: AppColors.cyan,
-                      onChanged: (v) => setState(() => _sfxVolume = v)),
                     _SliderTile(label: 'Mic Sensitivity', value: _micSensitivity, color: AppColors.mintGreen,
                       onChanged: (v) => setState(() => _micSensitivity = v)),
                     _ToggleTile(label: 'Push-to-Talk', value: _pushToTalk,

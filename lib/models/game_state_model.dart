@@ -1,11 +1,12 @@
 import 'player_model.dart';
 
-/// Game phases
+/// Game phases — full match flow
 enum GamePhase {
   lobby,
   matchmaking,
   roleAssignment,
   night,
+  morningReveal,
   day,
   voting,
   runoff,
@@ -22,6 +23,8 @@ enum GamePhase {
         return 'ROLE ASSIGNMENT';
       case GamePhase.night:
         return 'NIGHT';
+      case GamePhase.morningReveal:
+        return 'DAWN';
       case GamePhase.day:
         return 'DISCUSSION';
       case GamePhase.voting:
@@ -39,10 +42,59 @@ enum GamePhase {
   bool get isDay => this == GamePhase.day;
   bool get isVoting => this == GamePhase.voting;
   bool get isRunoff => this == GamePhase.runoff;
+  bool get isMorning => this == GamePhase.morningReveal;
+}
+
+/// Night sub-phase — sequential role turns
+enum NightSubPhase {
+  mafiaActing,
+  doctorActing,
+  detectiveActing;
+
+  String get displayName {
+    switch (this) {
+      case NightSubPhase.mafiaActing:
+        return 'THE SYNDICATE';
+      case NightSubPhase.doctorActing:
+        return 'THE DOCTOR';
+      case NightSubPhase.detectiveActing:
+        return 'THE DETECTIVE';
+    }
+  }
+
+  GameRole get activeRole {
+    switch (this) {
+      case NightSubPhase.mafiaActing:
+        return GameRole.mafia;
+      case NightSubPhase.doctorActing:
+        return GameRole.doctor;
+      case NightSubPhase.detectiveActing:
+        return GameRole.detective;
+    }
+  }
 }
 
 /// Winning side
 enum WinningSide { mafia, civilians, none }
+
+/// Match result stats
+class MatchResultData {
+  final int xpGained;
+  final int rankDelta;
+  final int bpXpGained;
+  final int influenceGained;
+  final int popularityGained;
+  final String? mvpPlayerId;
+
+  const MatchResultData({
+    this.xpGained = 0,
+    this.rankDelta = 0,
+    this.bpXpGained = 0,
+    this.influenceGained = 0,
+    this.popularityGained = 0,
+    this.mvpPlayerId,
+  });
+}
 
 /// Game state model
 class GameStateModel {
@@ -60,6 +112,18 @@ class GameStateModel {
   final String? doctorTargetId; // who doctor chose to save
   final String? detectiveTargetId; // who detective investigated
   final bool? detectiveResult; // true = mafia, false = not mafia
+  final Set<String> readyPlayers; // lobby ready states
+  final String? morningMessage; // "No one died" or victim name
+  final MatchResultData? resultData;
+
+  // ── New fields ──
+  final int lobbyCountdown; // 10 → 0 for lobby phase pre-game
+  final NightSubPhase? nightSubPhase; // which role is currently acting
+  final String? dawnMessage; // cinematic game master line
+  final bool lobbyTickingActive; // true when < 5s in lobby countdown
+  final bool showBeginsCinematic; // triggers "The Show Begins." overlay
+  final bool detectiveResultRevealed; // private: detective has seen result
+  final bool mafiaChannelOpen; // mafia private voice channel active
 
   const GameStateModel({
     required this.gameId,
@@ -76,6 +140,16 @@ class GameStateModel {
     this.doctorTargetId,
     this.detectiveTargetId,
     this.detectiveResult,
+    this.readyPlayers = const {},
+    this.morningMessage,
+    this.resultData,
+    this.lobbyCountdown = 0,
+    this.nightSubPhase,
+    this.dawnMessage,
+    this.lobbyTickingActive = false,
+    this.showBeginsCinematic = false,
+    this.detectiveResultRevealed = false,
+    this.mafiaChannelOpen = false,
   });
 
   GameStateModel copyWith({
@@ -93,6 +167,16 @@ class GameStateModel {
     String? doctorTargetId,
     String? detectiveTargetId,
     bool? detectiveResult,
+    Set<String>? readyPlayers,
+    String? morningMessage,
+    MatchResultData? resultData,
+    int? lobbyCountdown,
+    NightSubPhase? nightSubPhase,
+    String? dawnMessage,
+    bool? lobbyTickingActive,
+    bool? showBeginsCinematic,
+    bool? detectiveResultRevealed,
+    bool? mafiaChannelOpen,
   }) {
     return GameStateModel(
       gameId: gameId ?? this.gameId,
@@ -109,6 +193,16 @@ class GameStateModel {
       doctorTargetId: doctorTargetId ?? this.doctorTargetId,
       detectiveTargetId: detectiveTargetId ?? this.detectiveTargetId,
       detectiveResult: detectiveResult ?? this.detectiveResult,
+      readyPlayers: readyPlayers ?? this.readyPlayers,
+      morningMessage: morningMessage ?? this.morningMessage,
+      resultData: resultData ?? this.resultData,
+      lobbyCountdown: lobbyCountdown ?? this.lobbyCountdown,
+      nightSubPhase: nightSubPhase ?? this.nightSubPhase,
+      dawnMessage: dawnMessage ?? this.dawnMessage,
+      lobbyTickingActive: lobbyTickingActive ?? this.lobbyTickingActive,
+      showBeginsCinematic: showBeginsCinematic ?? this.showBeginsCinematic,
+      detectiveResultRevealed: detectiveResultRevealed ?? this.detectiveResultRevealed,
+      mafiaChannelOpen: mafiaChannelOpen ?? this.mafiaChannelOpen,
     );
   }
 
@@ -135,4 +229,15 @@ class GameStateModel {
 
   /// Check if local player is mafia
   bool get isLocalPlayerMafia => localPlayer?.isMafia ?? false;
+
+  /// Is local player ready
+  bool get isLocalPlayerReady =>
+      readyPlayers.contains(localPlayerId ?? '');
+
+  /// Is it the local player's turn to act at night
+  bool get isLocalPlayerNightTurn {
+    final lp = localPlayer;
+    if (lp == null || nightSubPhase == null) return false;
+    return lp.role == nightSubPhase!.activeRole;
+  }
 }

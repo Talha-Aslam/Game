@@ -47,5 +47,12 @@
 		<true/>
 		<key>UIStatusBarHidden</key>
 		<false/>
+		<!-- Permissions for image_picker -->
+		<key>NSPhotoLibraryUsageDescription</key>
+		<string>This app requires access to the photo library to upload profile pictures.</string>
+		<key>NSCameraUsageDescription</key>
+		<string>This app requires access to the camera to take profile pictures.</string>
+		<key>NSMicrophoneUsageDescription</key>
+		<string>This app requires access to the microphone for recording videos.</string>
 	</dict>
 </plist>

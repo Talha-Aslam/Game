@@ -50,6 +50,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
 
+    // Initial load redirect if already authenticated
+    if (authState.status == AuthStatus.authenticated) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) context.go('/home');
+      });
+    }
+
     ref.listen(authProvider, (prev, next) {
       if (next.status == AuthStatus.authenticated) {
         context.go('/home');

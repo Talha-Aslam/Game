@@ -43,9 +43,8 @@ class _MatchmakingScreenState extends ConsumerState<MatchmakingScreen>
   Widget build(BuildContext context) {
     final mmState = ref.watch(matchmakingStateProvider);
 
-    // Navigate to game when match accepted and game starts
     ref.listen(gameProvider, (prev, next) {
-      if (next.phase == GamePhase.roleAssignment) {
+      if (next.phase == GamePhase.lobby || next.phase == GamePhase.roleAssignment) {
         context.go('/game');
       }
     });
@@ -148,16 +147,19 @@ class _MatchmakingScreenState extends ConsumerState<MatchmakingScreen>
                   error: (e, _) => Text('Error: $e', style: AppTextStyles.bodyMedium.copyWith(color: AppColors.crimsonRed)),
                   data: (state) {
                     if (state.status == MatchmakingStatus.found) {
-                      // Auto-accept and start game
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        ref.read(matchmakingServiceProvider).acceptMatch();
-                        ref.read(gameProvider.notifier).startMatchmaking();
-                      });
                       return Column(
                         children: [
                           const NeonText(text: 'MATCH FOUND!', fontSize: 24, color: AppColors.gold, glowRadius: 20),
-                          const SizedBox(height: 8),
-                          Text('Preparing game...', style: AppTextStyles.bodyMedium),
+                          const SizedBox(height: 16),
+                          GlassButton(
+                            label: 'ACCEPT',
+                            glowColor: AppColors.mintGreen,
+                            width: 160,
+                            onPressed: () {
+                              ref.read(matchmakingServiceProvider).acceptMatch();
+                              ref.read(gameProvider.notifier).startMatchmaking();
+                            },
+                          ),
                         ],
                       );
                     }
