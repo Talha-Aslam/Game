@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -24,8 +23,6 @@ class ProfileScreen extends ConsumerStatefulWidget {
 }
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
-  // Mock User ID
-  final String _mockUserId = "MWR-48291";
   bool _isOpeningEditInfo = false;
 
   Future<void> _openEditInfo() async {
@@ -182,7 +179,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         const SizedBox(height: 16),
 
                         // ID & Sharing
-                        UserIdCardWidget(userId: _mockUserId),
+                        UserIdCardWidget(userId: user.id),
                         const SizedBox(height: 24),
 
                         // Rank Emblems
@@ -265,12 +262,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final popColor = popScore >= 5000
         ? AppColors.crimsonRed
         : popScore >= 2000
-            ? AppColors.gold
-            : popScore >= 500
-                ? AppColors.purpleNeon
-                : popScore >= 100
-                    ? AppColors.cyan
-                    : const Color(0xFFC0C0C0);
+        ? AppColors.gold
+        : popScore >= 500
+        ? AppColors.purpleNeon
+        : popScore >= 100
+        ? AppColors.cyan
+        : const Color(0xFFC0C0C0);
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -279,10 +276,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         color: AppColors.glassBackground,
         border: Border.all(color: popColor.withValues(alpha: 0.3)),
         boxShadow: [
-          BoxShadow(
-            color: popColor.withValues(alpha: 0.08),
-            blurRadius: 20,
-          ),
+          BoxShadow(color: popColor.withValues(alpha: 0.08), blurRadius: 20),
         ],
       ),
       child: Row(

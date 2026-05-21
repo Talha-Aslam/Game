@@ -479,7 +479,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
     return IgnorePointer(
       child: Container(
         color: Colors.black.withValues(alpha: 0.25),
-        padding: const EdgeInsets.only(bottom: 24),
+        padding: const EdgeInsets.only(bottom: 130),
         alignment: Alignment.bottomCenter,
         child: Column(
           mainAxisSize: MainAxisSize.min,

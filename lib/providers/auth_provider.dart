@@ -48,6 +48,20 @@ class AuthNotifier extends Notifier<AuthState> {
 
   AuthService get _authService => ref.read(authServiceProvider);
 
+  Future<void> checkAuth() async {
+    state = state.copyWith(status: AuthStatus.loading);
+    try {
+      final isLoggedIn = await _authService.checkAuthState();
+      if (isLoggedIn && _authService.currentUser != null) {
+        state = AuthState(status: AuthStatus.authenticated, user: _authService.currentUser);
+      } else {
+        state = const AuthState(status: AuthStatus.unauthenticated);
+      }
+    } catch (e) {
+      state = const AuthState(status: AuthStatus.unauthenticated);
+    }
+  }
+
   Future<void> signInWithEmail(String email, String password) async {
     state = state.copyWith(status: AuthStatus.loading);
     try {
@@ -143,18 +157,22 @@ class AuthNotifier extends Notifier<AuthState> {
       return 'Username must be between 3 and 20 characters.';
     }
 
-    final isAvailable = await isUsernameAvailable(cleanUsername);
-    if (!isAvailable) {
-      return 'This username is already taken.';
+    try {
+      // Call backend to update profile
+      await _authService.updateProfile(
+        username: cleanUsername,
+        bio: cleanTagline,
+      );
+
+      // Refresh the profile from backend
+      final refreshedUser = await _authService.fetchProfile();
+      if (refreshedUser != null) {
+        state = state.copyWith(user: refreshedUser);
+      }
+      return null;
+    } catch (e) {
+      return e.toString().replaceFirst('Exception: ', '');
     }
-
-    final updatedUser = currentUser.copyWith(
-      username: cleanUsername,
-      bio: cleanTagline,
-    );
-
-    state = state.copyWith(user: updatedUser);
-    return null;
   }
 }
 

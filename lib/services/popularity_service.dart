@@ -1,81 +1,57 @@
 import 'dart:async';
-import 'dart:math';
-import '../models/social/friend_model.dart';
 import '../models/social/popularity_model.dart';
+import 'user_api_service.dart';
+import 'auth_service.dart';
 
-/// Mock popularity / gifting service
+/// Popularity / gifting service backed by FastAPI
 class PopularityService {
-  final _rng = Random();
-  late PopularityProfile _profile;
-  final List<GiftTransaction> _giftHistory = [];
+  final UserApiService _api = UserApiService();
+  final AuthService _auth = AuthService();
 
-  PopularityService() {
-    final score = 1250 + _rng.nextInt(2000);
-    _profile = PopularityProfile(
+  Future<PopularityProfile> getProfile() async {
+    // For now, load from current authenticated user, eventually we'll need an endpoint to get the full PopularityProfile including supporters.
+    final user = await _auth.fetchProfile();
+    final score = user?.popularityScore ?? 0;
+    return PopularityProfile(
       totalScore: score,
       rank: PopularityRank.fromScore(score),
       dailyFreeRemaining: 5,
       dailyFreeMax: 5,
-      topSupporters: _generateTopSupporters(),
+      topSupporters: [], // Mocked for now until we build the history tables
     );
-  }
-
-  Future<PopularityProfile> getProfile() async {
-    await Future.delayed(const Duration(milliseconds: 200));
-    return _profile;
   }
 
   Future<bool> sendFreePopularity(String toUserId, PopularityGift gift) async {
-    await Future.delayed(const Duration(milliseconds: 400));
-    if (_profile.dailyFreeRemaining <= 0 || gift.isPremium) return false;
-    _profile = _profile.copyWith(
-      dailyFreeRemaining: _profile.dailyFreeRemaining - 1,
-    );
-    _giftHistory.add(GiftTransaction(
-      id: 'tx_${DateTime.now().millisecondsSinceEpoch}',
-      fromUser: const FriendModel(id: 'local_user', username: 'You'),
-      toUser: FriendModel(id: toUserId, username: 'Friend'),
-      gift: gift,
-      timestamp: DateTime.now(),
-    ));
-    return true;
+    try {
+      if (gift.isPremium) return false;
+      await _api.giftPopularity(toUserId);
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 
   Future<bool> sendPremiumPopularity(
-    String toUserId, PopularityGift gift, int availableCoins,
+    String toUserId,
+    PopularityGift gift,
+    int availableCoins,
   ) async {
-    await Future.delayed(const Duration(milliseconds: 400));
-    if (!gift.isPremium || availableCoins < gift.cost) return false;
-    _giftHistory.add(GiftTransaction(
-      id: 'tx_${DateTime.now().millisecondsSinceEpoch}',
-      fromUser: const FriendModel(id: 'local_user', username: 'You'),
-      toUser: FriendModel(id: toUserId, username: 'Friend'),
-      gift: gift,
-      timestamp: DateTime.now(),
-    ));
-    return true;
+    try {
+      if (!gift.isPremium || availableCoins < gift.cost) return false;
+      await _api.giftPopularity(toUserId);
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 
   Future<void> receivePopularity(int points) async {
-    final newScore = _profile.totalScore + points;
-    _profile = _profile.copyWith(
-      totalScore: newScore,
-      rank: PopularityRank.fromScore(newScore),
-    );
+    // Usually updated via websockets or push, for now we just rely on fetchProfile.
+    await _auth.fetchProfile();
   }
 
   Future<List<GiftTransaction>> getGiftHistory() async {
-    await Future.delayed(const Duration(milliseconds: 200));
-    return List.unmodifiable(_giftHistory);
-  }
-
-  List<FriendModel> _generateTopSupporters() {
-    final names = ['GhostWalker', 'NightViper', 'IronFist', 'DarkOracle'];
-    return List.generate(names.length, (i) => FriendModel(
-      id: 'supporter_$i',
-      username: names[i],
-      rankTier: 2 + _rng.nextInt(3),
-      popularityScore: 500 + _rng.nextInt(3000),
-    ));
+    // Backend doesn't support transaction history yet. Returning empty list.
+    return [];
   }
 }

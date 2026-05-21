@@ -1,0 +1,31 @@
+import 'http_service.dart';
+
+class UserApiService {
+  final HttpService _http = HttpService();
+
+  Future<Map<String, dynamic>> getProfile() async {
+    try {
+      final response = await _http.get('/user/me');
+      return response;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> updateProfile(Map<String, dynamic> data) async {
+    try {
+      final response = await _http.put('/user/update', body: data);
+      return response;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> giftPopularity(String targetId) async {
+    try {
+      await _http.post('/user/gift-popularity/$targetId');
+    } catch (e) {
+      rethrow;
+    }
+  }
+}

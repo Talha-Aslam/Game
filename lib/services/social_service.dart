@@ -1,30 +1,21 @@
 import 'dart:async';
-import 'dart:math';
 import '../models/social/friend_model.dart';
 import '../models/social/friend_request_model.dart';
-import '../models/social/popularity_model.dart';
+import 'social_api_service.dart';
 
-/// Mock social service simulating friend management
+/// Social service backed by FastAPI
 class SocialService {
-  final _rng = Random(42);
-  late List<FriendModel> _friends;
-  final List<FriendRequestModel> _requests = [];
-  final List<FriendModel> _recentPlayers = [];
-  final Set<String> _blockedIds = {};
-
-  SocialService() {
-    _friends = _generateMockFriends();
-    _requests.addAll(_generateMockRequests());
-    _recentPlayers.addAll(_generateRecentPlayers());
-  }
+  final SocialApiService _api = SocialApiService();
 
   // ── Friends List ──
 
   Future<List<FriendModel>> getFriends() async {
-    await Future.delayed(const Duration(milliseconds: 300));
-    return List.unmodifiable(
-      _friends.where((f) => !_blockedIds.contains(f.id)),
-    );
+    try {
+      final data = await _api.getFriends();
+      return data.map((json) => _friendFromJson(json)).toList();
+    } catch (_) {
+      return [];
+    }
   }
 
   Future<List<FriendModel>> getOnlineFriends() async {
@@ -40,10 +31,12 @@ class SocialService {
   // ── Friend Requests ──
 
   Future<List<FriendRequestModel>> getFriendRequests() async {
-    await Future.delayed(const Duration(milliseconds: 200));
-    return List.unmodifiable(
-      _requests.where((r) => r.status == FriendRequestStatus.pending),
-    );
+    try {
+      final data = await _api.getFriendRequests();
+      return data.map((json) => _requestFromJson(json)).toList();
+    } catch (_) {
+      return [];
+    }
   }
 
   Future<int> getPendingRequestCount() async {
@@ -52,193 +45,109 @@ class SocialService {
   }
 
   Future<void> sendFriendRequest(String targetUserId) async {
-    await Future.delayed(const Duration(milliseconds: 400));
-    _requests.add(FriendRequestModel(
-      id: 'req_${DateTime.now().millisecondsSinceEpoch}',
-      fromUser: const FriendModel(id: 'local_user', username: 'You'),
-      toUserId: targetUserId,
-      timestamp: DateTime.now(),
-      isIncoming: false,
-    ));
+    await _api.sendFriendRequest(targetUserId);
   }
 
   Future<void> acceptFriendRequest(String requestId) async {
-    await Future.delayed(const Duration(milliseconds: 300));
-    final idx = _requests.indexWhere((r) => r.id == requestId);
-    if (idx != -1) {
-      final req = _requests[idx];
-      _requests[idx] = req.copyWith(status: FriendRequestStatus.accepted);
-      // Add to friends list
-      _friends.add(req.fromUser.copyWith(
-        onlineStatus: OnlineStatus.online,
-        currentActivity: PlayerActivity.idle,
-      ));
-    }
+    await _api.acceptFriendRequest(requestId);
   }
 
   Future<void> rejectFriendRequest(String requestId) async {
-    await Future.delayed(const Duration(milliseconds: 200));
-    final idx = _requests.indexWhere((r) => r.id == requestId);
-    if (idx != -1) {
-      _requests[idx] = _requests[idx].copyWith(
-        status: FriendRequestStatus.rejected,
-      );
-    }
+    await _api.rejectFriendRequest(requestId);
   }
 
   Future<void> cancelFriendRequest(String requestId) async {
-    await Future.delayed(const Duration(milliseconds: 200));
-    final idx = _requests.indexWhere((r) => r.id == requestId);
-    if (idx != -1) {
-      _requests[idx] = _requests[idx].copyWith(
-        status: FriendRequestStatus.cancelled,
-      );
-    }
+    await _api.rejectFriendRequest(requestId);
   }
 
   // ── Block ──
 
   Future<void> blockUser(String userId) async {
-    await Future.delayed(const Duration(milliseconds: 200));
-    _blockedIds.add(userId);
-    _friends.removeWhere((f) => f.id == userId);
+    await _api.removeFriend(userId);
   }
 
   // ── Recent Players ──
 
   Future<List<FriendModel>> getRecentPlayers() async {
-    await Future.delayed(const Duration(milliseconds: 200));
-    return List.unmodifiable(_recentPlayers);
+    // No dedicated backend endpoint yet — return empty
+    return [];
   }
 
   // ── Search ──
 
   Future<List<FriendModel>> searchUsers(String query) async {
-    await Future.delayed(const Duration(milliseconds: 500));
-    if (query.trim().isEmpty) return [];
-    final lq = query.toLowerCase();
-    final allKnown = [..._friends, ..._recentPlayers];
-    return allKnown.where((u) {
-      return u.username.toLowerCase().contains(lq) ||
-          u.id.toLowerCase().contains(lq);
-    }).toList();
+    try {
+      final data = await _api.searchUsers(query);
+      return data.map((json) => _friendFromJson(json)).toList();
+    } catch (_) {
+      return [];
+    }
   }
 
   // ── Remove Friend ──
 
   Future<void> removeFriend(String friendId) async {
-    await Future.delayed(const Duration(milliseconds: 200));
-    _friends.removeWhere((f) => f.id == friendId);
+    await _api.removeFriend(friendId);
   }
 
-  // ── Mock Data Generators ──
+  // ── JSON Converters ──
 
-  List<FriendModel> _generateMockFriends() {
-    final names = [
-      'ShadowKing', 'NightViper', 'IronFist', 'GhostWalker',
-      'RedPhantom', 'DarkOracle', 'SilverBlade', 'CrimsonEye',
-      'StormBringer', 'VenomStrike', 'BladeRunner', 'NeonWraith',
-      'DeathWhisper', 'FrostBite', 'ThunderBolt', 'PhantomAce',
-    ];
-
-    final statuses = OnlineStatus.values;
-    final activities = PlayerActivity.values;
-    final tags = [null, '[COBRA]', '[VENOM]', '[GHOST]', '[BLAZE]', null];
-
-    return List.generate(names.length, (i) {
-      final isOnline = _rng.nextDouble() < 0.45;
-      return FriendModel(
-        id: 'friend_$i',
-        username: names[i],
-        rankTier: _rng.nextInt(5),
-        familyTag: tags[i % tags.length],
-        familyName: tags[i % tags.length] != null
-            ? 'Family ${tags[i % tags.length]}'
-            : null,
-        popularityScore: _rng.nextInt(6000),
-        popularityRank: PopularityRank
-            .fromScore(_rng.nextInt(6000))
-            .displayName,
-        onlineStatus: isOnline
-            ? statuses[_rng.nextInt(4)] // skip offline
-                .index == 1
-                ? OnlineStatus.online
-                : statuses[_rng.nextInt(statuses.length - 1) + 1 == 1
-                    ? 0
-                    : _rng.nextInt(4)]
-            : OnlineStatus.offline,
-        currentActivity: isOnline
-            ? activities[_rng.nextInt(activities.length)]
-            : PlayerActivity.idle,
-        lastSeen: !isOnline
-            ? DateTime.now().subtract(Duration(
-                minutes: _rng.nextInt(1440),
-              ))
-            : null,
-        mutualFriendCount: _rng.nextInt(8),
-      );
-    });
+  FriendModel _friendFromJson(Map<String, dynamic> json) {
+    return FriendModel(
+      id: json['id'] ?? '',
+      username: json['username'] ?? '',
+      avatarUrl: json['avatarUrl'] ?? json['avatar_url'] ?? '',
+      rankTier: json['rankTier'] ?? json['rank_tier'] ?? 0,
+      familyTag: json['familyTag'] ?? json['family_tag'],
+      familyName: json['familyName'] ?? json['family_name'],
+      popularityScore: json['popularityScore'] ?? json['popularity_score'] ?? 0,
+      onlineStatus: _parseOnlineStatus(json['onlineStatus'] ?? json['online_status'] ?? 'offline'),
+      currentActivity: _parseActivity(json['currentActivity'] ?? json['current_activity'] ?? 'idle'),
+      mutualFriendCount: json['mutualFriendCount'] ?? json['mutual_friend_count'] ?? 0,
+    );
   }
 
-  List<FriendRequestModel> _generateMockRequests() {
-    final requesters = [
-      const FriendModel(
-        id: 'req_user_1',
-        username: 'MidnightRogue',
-        rankTier: 3,
-        familyTag: '[SHADOW]',
-        popularityScore: 1200,
-      ),
-      const FriendModel(
-        id: 'req_user_2',
-        username: 'CyberNinja',
-        rankTier: 2,
-        popularityScore: 450,
-      ),
-      const FriendModel(
-        id: 'req_user_3',
-        username: 'ViperQueen',
-        rankTier: 4,
-        familyTag: '[VENOM]',
-        popularityScore: 3200,
-      ),
-    ];
-
-    return List.generate(requesters.length, (i) {
-      return FriendRequestModel(
-        id: 'req_$i',
-        fromUser: requesters[i],
-        toUserId: 'local_user',
-        timestamp: DateTime.now().subtract(Duration(hours: i * 2 + 1)),
-        mutualFriendCount: _rng.nextInt(5),
-        isIncoming: i < 2, // first 2 incoming, last outgoing
-      );
-    });
+  FriendRequestModel _requestFromJson(Map<String, dynamic> json) {
+    final fromUser = json['fromUser'] ?? json['from_user'] ?? {};
+    return FriendRequestModel(
+      id: json['id'] ?? '',
+      fromUser: _friendFromJson(Map<String, dynamic>.from(fromUser)),
+      toUserId: json['toUserId'] ?? json['to_user_id'] ?? '',
+      status: _parseRequestStatus(json['status'] ?? 'pending'),
+      timestamp: DateTime.tryParse(json['timestamp'] ?? '') ?? DateTime.now(),
+      mutualFriendCount: json['mutualFriendCount'] ?? json['mutual_friend_count'] ?? 0,
+      isIncoming: json['isIncoming'] ?? json['is_incoming'] ?? true,
+    );
   }
 
-  List<FriendModel> _generateRecentPlayers() {
-    final names = [
-      'ZeroGravity', 'SteelNerve', 'QuickDraw', 'SilentKill',
-      'RapidFire', 'NightShade', 'IcePick', 'FlameWard',
-      'ToxicBlade', 'ShadowHawk', 'BulletProof', 'GrimReaper',
-      'SnakeEyes', 'GoldFinger', 'HotShot', 'WildCard',
-      'AceSpade', 'DeadShot', 'KnightOwl', 'BlitzKrieg',
-    ];
+  OnlineStatus _parseOnlineStatus(String s) {
+    switch (s.toLowerCase()) {
+      case 'online': return OnlineStatus.online;
+      case 'inmatch': case 'in_match': return OnlineStatus.inMatch;
+      case 'infamilylobby': case 'in_family_lobby': return OnlineStatus.inFamilyLobby;
+      case 'busy': return OnlineStatus.busy;
+      case 'donotdisturb': case 'do_not_disturb': return OnlineStatus.doNotDisturb;
+      default: return OnlineStatus.offline;
+    }
+  }
 
-    return List.generate(min(20, names.length), (i) {
-      return FriendModel(
-        id: 'recent_$i',
-        username: names[i],
-        rankTier: _rng.nextInt(5),
-        familyTag: i % 4 == 0 ? '[WOLF]' : null,
-        popularityScore: _rng.nextInt(3000),
-        onlineStatus: _rng.nextDouble() < 0.3
-            ? OnlineStatus.online
-            : OnlineStatus.offline,
-        lastSeen: DateTime.now().subtract(Duration(
-          hours: _rng.nextInt(24),
-        )),
-      );
-    });
+  PlayerActivity _parseActivity(String s) {
+    switch (s.toLowerCase()) {
+      case 'inlobby': case 'in_lobby': return PlayerActivity.inLobby;
+      case 'inmatch': case 'in_match': return PlayerActivity.inMatch;
+      case 'lookingforteam': case 'looking_for_team': return PlayerActivity.lookingForTeam;
+      case 'instore': case 'in_store': return PlayerActivity.inStore;
+      case 'inbattlepass': case 'in_battle_pass': return PlayerActivity.inBattlePass;
+      default: return PlayerActivity.idle;
+    }
+  }
+
+  FriendRequestStatus _parseRequestStatus(String s) {
+    switch (s.toLowerCase()) {
+      case 'accepted': return FriendRequestStatus.accepted;
+      case 'rejected': return FriendRequestStatus.rejected;
+      case 'cancelled': return FriendRequestStatus.cancelled;
+      default: return FriendRequestStatus.pending;
+    }
   }
 }

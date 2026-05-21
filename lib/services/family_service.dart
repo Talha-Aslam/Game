@@ -1,41 +1,28 @@
 import 'dart:async';
-import 'dart:math';
 import '../models/family_model.dart';
 import '../models/family/family_treasury_model.dart';
 import '../models/family/family_war_model.dart';
 import '../models/family/family_achievement_model.dart';
 import '../models/family/family_application_model.dart';
 import '../models/family/family_audit_log_model.dart';
+import 'family_api_service.dart';
 
-/// Comprehensive mock family service
+/// Family service backed by FastAPI
 class FamilyService {
-  final _rng = Random(42);
-  FamilyModel? _currentFamily;
-  final List<FamilyApplication> _applications = [];
-  final List<FamilyAuditEntry> _auditLog = [];
-  final List<FamilyWarModel> _wars = [];
-  final List<RivalryRecord> _rivalries = [];
-  late FamilyTreasury _treasury;
-  List<FamilyAchievement> _achievements = [];
-  final List<FamilyModel> _allFamilies = [];
+  final FamilyApiService _api = FamilyApiService();
 
   static const int creationCost = 500;
 
-  FamilyService() {
-    _currentFamily = _buildMockFamily();
-    _treasury = _buildMockTreasury();
-    _applications.addAll(_buildMockApplications());
-    _auditLog.addAll(_buildMockAuditLog());
-    _wars.addAll(_buildMockWars());
-    _rivalries.addAll(_buildMockRivalries());
-    _achievements = _buildMockAchievements();
-    _allFamilies.addAll(_buildSearchableFamilies());
-  }
-
   // ── Family CRUD ──
+
   Future<FamilyModel?> getCurrentFamily() async {
-    await Future.delayed(const Duration(milliseconds: 200));
-    return _currentFamily;
+    try {
+      final data = await _api.getMyFamily();
+      if (data == null) return null;
+      return _familyFromJson(data);
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<FamilyModel> createFamily({
@@ -46,417 +33,391 @@ class FamilyService {
     FamilyPrivacy privacy = FamilyPrivacy.approvalRequired,
     FamilyRequirements requirements = const FamilyRequirements(),
   }) async {
-    await Future.delayed(const Duration(milliseconds: 500));
-    _currentFamily = FamilyModel(
-      id: 'fam_${DateTime.now().millisecondsSinceEpoch}',
+    final data = await _api.createFamily(
       name: name,
-      tag: '[$tag]',
+      tag: tag,
       description: description,
       slogan: slogan,
-      privacy: privacy,
-      requirements: requirements,
-      members: [
-        FamilyMember(
-          userId: 'local_user', username: 'You',
-          role: FamilyRole.boss, activity: MemberActivity.online,
-          rankTier: 2, winRate: 65.0, totalGames: 120,
-          joinedAt: DateTime.now(), lastActive: DateTime.now(),
-        ),
-      ],
-      createdAt: DateTime.now(),
-      createdBy: 'local_user',
+      privacy: _privacyToString(privacy),
     );
-    _addAudit(AuditAction.familyCreated, 'You');
-    return _currentFamily!;
+    return _familyFromJson(data);
   }
 
   Future<void> leaveFamily() async {
-    await Future.delayed(const Duration(milliseconds: 300));
-    _currentFamily = null;
+    await _api.leaveFamily();
   }
 
   Future<void> updateSettings({
-    String? name, String? tag, String? description,
-    String? slogan, String? motd, FamilyPrivacy? privacy,
+    String? name,
+    String? tag,
+    String? description,
+    String? slogan,
+    String? motd,
+    FamilyPrivacy? privacy,
     FamilyRequirements? requirements,
   }) async {
-    await Future.delayed(const Duration(milliseconds: 300));
-    if (_currentFamily == null) return;
-    _currentFamily = _currentFamily!.copyWith(
-      name: name, tag: tag, description: description,
-      slogan: slogan, motd: motd, privacy: privacy,
-      requirements: requirements,
-      motdUpdatedAt: motd != null ? DateTime.now() : null,
-    );
-    _addAudit(AuditAction.settingsChanged, 'You');
+    final updates = <String, dynamic>{};
+    if (name != null) updates['name'] = name;
+    if (tag != null) updates['tag'] = tag;
+    if (description != null) updates['description'] = description;
+    if (slogan != null) updates['slogan'] = slogan;
+    if (motd != null) updates['motd'] = motd;
+    if (privacy != null) updates['privacy'] = _privacyToString(privacy);
+    await _api.updateSettings(updates);
   }
 
   // ── Members ──
+
   Future<void> kickMember(String userId) async {
-    await Future.delayed(const Duration(milliseconds: 300));
-    if (_currentFamily == null) return;
-    final target = _currentFamily!.members.where((m) => m.userId == userId).firstOrNull;
-    final members = _currentFamily!.members.where((m) => m.userId != userId).toList();
-    _currentFamily = _currentFamily!.copyWith(members: members);
-    _addAudit(AuditAction.memberKicked, 'You', targetName: target?.username);
+    await _api.kickMember(userId);
   }
 
   Future<void> promoteMember(String userId) async {
-    await Future.delayed(const Duration(milliseconds: 300));
-    if (_currentFamily == null) return;
-    final members = _currentFamily!.members.map((m) {
-      if (m.userId == userId) {
-        final newRole = m.role == FamilyRole.associate
-            ? FamilyRole.capo
-            : m.role == FamilyRole.capo
-                ? FamilyRole.underboss
-                : m.role;
-        return m.copyWith(role: newRole);
-      }
-      return m;
-    }).toList();
-    _currentFamily = _currentFamily!.copyWith(members: members);
-    final target = members.where((m) => m.userId == userId).firstOrNull;
-    _addAudit(AuditAction.memberPromoted, 'You', targetName: target?.username);
+    await _api.promoteMember(userId);
   }
 
   Future<void> demoteMember(String userId) async {
-    await Future.delayed(const Duration(milliseconds: 300));
-    if (_currentFamily == null) return;
-    final members = _currentFamily!.members.map((m) {
-      if (m.userId == userId) {
-        final newRole = m.role == FamilyRole.underboss
-            ? FamilyRole.capo
-            : m.role == FamilyRole.capo
-                ? FamilyRole.associate
-                : m.role;
-        return m.copyWith(role: newRole);
-      }
-      return m;
-    }).toList();
-    _currentFamily = _currentFamily!.copyWith(members: members);
-    final target = members.where((m) => m.userId == userId).firstOrNull;
-    _addAudit(AuditAction.memberDemoted, 'You', targetName: target?.username);
+    await _api.demoteMember(userId);
   }
 
   Future<void> muteMember(String userId) async {
-    await Future.delayed(const Duration(milliseconds: 200));
-    if (_currentFamily == null) return;
-    final members = _currentFamily!.members.map((m) {
-      if (m.userId == userId) return m.copyWith(isMuted: !m.isMuted);
-      return m;
-    }).toList();
-    _currentFamily = _currentFamily!.copyWith(members: members);
-    _addAudit(AuditAction.memberMuted, 'You',
-        targetName: members.where((m) => m.userId == userId).firstOrNull?.username);
+    // Muting is a local action for now
   }
 
   Future<void> transferOwnership(String userId) async {
-    await Future.delayed(const Duration(milliseconds: 400));
-    if (_currentFamily == null) return;
-    final members = _currentFamily!.members.map((m) {
-      if (m.userId == userId) return m.copyWith(role: FamilyRole.boss);
-      if (m.userId == 'local_user') return m.copyWith(role: FamilyRole.underboss);
-      return m;
-    }).toList();
-    _currentFamily = _currentFamily!.copyWith(members: members);
-    _addAudit(AuditAction.ownershipTransferred, 'You',
-        targetName: members.where((m) => m.userId == userId).firstOrNull?.username);
+    // TODO: Implement backend endpoint
   }
 
   // ── Applications ──
+
   Future<List<FamilyApplication>> getApplications() async {
-    await Future.delayed(const Duration(milliseconds: 200));
-    return _applications.where((a) => a.status == ApplicationStatus.pending).toList();
+    try {
+      final data = await _api.getMyFamily();
+      if (data == null) return [];
+      final apps = List<Map<String, dynamic>>.from(data['applications'] ?? []);
+      return apps
+          .where((a) => a['status'] == 'pending')
+          .map((a) => _applicationFromJson(a))
+          .toList();
+    } catch (_) {
+      return [];
+    }
   }
 
   Future<void> acceptApplication(String appId) async {
-    await Future.delayed(const Duration(milliseconds: 300));
-    final idx = _applications.indexWhere((a) => a.id == appId);
-    if (idx == -1 || _currentFamily == null) return;
-    final app = _applications[idx];
-    _applications[idx] = app.copyWith(
-      status: ApplicationStatus.accepted,
-      reviewedBy: 'local_user',
-      reviewedAt: DateTime.now(),
-    );
-    final members = List<FamilyMember>.from(_currentFamily!.members);
-    members.add(FamilyMember(
-      userId: app.applicantId, username: app.applicantName,
-      role: FamilyRole.associate, rankTier: app.rankTier,
-      winRate: app.winRate, totalGames: app.totalGames,
-      popularityScore: app.popularityScore,
-      joinedAt: DateTime.now(), lastActive: DateTime.now(),
-    ));
-    _currentFamily = _currentFamily!.copyWith(members: members);
-    _addAudit(AuditAction.memberJoined, app.applicantName);
+    await _api.acceptApplication(appId);
   }
 
   Future<void> rejectApplication(String appId) async {
-    await Future.delayed(const Duration(milliseconds: 200));
-    final idx = _applications.indexWhere((a) => a.id == appId);
-    if (idx != -1) {
-      _applications[idx] = _applications[idx].copyWith(
-        status: ApplicationStatus.rejected,
-        reviewedBy: 'local_user',
-        reviewedAt: DateTime.now(),
-      );
-    }
+    await _api.rejectApplication(appId);
   }
 
   // ── Treasury ──
+
   Future<FamilyTreasury> getTreasury() async {
-    await Future.delayed(const Duration(milliseconds: 200));
-    return _treasury;
+    try {
+      final data = await _api.getMyFamily();
+      if (data == null) return const FamilyTreasury();
+      final treasury = data['treasury'] ?? {};
+      return _treasuryFromJson(Map<String, dynamic>.from(treasury));
+    } catch (_) {
+      return const FamilyTreasury();
+    }
   }
 
   Future<void> donate(int amount) async {
-    await Future.delayed(const Duration(milliseconds: 300));
-    final donations = List<TreasuryDonation>.from(_treasury.recentDonations);
-    donations.insert(0, TreasuryDonation(
-      id: 'don_${DateTime.now().millisecondsSinceEpoch}',
-      userId: 'local_user', username: 'You',
-      amount: amount, timestamp: DateTime.now(),
-    ));
-    _treasury = _treasury.copyWith(
-      balance: _treasury.balance + amount,
-      recentDonations: donations,
-    );
-    if (_currentFamily != null) {
-      _currentFamily = _currentFamily!.copyWith(
-        treasuryBalance: _treasury.balance,
-      );
-    }
-    _addAudit(AuditAction.treasuryDonation, 'You', details: '$amount');
+    await _api.donate(amount);
   }
 
   Future<bool> activateBoost(FamilyBoostType type) async {
-    await Future.delayed(const Duration(milliseconds: 400));
-    if (_treasury.balance < type.cost) return false;
-    final now = DateTime.now();
-    final boosts = List<FamilyBoost>.from(_treasury.activeBoosts);
-    boosts.add(FamilyBoost(
-      id: 'boost_${now.millisecondsSinceEpoch}',
-      type: type, activatedAt: now,
-      expiresAt: now.add(type.duration),
-      activatedBy: 'You',
-    ));
-    _treasury = _treasury.copyWith(
-      balance: _treasury.balance - type.cost,
-      activeBoosts: boosts,
-    );
-    _addAudit(AuditAction.boostActivated, 'You', details: type.displayName);
-    return true;
+    try {
+      await _api.activateBoost(type.name);
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 
   // ── Wars ──
+
   Future<List<FamilyWarModel>> getWars() async {
-    await Future.delayed(const Duration(milliseconds: 200));
-    return List.unmodifiable(_wars);
+    try {
+      final data = await _api.getMyFamily();
+      if (data == null) return [];
+      final wars = List<Map<String, dynamic>>.from(data['wars'] ?? []);
+      return wars.map((w) => _warFromJson(w)).toList();
+    } catch (_) {
+      return [];
+    }
   }
 
   Future<List<RivalryRecord>> getRivalries() async {
-    await Future.delayed(const Duration(milliseconds: 200));
-    return List.unmodifiable(_rivalries);
+    try {
+      final data = await _api.getRivalries();
+      return data.map((r) => _rivalryFromJson(r)).toList();
+    } catch (_) {
+      return [];
+    }
   }
 
   // ── Achievements ──
+
   Future<List<FamilyAchievement>> getAchievements() async {
-    await Future.delayed(const Duration(milliseconds: 200));
-    return List.unmodifiable(_achievements);
+    // Still local for now
+    return FamilyAchievement.allAchievements;
   }
 
   // ── Audit Log ──
+
   Future<List<FamilyAuditEntry>> getAuditLog() async {
-    await Future.delayed(const Duration(milliseconds: 200));
-    return List.unmodifiable(_auditLog);
+    try {
+      final data = await _api.getMyFamily();
+      if (data == null) return [];
+      final log = List<Map<String, dynamic>>.from(data['audit_log'] ?? []);
+      return log.map((e) => _auditFromJson(e)).toList();
+    } catch (_) {
+      return [];
+    }
   }
 
   // ── Search ──
+
   Future<List<FamilyModel>> searchFamilies(String query) async {
-    await Future.delayed(const Duration(milliseconds: 400));
-    if (query.trim().isEmpty) return _allFamilies;
-    final lq = query.toLowerCase();
-    return _allFamilies.where((f) =>
-        f.name.toLowerCase().contains(lq) ||
-        f.tag.toLowerCase().contains(lq)).toList();
+    try {
+      final data = await _api.searchFamilies(query);
+      return data.map((j) => _familyFromJson(j)).toList();
+    } catch (_) {
+      return [];
+    }
   }
 
-  // ── Helpers ──
-  void _addAudit(AuditAction action, String actorName, {String? targetName, String? details}) {
-    _auditLog.insert(0, FamilyAuditEntry(
-      id: 'audit_${DateTime.now().millisecondsSinceEpoch}',
-      action: action, actorId: 'local_user', actorName: actorName,
-      targetName: targetName, details: details, timestamp: DateTime.now(),
-    ));
-  }
+  // ══════════════════════════════════════════════════════
+  //  JSON → MODEL CONVERTERS
+  // ══════════════════════════════════════════════════════
 
-  // ══════════════════════════════════════════════════════════════
-  //  MOCK DATA BUILDERS
-  // ══════════════════════════════════════════════════════════════
-
-  FamilyModel _buildMockFamily() {
-    final now = DateTime.now();
-    final activities = MemberActivity.values;
-    final names = ['ShadowKing','NightViper','IronFist','GhostWalker','RedPhantom',
-      'DarkOracle','SilverBlade','CrimsonEye','StormBringer','VenomStrike',
-      'BladeRunner','NeonWraith','DeathWhisper','FrostBite','ThunderBolt'];
-    final roles = [FamilyRole.boss, FamilyRole.underboss, FamilyRole.capo,
-      FamilyRole.capo, FamilyRole.associate, FamilyRole.associate,
-      FamilyRole.associate, FamilyRole.associate, FamilyRole.associate,
-      FamilyRole.associate, FamilyRole.associate, FamilyRole.associate,
-      FamilyRole.associate, FamilyRole.associate, FamilyRole.associate];
-
+  FamilyModel _familyFromJson(Map<String, dynamic> json) {
+    final membersRaw = List<Map<String, dynamic>>.from(json['members'] ?? []);
     return FamilyModel(
-      id: 'family_001', name: 'Cobra Dynasty', tag: '[COBRA]',
-      description: 'Strike fast, vanish faster. We rule the city from the shadows.',
-      slogan: 'In shadows we trust.',
-      privacy: FamilyPrivacy.approvalRequired,
-      level: 8, currentXP: 7200, xpToNextLevel: 10000,
-      totalWins: 456, totalLosses: 123, seasonPoints: 12500, globalRank: 42,
-      treasuryBalance: 8500,
-      motd: '🔥 Syndicate War tonight at 8 PM — all ranked grinders online!',
-      motdUpdatedAt: now.subtract(const Duration(hours: 3)),
-      warWins: 18, warLosses: 5,
-      createdAt: now.subtract(const Duration(days: 90)),
-      createdBy: 'u1',
-      members: List.generate(names.length, (i) {
-        final isOnline = _rng.nextDouble() < 0.45;
-        return FamilyMember(
-          userId: 'u${i + 1}', username: names[i],
-          role: roles[i],
-          contributedPoints: 3200 - (i * 180),
-          activity: isOnline ? activities[_rng.nextInt(activities.length - 1)] : MemberActivity.offline,
-          rankTier: (4 - i ~/ 4).clamp(0, 4),
-          rankPoints: 2000 - (i * 100),
-          winRate: 75.0 - (i * 2.5),
-          totalGames: 500 - (i * 25),
-          trustRating: 4.5 - (i * 0.15),
-          popularityScore: 3000 - (i * 150),
-          mostPlayedRole: ['Mafia','Detective','Doctor','Civilian'][i % 4],
-          joinedAt: now.subtract(Duration(days: 90 - i * 5)),
-          lastActive: isOnline ? now : now.subtract(Duration(hours: i * 2)),
-        );
-      }),
+      id: json['id'] ?? json['_id'] ?? '',
+      name: json['name'] ?? '',
+      tag: json['tag'] ?? '',
+      description: json['description'] ?? '',
+      slogan: json['slogan'] ?? '',
+      privacy: _parsePrivacy(json['privacy'] ?? 'approvalRequired'),
+      level: json['level'] ?? 1,
+      currentXP: json['current_xp'] ?? 0,
+      xpToNextLevel: json['xp_to_next_level'] ?? 1000,
+      totalWins: json['total_wins'] ?? 0,
+      totalLosses: json['total_losses'] ?? 0,
+      seasonPoints: json['season_points'] ?? 0,
+      globalRank: json['global_rank'] ?? 0,
+      treasuryBalance: (json['treasury'] is Map)
+          ? (json['treasury']['balance'] ?? 0)
+          : (json['treasury_balance'] ?? 0),
+      motd: json['motd'] ?? '',
+      motdUpdatedAt: json['motd_updated_at'] != null
+          ? DateTime.tryParse(json['motd_updated_at'])
+          : null,
+      warWins: json['war_wins'] ?? 0,
+      warLosses: json['war_losses'] ?? 0,
+      members: membersRaw.map((m) => _memberFromJson(m)).toList(),
+      createdAt: DateTime.tryParse(json['created_at'] ?? '') ?? DateTime.now(),
+      createdBy: json['created_by'] ?? '',
     );
   }
 
-  FamilyTreasury _buildMockTreasury() {
+  FamilyMember _memberFromJson(Map<String, dynamic> json) {
+    return FamilyMember(
+      userId: json['user_id'] ?? '',
+      username: json['username'] ?? '',
+      avatarUrl: json['avatar_url'] ?? '',
+      role: _parseRole(json['role'] ?? 'associate'),
+      contributedPoints: json['contributed_points'] ?? 0,
+      activity: _parseActivity(json['activity'] ?? 'offline'),
+      rankTier: json['rank_tier'] ?? 0,
+      rankPoints: json['rank_points'] ?? 0,
+      winRate: (json['win_rate'] ?? 0).toDouble(),
+      totalGames: json['total_games'] ?? 0,
+      trustRating: (json['trust_rating'] ?? 5.0).toDouble(),
+      popularityScore: json['popularity_score'] ?? 0,
+      mostPlayedRole: json['most_played_role'],
+      joinedAt: DateTime.tryParse(json['joined_at'] ?? '') ?? DateTime.now(),
+      lastActive:
+          DateTime.tryParse(json['last_active'] ?? '') ?? DateTime.now(),
+      isMuted: json['is_muted'] ?? false,
+    );
+  }
+
+  FamilyTreasury _treasuryFromJson(Map<String, dynamic> json) {
+    final donations = List<Map<String, dynamic>>.from(
+      json['recent_donations'] ?? [],
+    );
     return FamilyTreasury(
-      balance: 8500,
-      activeBoosts: [
-        FamilyBoost(id: 'b1', type: FamilyBoostType.influenceBonus,
-          activatedAt: DateTime.now().subtract(const Duration(hours: 6)),
-          expiresAt: DateTime.now().add(const Duration(hours: 18)),
-          activatedBy: 'ShadowKing'),
-      ],
-      topContributors: const [
-        TreasuryContributor(userId: 'u1', username: 'ShadowKing', totalDonated: 3200),
-        TreasuryContributor(userId: 'u2', username: 'NightViper', totalDonated: 2800),
-        TreasuryContributor(userId: 'u3', username: 'IronFist', totalDonated: 1900),
-        TreasuryContributor(userId: 'u4', username: 'GhostWalker', totalDonated: 1500),
-        TreasuryContributor(userId: 'u5', username: 'RedPhantom', totalDonated: 800),
-      ],
+      balance: json['balance'] ?? 0,
+      recentDonations: donations
+          .map(
+            (d) => TreasuryDonation(
+              id: d['id'] ?? '',
+              userId: d['user_id'] ?? '',
+              username: d['username'] ?? '',
+              amount: d['amount'] ?? 0,
+              timestamp:
+                  DateTime.tryParse(d['timestamp'] ?? '') ?? DateTime.now(),
+            ),
+          )
+          .toList(),
     );
   }
 
-  List<FamilyApplication> _buildMockApplications() => [
-    FamilyApplication(id: 'app_1', applicantId: 'ap1', applicantName: 'ZeroGravity',
-      familyId: 'family_001', rankTier: 3, rankPoints: 1800,
-      winRate: 68.5, totalGames: 200, trustRating: 4.2,
-      popularityScore: 1500, mostPlayedRole: 'Detective',
-      submittedAt: DateTime.now().subtract(const Duration(hours: 2))),
-    FamilyApplication(id: 'app_2', applicantId: 'ap2', applicantName: 'SteelNerve',
-      familyId: 'family_001', rankTier: 2, rankPoints: 1200,
-      winRate: 55.0, totalGames: 80, trustRating: 3.8,
-      popularityScore: 800, mostPlayedRole: 'Mafia',
-      previousFamilyName: 'Night Syndicate',
-      submittedAt: DateTime.now().subtract(const Duration(hours: 5))),
-  ];
-
-  List<FamilyAuditEntry> _buildMockAuditLog() {
-    final now = DateTime.now();
-    return [
-      FamilyAuditEntry(id: 'a1', action: AuditAction.motdUpdated,
-        actorId: 'u1', actorName: 'ShadowKing', timestamp: now.subtract(const Duration(hours: 3))),
-      FamilyAuditEntry(id: 'a2', action: AuditAction.boostActivated,
-        actorId: 'u1', actorName: 'ShadowKing', details: '+10% Influence Earned',
-        timestamp: now.subtract(const Duration(hours: 6))),
-      FamilyAuditEntry(id: 'a3', action: AuditAction.memberJoined,
-        actorId: 'u15', actorName: 'ThunderBolt', timestamp: now.subtract(const Duration(days: 1))),
-      FamilyAuditEntry(id: 'a4', action: AuditAction.memberPromoted,
-        actorId: 'u1', actorName: 'ShadowKing', targetName: 'NightViper',
-        timestamp: now.subtract(const Duration(days: 2))),
-      FamilyAuditEntry(id: 'a5', action: AuditAction.warCompleted,
-        actorId: 'system', actorName: 'System', targetName: 'Night Syndicate',
-        timestamp: now.subtract(const Duration(days: 3))),
-    ];
+  FamilyApplication _applicationFromJson(Map<String, dynamic> json) {
+    return FamilyApplication(
+      id: json['id'] ?? '',
+      applicantId: json['applicant_id'] ?? '',
+      applicantName: json['applicant_name'] ?? '',
+      familyId: json['family_id'] ?? '',
+      rankTier: json['rank_tier'] ?? 0,
+      rankPoints: json['rank_points'] ?? 0,
+      winRate: (json['win_rate'] ?? 0).toDouble(),
+      totalGames: json['total_games'] ?? 0,
+      trustRating: (json['trust_rating'] ?? 5.0).toDouble(),
+      popularityScore: json['popularity_score'] ?? 0,
+      mostPlayedRole: json['most_played_role'],
+      submittedAt:
+          DateTime.tryParse(json['submitted_at'] ?? '') ?? DateTime.now(),
+    );
   }
 
-  List<FamilyWarModel> _buildMockWars() {
-    final now = DateTime.now();
-    return [
-      FamilyWarModel(id: 'war_1',
-        challengerFamilyId: 'family_001', challengerFamilyName: 'Cobra Dynasty', challengerFamilyTag: '[COBRA]',
-        defenderFamilyId: 'family_002', defenderFamilyName: 'Night Syndicate', defenderFamilyTag: '[NIGHT]',
-        challengerScore: 4, defenderScore: 2, status: WarStatus.completed,
-        createdAt: now.subtract(const Duration(days: 3)),
-        completedAt: now.subtract(const Duration(days: 3))),
-      FamilyWarModel(id: 'war_2',
-        challengerFamilyId: 'family_003', challengerFamilyName: 'Ghost Protocol', challengerFamilyTag: '[GHOST]',
-        defenderFamilyId: 'family_001', defenderFamilyName: 'Cobra Dynasty', defenderFamilyTag: '[COBRA]',
-        status: WarStatus.pending,
-        createdAt: now.subtract(const Duration(hours: 2))),
-    ];
+  FamilyWarModel _warFromJson(Map<String, dynamic> json) {
+    return FamilyWarModel(
+      id: json['id'] ?? '',
+      challengerFamilyId: json['challenger_family_id'] ?? '',
+      challengerFamilyName: json['challenger_family_name'] ?? '',
+      challengerFamilyTag: json['challenger_family_tag'] ?? '',
+      defenderFamilyId: json['defender_family_id'] ?? '',
+      defenderFamilyName: json['defender_family_name'] ?? '',
+      defenderFamilyTag: json['defender_family_tag'] ?? '',
+      challengerScore: json['challenger_score'] ?? 0,
+      defenderScore: json['defender_score'] ?? 0,
+      status: _parseWarStatus(json['status'] ?? 'pending'),
+      createdAt: DateTime.tryParse(json['created_at'] ?? '') ?? DateTime.now(),
+    );
   }
 
-  List<RivalryRecord> _buildMockRivalries() => [
-    RivalryRecord(rivalFamilyId: 'family_002', rivalFamilyName: 'Night Syndicate',
-      rivalFamilyTag: '[NIGHT]', wins: 12, losses: 5,
-      lastMatchDate: DateTime.now().subtract(const Duration(days: 3))),
-    RivalryRecord(rivalFamilyId: 'family_003', rivalFamilyName: 'Ghost Protocol',
-      rivalFamilyTag: '[GHOST]', wins: 4, losses: 3,
-      lastMatchDate: DateTime.now().subtract(const Duration(days: 10))),
-  ];
-
-  List<FamilyAchievement> _buildMockAchievements() {
-    return FamilyAchievement.allAchievements.map((a) {
-      int progress;
-      switch (a.id) {
-        case 'fam_wins_10': progress = 10;
-        case 'fam_wins_100': progress = 82;
-        case 'fam_wins_500': progress = 456;
-        case 'fam_wars_won_25': progress = 18;
-        case 'fam_level_10': progress = 8;
-        default: progress = _rng.nextInt(a.target);
-      }
-      return FamilyAchievement(
-        id: a.id, title: a.title, description: a.description,
-        icon: a.icon, currentProgress: progress, target: a.target,
-        isUnlocked: progress >= a.target, rewardDescription: a.rewardDescription,
-      );
-    }).toList();
+  RivalryRecord _rivalryFromJson(Map<String, dynamic> json) {
+    return RivalryRecord(
+      rivalFamilyId: json['rival_family_id'] ?? '',
+      rivalFamilyName: json['rival_family_name'] ?? '',
+      rivalFamilyTag: json['rival_family_tag'] ?? '',
+      wins: json['wars_won'] ?? json['wins'] ?? 0,
+      losses: json['wars_lost'] ?? json['losses'] ?? 0,
+      lastMatchDate:
+          DateTime.tryParse(
+            json['last_match_date'] ?? json['started_at'] ?? '',
+          ) ??
+          DateTime.now(),
+    );
   }
 
-  List<FamilyModel> _buildSearchableFamilies() {
-    final now = DateTime.now();
-    return [
-      FamilyModel(id: 'family_002', name: 'Night Syndicate', tag: '[NIGHT]',
-        description: 'We own the night.', privacy: FamilyPrivacy.approvalRequired,
-        level: 12, totalWins: 380, seasonPoints: 10800, globalRank: 58,
-        createdAt: now.subtract(const Duration(days: 120))),
-      FamilyModel(id: 'family_003', name: 'Ghost Protocol', tag: '[GHOST]',
-        description: 'Invisible, untouchable.', privacy: FamilyPrivacy.public,
-        level: 6, totalWins: 210, seasonPoints: 7500, globalRank: 95,
-        createdAt: now.subtract(const Duration(days: 60))),
-      FamilyModel(id: 'family_004', name: 'Crimson Blade', tag: '[BLADE]',
-        description: 'Blood and honor.', privacy: FamilyPrivacy.inviteOnly,
-        level: 15, totalWins: 620, seasonPoints: 18000, globalRank: 12,
-        createdAt: now.subtract(const Duration(days: 200))),
-      FamilyModel(id: 'family_005', name: 'Neon Vipers', tag: '[NEON]',
-        description: 'Electric precision.', privacy: FamilyPrivacy.public,
-        level: 4, totalWins: 95, seasonPoints: 3200, globalRank: 180,
-        createdAt: now.subtract(const Duration(days: 30))),
-    ];
+  FamilyAuditEntry _auditFromJson(Map<String, dynamic> json) {
+    return FamilyAuditEntry(
+      id: json['id'] ?? '',
+      action: _parseAuditAction(json['action'] ?? ''),
+      actorId: json['actor_id'] ?? '',
+      actorName: json['actor_name'] ?? '',
+      targetName: json['target_name'],
+      details: json['details'],
+      timestamp: DateTime.tryParse(json['timestamp'] ?? '') ?? DateTime.now(),
+    );
+  }
+
+  // ── Enum Parsers ──
+
+  String _privacyToString(FamilyPrivacy p) {
+    switch (p) {
+      case FamilyPrivacy.public:
+        return 'public';
+      case FamilyPrivacy.approvalRequired:
+        return 'approvalRequired';
+      case FamilyPrivacy.inviteOnly:
+        return 'inviteOnly';
+    }
+  }
+
+  FamilyPrivacy _parsePrivacy(String s) {
+    switch (s) {
+      case 'public':
+        return FamilyPrivacy.public;
+      case 'inviteOnly':
+        return FamilyPrivacy.inviteOnly;
+      default:
+        return FamilyPrivacy.approvalRequired;
+    }
+  }
+
+  FamilyRole _parseRole(String s) {
+    switch (s) {
+      case 'boss':
+        return FamilyRole.boss;
+      case 'underboss':
+        return FamilyRole.underboss;
+      case 'capo':
+        return FamilyRole.capo;
+      default:
+        return FamilyRole.associate;
+    }
+  }
+
+  MemberActivity _parseActivity(String s) {
+    switch (s) {
+      case 'online':
+        return MemberActivity.online;
+      case 'inMatch':
+        return MemberActivity.inMatch;
+      case 'inVoiceChat':
+        return MemberActivity.inVoiceChat;
+      case 'inParty':
+        return MemberActivity.inParty;
+      case 'spectating':
+        return MemberActivity.spectating;
+      case 'idle':
+        return MemberActivity.idle;
+      default:
+        return MemberActivity.offline;
+    }
+  }
+
+  WarStatus _parseWarStatus(String s) {
+    switch (s) {
+      case 'accepted':
+        return WarStatus.accepted;
+      case 'active':
+        return WarStatus.active;
+      case 'completed':
+        return WarStatus.completed;
+      case 'cancelled':
+        return WarStatus.cancelled;
+      default:
+        return WarStatus.pending;
+    }
+  }
+
+  AuditAction _parseAuditAction(String s) {
+    const map = {
+      'familyCreated': AuditAction.familyCreated,
+      'settingsChanged': AuditAction.settingsChanged,
+      'memberJoined': AuditAction.memberJoined,
+      'memberLeft': AuditAction.memberLeft,
+      'memberKicked': AuditAction.memberKicked,
+      'memberPromoted': AuditAction.memberPromoted,
+      'memberDemoted': AuditAction.memberDemoted,
+      'memberMuted': AuditAction.memberMuted,
+      'ownershipTransferred': AuditAction.ownershipTransferred,
+      'motdUpdated': AuditAction.motdUpdated,
+      'boostActivated': AuditAction.boostActivated,
+      'treasuryDonation': AuditAction.treasuryDonation,
+      'warStarted': AuditAction.warStarted,
+      'warCompleted': AuditAction.warCompleted,
+    };
+    return map[s] ?? AuditAction.settingsChanged;
   }
 }

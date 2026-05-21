@@ -1,57 +1,75 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/battle_pass_model.dart';
+import '../services/battle_pass_api_service.dart';
+import 'auth_provider.dart';
 
 class BattlePassNotifier extends Notifier<BattlePassModel> {
-  @override
-  BattlePassModel build() => _buildMock();
+  final _api = BattlePassApiService();
 
-  // ── Claim ──
-  void claimFreeReward(int tier) {
-    final tiers = List<BattlePassTier>.from(state.tiers);
-    final idx = tiers.indexWhere((t) => t.tier == tier);
-    if (idx == -1 || !tiers[idx].isUnlocked || tiers[idx].isFreeClaimed) return;
-    tiers[idx] = tiers[idx].copyWith(isFreeClaimed: true);
-    state = state.copyWith(tiers: tiers);
+  @override
+  BattlePassModel build() {
+    final user = ref.watch(authProvider).user;
+    var baseModel = _buildMock();
+    
+    if (user != null) {
+      // Sync with user data
+      baseModel = baseModel.copyWith(
+        currentTier: user.battlePassTier,
+        currentXP: user.battlePassXP,
+        isPremium: user.hasPremiumPass,
+      );
+
+      final updatedTiers = baseModel.tiers.map((t) {
+        return t.copyWith(
+          isUnlocked: t.tier <= user.battlePassTier,
+          isFreeClaimed: user.claimedFreeTiers.contains(t.tier),
+          isPremiumClaimed: user.claimedPremiumTiers.contains(t.tier),
+        );
+      }).toList();
+
+      baseModel = baseModel.copyWith(tiers: updatedTiers);
+    }
+    
+    return baseModel;
   }
 
-  void claimPremiumReward(int tier) {
-    if (!state.isPremium) return;
-    final tiers = List<BattlePassTier>.from(state.tiers);
-    final idx = tiers.indexWhere((t) => t.tier == tier);
-    if (idx == -1 || !tiers[idx].isUnlocked || tiers[idx].isPremiumClaimed) return;
-    tiers[idx] = tiers[idx].copyWith(isPremiumClaimed: true);
-    state = state.copyWith(tiers: tiers);
+  // ── Claim ──
+  Future<void> claimFreeReward(int tier) async {
+    final success = await _api.claimTier(tier, false);
+    if (success) {
+      await ref.read(authServiceProvider).fetchProfile();
+      ref.invalidate(authProvider);
+    }
+  }
+
+  Future<void> claimPremiumReward(int tier) async {
+    final success = await _api.claimTier(tier, true);
+    if (success) {
+      await ref.read(authServiceProvider).fetchProfile();
+      ref.invalidate(authProvider);
+    }
   }
 
   /// Backward compat
   void claimReward(int tier) => claimFreeReward(tier);
 
   // ── Premium ──
-  void purchasePremium() {
-    state = state.copyWith(isPremium: true);
+  Future<void> purchasePremium() async {
+    final success = await _api.buyPremiumPass();
+    if (success) {
+      await ref.read(authServiceProvider).fetchProfile();
+      ref.invalidate(authProvider);
+    }
   }
 
-  void purchasePremiumPlus() {
-    // Premium+ = Premium + 20 instant tiers
-    final tiers = List<BattlePassTier>.from(state.tiers);
-    final newTier = (state.currentTier + 20).clamp(1, state.maxTier);
-    for (int i = 0; i < newTier; i++) {
-      tiers[i] = tiers[i].copyWith(isUnlocked: true);
-    }
-    state = state.copyWith(
-      isPremium: true, isPremiumPlus: true,
-      currentTier: newTier, tiers: tiers,
-    );
+  Future<void> purchasePremiumPlus() async {
+    // Left as future work (need another endpoint or param)
+    await purchasePremium();
   }
 
   // ── Tier Purchase ──
-  void purchaseTiers(int count) {
-    final tiers = List<BattlePassTier>.from(state.tiers);
-    final newTier = (state.currentTier + count).clamp(1, state.maxTier);
-    for (int i = 0; i < newTier; i++) {
-      tiers[i] = tiers[i].copyWith(isUnlocked: true);
-    }
-    state = state.copyWith(currentTier: newTier, currentXP: 0, tiers: tiers);
+  Future<void> purchaseTiers(int count) async {
+    // Left as future work
   }
 
   // ── XP ──

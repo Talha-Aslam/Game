@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'app.dart';
 import 'services/audio/audio_service.dart';
+import 'providers/auth_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -29,26 +30,41 @@ void main() async {
   runApp(const ProviderScope(child: SplashGate(child: CityOfLiesApp())));
 }
 
-class SplashGate extends StatefulWidget {
+class SplashGate extends ConsumerStatefulWidget {
   const SplashGate({super.key, required this.child});
 
   final Widget child;
 
   @override
-  State<SplashGate> createState() => _SplashGateState();
+  ConsumerState<SplashGate> createState() => _SplashGateState();
 }
 
-class _SplashGateState extends State<SplashGate> {
+class _SplashGateState extends ConsumerState<SplashGate> {
   static const _minDuration = Duration(milliseconds: 1200);
   bool _showSplash = true;
 
   @override
   void initState() {
     super.initState();
-    Future.delayed(_minDuration, () {
-      if (!mounted) return;
-      setState(() => _showSplash = false);
-    });
+    _initializeApp();
+  }
+
+  Future<void> _initializeApp() async {
+    // Delay the initialization slightly to allow the widget tree to finish building
+    // and prevent the "modify a provider while the widget tree was building" error.
+    await Future.microtask(() {});
+
+    // Start minimum splash timer
+    final splashTimer = Future.delayed(_minDuration);
+
+    // Check auth status
+    await ref.read(authProvider.notifier).checkAuth();
+
+    // Wait for minimum duration to complete
+    await splashTimer;
+
+    if (!mounted) return;
+    setState(() => _showSplash = false);
   }
 
   @override
