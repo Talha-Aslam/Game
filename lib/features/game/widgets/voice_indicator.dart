@@ -16,7 +16,8 @@ class VoiceIndicator extends StatefulWidget {
   State<VoiceIndicator> createState() => _VoiceIndicatorState();
 }
 
-class _VoiceIndicatorState extends State<VoiceIndicator> with SingleTickerProviderStateMixin {
+class _VoiceIndicatorState extends State<VoiceIndicator>
+    with SingleTickerProviderStateMixin {
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
   bool _isSpeaking = false;
@@ -36,7 +37,7 @@ class _VoiceIndicatorState extends State<VoiceIndicator> with SingleTickerProvid
       if (!mounted) return;
       int uid = widget.userId.hashCode.abs();
       bool speaking = activeIds.contains(uid);
-      
+
       if (speaking && !_isSpeaking) {
         setState(() => _isSpeaking = true);
         _pulseController.repeat(reverse: true);
