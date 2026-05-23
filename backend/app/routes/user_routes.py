@@ -31,6 +31,9 @@ async def upload_avatar(file: UploadFile = File(...), user_id: str = Depends(get
     filename = f"{user_id}_{uuid.uuid4().hex}.{ext}"
     filepath = os.path.join("uploads", "avatars", filename)
     
+    # Ensure directory exists
+    os.makedirs(os.path.dirname(filepath), exist_ok=True)
+    
     # Save the file
     with open(filepath, "wb") as buffer:
         content = await file.read()

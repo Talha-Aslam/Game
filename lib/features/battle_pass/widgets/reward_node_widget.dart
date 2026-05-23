@@ -52,35 +52,40 @@ class _RewardNodeWidgetState extends State<RewardNodeWidget>
     final isClaimed = widget.claimState == ClaimState.claimed;
     final isClaimable = widget.claimState == ClaimState.unlockable;
 
-    return GestureDetector(
-      onTap: isClaimable ? widget.onClaim : widget.onTap,
-      child: AnimatedBuilder(animation: _pulse, builder: (_, _) {
-        final p = isClaimable ? _pulse.value : 0.0;
-        return Container(
-          width: 72, height: 84,
-          margin: const EdgeInsets.symmetric(horizontal: 4),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(14),
+    return AnimatedBuilder(animation: _pulse, builder: (_, _) {
+      final p = isClaimable ? _pulse.value : 0.0;
+      return Container(
+        width: 72, height: 84,
+        margin: const EdgeInsets.symmetric(horizontal: 4),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(14),
+          color: isLocked
+              ? AppColors.white05
+              : isClaimed
+                  ? rarity.color.withValues(alpha: 0.06)
+                  : rarity.color.withValues(alpha: 0.06 + p * 0.06),
+          border: Border.all(
             color: isLocked
-                ? AppColors.white05
+                ? AppColors.glassBorder
                 : isClaimed
-                    ? rarity.color.withValues(alpha: 0.06)
-                    : rarity.color.withValues(alpha: 0.06 + p * 0.06),
-            border: Border.all(
-              color: isLocked
-                  ? AppColors.glassBorder
-                  : isClaimed
-                      ? rarity.color.withValues(alpha: 0.15)
-                      : rarity.color.withValues(alpha: 0.3 + p * 0.3),
-              width: isClaimable ? 1.5 : 1,
-            ),
-            boxShadow: isClaimable ? [
-              BoxShadow(color: rarity.glowColor.withValues(alpha: 0.15 + p * 0.15), blurRadius: 10 + p * 6)
-            ] : widget.isPremiumTrack && !isLocked ? [
-              BoxShadow(color: AppColors.gold.withValues(alpha: 0.08), blurRadius: 8)
-            ] : null,
+                    ? rarity.color.withValues(alpha: 0.15)
+                    : rarity.color.withValues(alpha: 0.3 + p * 0.3),
+            width: isClaimable ? 1.5 : 1,
           ),
-          child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+          boxShadow: isClaimable ? [
+            BoxShadow(color: rarity.glowColor.withValues(alpha: 0.15 + p * 0.15), blurRadius: 10 + p * 6)
+          ] : widget.isPremiumTrack && !isLocked ? [
+            BoxShadow(color: AppColors.gold.withValues(alpha: 0.08), blurRadius: 8)
+          ] : null,
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(14),
+            onTap: isClaimable ? widget.onClaim : widget.onTap,
+            splashColor: rarity.color.withValues(alpha: 0.3),
+            highlightColor: rarity.color.withValues(alpha: 0.1),
+            child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
             // Tier number
             Text('${widget.tier}', style: TextStyle(
               color: isLocked ? AppColors.white10 : rarity.color,
@@ -107,9 +112,10 @@ class _RewardNodeWidgetState extends State<RewardNodeWidget>
             Container(width: 20, height: 2, decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(1),
               color: isLocked ? AppColors.white05 : rarity.color.withValues(alpha: 0.5))),
-          ]),
-        );
-      }),
-    );
+            ]),
+          ),
+        ),
+      );
+    });
   }
 }
