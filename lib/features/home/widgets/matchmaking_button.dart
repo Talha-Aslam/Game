@@ -79,7 +79,7 @@ class _MatchmakingButtonState extends State<MatchmakingButton>
       onTap: widget.onPlay,
       child: AnimatedBuilder(
         animation: Listenable.merge([_breathe, _ring]),
-        builder: (_, __) {
+        builder: (_, _) {
           final b = _breathe.value;
           final scale = 1.0 + b * 0.04;
           final modeColor = _modeColors[_selectedMode];

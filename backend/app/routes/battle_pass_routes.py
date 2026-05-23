@@ -16,3 +16,7 @@ async def claim_tier(request: ClaimRequest, user_id: str = Depends(get_current_u
 @router.post("/buy-premium")
 async def buy_premium(user_id: str = Depends(get_current_user_id)):
     return await battle_pass_service.buy_premium_pass(user_id)
+
+@router.post("/purchase-tier")
+async def purchase_tier_route(user_id: str = Depends(get_current_user_id)):
+    return await battle_pass_service.purchase_tier(user_id)

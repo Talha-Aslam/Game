@@ -94,7 +94,6 @@ class MatchmakingManager:
         
         logger.info(f"Created {mode} match {room_id} with players: {matched_users} and {bots_needed} bots")
         
-        # TODO: Initialize game state in GameEngine
         from app.core.game_engine import game_engine
         await game_engine.create_room(room_id, all_players)
         

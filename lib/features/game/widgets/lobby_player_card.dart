@@ -77,7 +77,7 @@ class _LobbyPlayerCardState extends State<LobbyPlayerCard>
       onTap: isAlive ? widget.onTap : null,
       child: AnimatedBuilder(
         animation: Listenable.merge([_float, _voicePulse]),
-        builder: (_, __) {
+        builder: (_, _) {
           final floatY = isAlive ? sin(_float.value * pi) * 2 : 0.0;
           // Subtle scale — no more than 3% for speaking
           final speakScale = isSpeaking ? 1.0 + _voicePulse.value * 0.03 : 1.0;
@@ -294,7 +294,7 @@ class _FloatingEmojiWidgetState extends State<_FloatingEmojiWidget>
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(animation: _anim, builder: (_, __) {
+    return AnimatedBuilder(animation: _anim, builder: (_, _) {
       return Opacity(
         opacity: (1.0 - _anim.value).clamp(0.0, 1.0),
         child: Transform.translate(

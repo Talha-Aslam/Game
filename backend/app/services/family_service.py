@@ -482,3 +482,44 @@ def _rank_to_tier(rank_val) -> int:
         if "boss" in r or "syndicate" in r:
             return 4
     return 0
+
+async def transfer_boss(user_id: str, target_user_id: str) -> dict:
+    db = get_database()
+    family = await db["families"].find_one({"members.user_id": user_id, "members.role": "Boss"})
+    if not family:
+        raise HTTPException(status_code=403, detail="Not the boss of any family")
+        
+    # Check if target is in family
+    target_in_family = any(m["user_id"] == target_user_id for m in family["members"])
+    if not target_in_family:
+        raise HTTPException(status_code=400, detail="Target user not in family")
+        
+    # Demote current boss to Underboss, promote target to Boss
+    await db["families"].update_one(
+        {"_id": family["_id"], "members.user_id": user_id},
+        {"$set": {"members.$.role": "Underboss"}}
+    )
+    await db["families"].update_one(
+        {"_id": family["_id"], "members.user_id": target_user_id},
+        {"$set": {"members.$.role": "Boss"}}
+    )
+    return {"status": "success", "message": "Ownership transferred"}
+
+async def pin_message(user_id: str, msg_id: str) -> dict:
+    db = get_database()
+    # verify user is boss/underboss
+    family = await db["families"].find_one({"members.user_id": user_id, "members.role": {"$in": ["Boss", "Underboss"]}})
+    if not family:
+        raise HTTPException(status_code=403, detail="Not authorized to pin messages")
+        
+    from bson.objectid import ObjectId
+    try:
+        obj_id = ObjectId(msg_id)
+    except:
+        raise HTTPException(status_code=400, detail="Invalid message ID")
+        
+    await db["family_chats"].update_one(
+        {"_id": obj_id, "family_id": str(family["_id"])},
+        {"$set": {"is_pinned": True}}
+    )
+    return {"status": "success", "message": "Message pinned"}

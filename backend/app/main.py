@@ -9,6 +9,12 @@ app = FastAPI(
     version="1.0.0"
 )
 
+from fastapi.staticfiles import StaticFiles
+import os
+
+# Create uploads directory if it doesn't exist
+os.makedirs("uploads/avatars", exist_ok=True)
+
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
@@ -18,9 +24,29 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Mount static files for media storage
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+
 # Database lifecycle events
 app.add_event_handler("startup", connect_to_mongo)
 app.add_event_handler("shutdown", close_mongo_connection)
+
+import firebase_admin
+from firebase_admin import credentials
+import logging
+
+@app.on_event("startup")
+async def init_firebase():
+    try:
+        cred_path = "firebase-adminsdk.json"
+        if os.path.exists(cred_path):
+            cred = credentials.Certificate(cred_path)
+            firebase_admin.initialize_app(cred)
+            logging.info("Firebase Admin initialized.")
+        else:
+            logging.warning("Firebase Admin credentials not found. Social login will fail.")
+    except Exception as e:
+        logging.error(f"Failed to initialize Firebase Admin: {e}")
 
 # Include routers
 app.include_router(auth_routes.router, prefix="/auth", tags=["Authentication"])

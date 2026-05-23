@@ -324,17 +324,18 @@ class GameEngine:
         return leaders[0], False
 
     async def _check_win_condition(self, room: Room) -> bool:
+        from app.services.match_service import resolve_match_results
         alive_mafia = len(room.get_role_players("mafia"))
         alive_civs = len([p for p in room.get_alive_players() if p.role != "mafia"])
         
         if alive_mafia == 0:
             await room.broadcast({"event": "game_over", "winner": "civilians"})
-            # TODO: Add backend XP, MMR updates here
+            await resolve_match_results(list(room.players.values()), "civilians")
             return True
             
         if alive_mafia >= alive_civs:
             await room.broadcast({"event": "game_over", "winner": "mafia"})
-            # TODO: Add backend XP, MMR updates here
+            await resolve_match_results(list(room.players.values()), "mafia")
             return True
             
         return False

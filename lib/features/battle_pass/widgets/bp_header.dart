@@ -119,7 +119,7 @@ class _BoostBadgeState extends State<_BoostBadge> with SingleTickerProviderState
   void dispose() { _glow.dispose(); super.dispose(); }
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(animation: _glow, builder: (_, __) => Container(
+    return AnimatedBuilder(animation: _glow, builder: (_, _) => Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(borderRadius: BorderRadius.circular(8),
         color: AppColors.mintGreen.withValues(alpha: 0.1 + _glow.value * 0.05),
@@ -145,7 +145,7 @@ class _PremiumButtonState extends State<_PremiumButton> with SingleTickerProvide
   void dispose() { _shimmer.dispose(); super.dispose(); }
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(onTap: widget.onTap, child: AnimatedBuilder(animation: _shimmer, builder: (_, __) {
+    return GestureDetector(onTap: widget.onTap, child: AnimatedBuilder(animation: _shimmer, builder: (_, _) {
       return Container(height: 36, decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(10),
         gradient: const LinearGradient(colors: [AppColors.gold, Color(0xFFFF8F00), AppColors.gold]),

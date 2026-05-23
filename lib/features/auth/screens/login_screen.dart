@@ -173,12 +173,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                         icon: Icons.g_mobiledata,
                         onPressed: () => ref.read(authProvider.notifier).signInWithGoogle(),
                       ),
-                      const SizedBox(height: 12),
-                      SocialLoginButton(
-                        label: 'Continue with Apple',
-                        icon: Icons.apple,
-                        onPressed: () => ref.read(authProvider.notifier).signInWithApple(),
-                      ),
+                      // Apple Login removed as per user request (no dev account)
 
                       const SizedBox(height: 32),
 

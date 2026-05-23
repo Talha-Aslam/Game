@@ -53,7 +53,9 @@ class _GameScreenState extends ConsumerState<GameScreen>
     ref.listen(gameProvider.select((state) => state.phase), (prev, next) {
       if (next == GamePhase.result && prev != GamePhase.result) {
         Future.microtask(() {
-          if (mounted) context.go('/game/result');
+          if (!mounted) return;
+          if (!context.mounted) return;
+          context.go('/game/result');
         });
       }
     });
@@ -422,7 +424,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0.0, end: 1.0),
       duration: const Duration(milliseconds: 800),
-      builder: (_, t, __) {
+      builder: (_, t, _) {
         return Container(
           color: Colors.black.withValues(alpha: 0.5 * t),
           child: Center(

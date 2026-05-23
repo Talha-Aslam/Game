@@ -119,7 +119,7 @@ class _NightOverlayPanelState extends State<NightOverlayPanel>
   Widget _mafiaActiveOverlay() {
     return AnimatedBuilder(
       animation: _pulse,
-      builder: (_, __) => IgnorePointer(
+      builder: (_, _) => IgnorePointer(
         child: Container(
           padding: const EdgeInsets.only(bottom: 24),
           alignment: Alignment.bottomCenter,
@@ -208,7 +208,7 @@ class _NightOverlayPanelState extends State<NightOverlayPanel>
   Widget _doctorActiveOverlay() {
     return AnimatedBuilder(
       animation: _heartbeat,
-      builder: (_, __) {
+      builder: (_, _) {
         final scale = 1.0 + _heartbeat.value * 0.1;
         return IgnorePointer(
           child: Container(
@@ -265,7 +265,7 @@ class _NightOverlayPanelState extends State<NightOverlayPanel>
   Widget _detectiveActiveOverlay() {
     return AnimatedBuilder(
       animation: _scanLine,
-      builder: (_, __) => IgnorePointer(
+      builder: (_, _) => IgnorePointer(
         child: Stack(
           children: [
             // Scanning line effect
@@ -373,7 +373,7 @@ class _NightOverlayPanelState extends State<NightOverlayPanel>
 
     return AnimatedBuilder(
       animation: _glitch,
-      builder: (_, __) {
+      builder: (_, _) {
         final glitchOffset = _glitch.value * 4 * (Random().nextDouble() - 0.5);
         return IgnorePointer(
           child: Container(
@@ -459,7 +459,7 @@ class _NightOverlayPanelState extends State<NightOverlayPanel>
     return IgnorePointer(
       child: AnimatedBuilder(
         animation: _pulse,
-        builder: (_, __) => Container(
+        builder: (_, _) => Container(
           color: Colors.black.withValues(alpha: 0.45),
           padding: const EdgeInsets.only(bottom: 24),
           alignment: Alignment.bottomCenter,
@@ -516,7 +516,7 @@ class _NightOverlayPanelState extends State<NightOverlayPanel>
     return IgnorePointer(
       child: AnimatedBuilder(
         animation: _pulse,
-        builder: (_, __) => Container(
+        builder: (_, _) => Container(
           color: Colors.black.withValues(alpha: 0.5),
           padding: const EdgeInsets.only(bottom: 24),
           alignment: Alignment.bottomCenter,

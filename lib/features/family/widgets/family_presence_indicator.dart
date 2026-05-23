@@ -34,7 +34,7 @@ class _FamilyPresenceIndicatorState extends State<FamilyPresenceIndicator>
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(animation: _pulse, builder: (_, __) {
+    return AnimatedBuilder(animation: _pulse, builder: (_, _) {
       final p = widget.activity.isAvailable ? _pulse.value : 0.0;
       return Container(
         width: widget.size, height: widget.size,

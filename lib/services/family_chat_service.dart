@@ -30,7 +30,7 @@ class FamilyChatService {
   }
 
   Future<void> pinMessage(String messageId) async {
-    // TODO: Implement backend endpoint for pinning
+    await _api.pinMessage(messageId);
   }
 
   /// Poll for new messages every 5 seconds

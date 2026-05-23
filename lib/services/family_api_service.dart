@@ -101,4 +101,12 @@ class FamilyApiService {
     final data = await _http.get('/family/rivalries');
     return List<Map<String, dynamic>>.from(data ?? []);
   }
+
+  Future<void> transferOwnership(String targetUserId) async {
+    await _http.post('/family/transfer_ownership/$targetUserId');
+  }
+
+  Future<void> pinMessage(String msgId) async {
+    await _http.post('/family/chat/$msgId/pin');
+  }
 }

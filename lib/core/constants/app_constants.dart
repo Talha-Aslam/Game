@@ -30,11 +30,11 @@ class AppConstants {
   static const double defaultVoiceVolume = 1.0;
 
   // ── Voice ──
-  static const String agoraAppId = 'YOUR_AGORA_APP_ID';
+  static const String agoraAppId = 'faee0e101a9a48338663b3fc493b14a4';
 
   // ── WebSocket ──
-  static const String wsUrl = 'wss://api.mafiawars.game/ws';
-  static const String apiBaseUrl = 'https://api.mafiawars.game/v1';
+  static const String wsUrl = 'ws://64.227.145.171/ws';
+  static const String apiBaseUrl = 'http://64.227.145.171';
 
   // ── Ranks ──
   static const List<String> rankNames = [

@@ -6,17 +6,18 @@ class VoiceIndicator extends StatefulWidget {
   final Widget child;
 
   const VoiceIndicator({
-    Key? key,
+    super.key,
     required this.activeSpeakersStream,
     required this.userId,
     required this.child,
-  }) : super(key: key);
+  });
 
   @override
   State<VoiceIndicator> createState() => _VoiceIndicatorState();
 }
 
-class _VoiceIndicatorState extends State<VoiceIndicator> with SingleTickerProviderStateMixin {
+class _VoiceIndicatorState extends State<VoiceIndicator>
+    with SingleTickerProviderStateMixin {
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
   bool _isSpeaking = false;
@@ -36,7 +37,7 @@ class _VoiceIndicatorState extends State<VoiceIndicator> with SingleTickerProvid
       if (!mounted) return;
       int uid = widget.userId.hashCode.abs();
       bool speaking = activeIds.contains(uid);
-      
+
       if (speaking && !_isSpeaking) {
         setState(() => _isSpeaking = true);
         _pulseController.repeat(reverse: true);
@@ -67,7 +68,7 @@ class _VoiceIndicatorState extends State<VoiceIndicator> with SingleTickerProvid
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.greenAccent.withOpacity(0.6),
+                        color: Colors.greenAccent.withValues(alpha: 0.6),
                         blurRadius: 15,
                         spreadRadius: 5,
                       ),

@@ -61,7 +61,7 @@ class _PlanCardState extends State<_PlanCard> with SingleTickerProviderStateMixi
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(animation: _glow, builder: (_, __) {
+    return AnimatedBuilder(animation: _glow, builder: (_, _) {
       final g = _glow.value;
       return GestureDetector(onTap: widget.onTap, child: Container(
         padding: const EdgeInsets.all(16),

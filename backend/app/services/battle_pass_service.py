@@ -62,3 +62,27 @@ async def buy_premium_pass(user_id: str) -> dict:
     )
     
     return {"message": "Premium pass purchased successfully"}
+
+async def purchase_tier(user_id: str) -> dict:
+    db = get_database()
+    users_collection = db["users"]
+    
+    user = await users_collection.find_one({"_id": user_id})
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+        
+    # Cost is 200 influence to unlock a tier early
+    if user.get("influence", 0) < 200:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Not enough Influence")
+        
+    result = await users_collection.update_one(
+        {"_id": user_id},
+        {
+            "$inc": {
+                "battle_pass_tier": 1,
+                "influence": -200
+            }
+        }
+    )
+    
+    return {"message": "Tier purchased successfully"}

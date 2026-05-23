@@ -57,7 +57,7 @@ class _RoleRevealPanelState extends State<RoleRevealPanel>
   @override
   Widget build(BuildContext context) {
     final color = _roleColor;
-    return AnimatedBuilder(animation: _reveal, builder: (_, __) {
+    return AnimatedBuilder(animation: _reveal, builder: (_, _) {
       final t = Curves.easeOutBack.transform(_reveal.value);
       final blurAmount = (1.0 - t) * 12;
       final opacity = t.clamp(0.0, 1.0);

@@ -24,7 +24,7 @@ class _CharacterShowcaseWidgetState extends State<CharacterShowcaseWidget>
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(animation: _anim, builder: (_, __) {
+    return AnimatedBuilder(animation: _anim, builder: (_, _) {
       final t = _anim.value;
       final floatY = sin(t * 2 * pi) * 4;
       final breathe = 0.95 + sin(t * 2 * pi) * 0.02;

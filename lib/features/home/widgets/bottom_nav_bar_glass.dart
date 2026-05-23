@@ -69,7 +69,7 @@ class _BottomNavBarGlassState extends State<BottomNavBarGlass>
   Widget build(BuildContext context) {
     return AnimatedBuilder(
       animation: _glow,
-      builder: (_, __) {
+      builder: (_, _) {
         return Container(
           margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
           child: ClipRRect(
@@ -157,7 +157,13 @@ class _NavTab extends StatelessWidget {
               children: [
                 AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
-                  transform: Matrix4.identity()..scale(isActive ? 1.15 : 1.0),
+                  transform: Matrix4.identity()
+                    ..scaleByDouble(
+                      isActive ? 1.15 : 1.0,
+                      isActive ? 1.15 : 1.0,
+                      1.0,
+                      1.0,
+                    ),
                   transformAlignment: Alignment.center,
                   child: Icon(
                     isActive ? activeIcon : icon,

@@ -40,6 +40,22 @@ class AuthApiService {
     }
   }
 
+  Future<bool> googleLogin(String firebaseToken) async {
+    try {
+      final response = await _http.post('/auth/google', body: {
+        'token': firebaseToken,
+      });
+      final token = response['access_token'];
+      if (token != null) {
+        await _storage.write(key: 'jwt_token', value: token);
+        return true;
+      }
+      return false;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Future<void> logout() async {
     await _storage.delete(key: 'jwt_token');
   }

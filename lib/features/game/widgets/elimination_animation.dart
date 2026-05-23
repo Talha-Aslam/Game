@@ -83,7 +83,7 @@ class _EliminationAnimationState extends State<EliminationAnimation>
 
     return AnimatedBuilder(
       animation: _shatter,
-      builder: (_, __) {
+      builder: (_, _) {
         final t = Curves.easeOut.transform(_shatter.value);
         final opacity = (1.0 - t).clamp(0.0, 1.0);
 

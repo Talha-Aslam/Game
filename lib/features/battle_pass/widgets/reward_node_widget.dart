@@ -54,7 +54,7 @@ class _RewardNodeWidgetState extends State<RewardNodeWidget>
 
     return GestureDetector(
       onTap: isClaimable ? widget.onClaim : widget.onTap,
-      child: AnimatedBuilder(animation: _pulse, builder: (_, __) {
+      child: AnimatedBuilder(animation: _pulse, builder: (_, _) {
         final p = isClaimable ? _pulse.value : 0.0;
         return Container(
           width: 72, height: 84,

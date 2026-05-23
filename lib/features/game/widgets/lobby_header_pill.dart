@@ -43,7 +43,7 @@ class _LobbyHeaderPillState extends State<LobbyHeaderPill>
   @override
   Widget build(BuildContext context) {
     final color = _phaseColor;
-    return AnimatedBuilder(animation: _glow, builder: (_, __) {
+    return AnimatedBuilder(animation: _glow, builder: (_, _) {
       return ClipRRect(
         borderRadius: BorderRadius.circular(20),
         child: BackdropFilter(

@@ -45,7 +45,7 @@ class _GraveyardPanelState extends State<GraveyardPanel>
 
     return AnimatedBuilder(
       animation: _slideUp,
-      builder: (_, __) {
+      builder: (_, _) {
         final t = Curves.easeOutCubic.transform(_slideUp.value);
         return Transform.translate(
           offset: Offset(0, 60 * (1 - t)),
@@ -86,7 +86,7 @@ class _GraveyardPanelState extends State<GraveyardPanel>
                       child: ListView.separated(
                         scrollDirection: Axis.horizontal,
                         itemCount: widget.deadPlayers.length,
-                        separatorBuilder: (_, __) => const SizedBox(width: 10),
+                        separatorBuilder: (_, _) => const SizedBox(width: 10),
                         itemBuilder: (_, i) =>
                             _GraveyardSlot(player: widget.deadPlayers[i]),
                       ),
