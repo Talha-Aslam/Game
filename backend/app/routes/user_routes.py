@@ -23,12 +23,16 @@ from app.config.database import get_database
 
 @router.post("/me/avatar", response_model=UserResponse)
 async def upload_avatar(file: UploadFile = File(...), user_id: str = Depends(get_current_user_id)):
-    if not file.content_type.startswith("image/"):
+    valid_extensions = {".jpg", ".jpeg", ".png", ".gif", ".webp"}
+    ext = ""
+    if file.filename and "." in file.filename:
+        ext = "." + file.filename.split(".")[-1].lower()
+        
+    if not file.content_type.startswith("image/") and ext not in valid_extensions:
         raise HTTPException(status_code=400, detail="File must be an image")
     
     # Generate unique filename
-    ext = file.filename.split(".")[-1]
-    filename = f"{user_id}_{uuid.uuid4().hex}.{ext}"
+    filename = f"{user_id}_{uuid.uuid4().hex}{ext}"
     filepath = os.path.join("uploads", "avatars", filename)
     
     # Ensure directory exists
