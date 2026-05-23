@@ -25,13 +25,16 @@ class UserIdCardWidget extends StatelessWidget {
             children: [
               const Icon(Icons.fingerprint, color: AppColors.cyan, size: 20),
               const SizedBox(width: 8),
-              Text(
-                userId.toUpperCase(),
-                style: const TextStyle(
-                  color: Colors.white70,
-                  letterSpacing: 2,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13,
+              Flexible(
+                child: Text(
+                  userId.toUpperCase(),
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    letterSpacing: 2,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
               const SizedBox(width: 16),

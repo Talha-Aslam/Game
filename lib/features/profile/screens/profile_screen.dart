@@ -142,6 +142,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             ),
                             onPressed: () => context.push('/settings'),
                           ),
+                          IconButton(
+                            icon: const Icon(Icons.logout, color: AppColors.crimsonRed),
+                            tooltip: 'Logout',
+                            onPressed: () async {
+                              await ref.read(authProvider.notifier).signOut();
+                              if (context.mounted) {
+                                context.go('/login');
+                              }
+                            },
+                          ),
                         ],
                       ),
                     ],

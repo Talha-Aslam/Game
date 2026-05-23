@@ -111,7 +111,7 @@ class BattlePassNotifier extends Notifier<BattlePassModel> {
 
   static BattlePassModel _buildMock() {
     final seasonEnd = DateTime.now().add(const Duration(days: 30));
-    const currentTier = 23;
+    const currentTier = 1; // Start new users at Tier 1
 
     final rewardTable = <_TierDef>[
       _TierDef(1, 'Welcome Pack', RewardType.influencePoints, RewardRarity.common, amt: 200,
@@ -157,9 +157,9 @@ class BattlePassNotifier extends Notifier<BattlePassModel> {
           isPremiumExclusive: true,
           currencyAmount: def.pAmt,
         ) : null,
-        isUnlocked: i < currentTier,
-        isFreeClaimed: i < 20,
-        isPremiumClaimed: i < 18,
+        isUnlocked: (i + 1) <= currentTier, // Unlocked if tier <= currentTier
+        isFreeClaimed: false, // Default unclaimed
+        isPremiumClaimed: false, // Default unclaimed
       ));
     }
 
@@ -168,9 +168,9 @@ class BattlePassNotifier extends Notifier<BattlePassModel> {
       seasonEndDate: seasonEnd,
       currentTier: currentTier,
       maxTier: 50,
-      currentXP: 750,
+      currentXP: 0, // Default 0
       xpToNextTier: 1000,
-      isPremium: true,
+      isPremium: false, // Default false
       tiers: allTiers,
     );
   }
