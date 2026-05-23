@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "749968763905",
+    "project_id": "city-of-lies",
+    "storage_bucket": "city-of-lies.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:749968763905:android:b8ccf9ccd31b8539fda400",
+        "android_client_info": {
+          "package_name": "com.example.mafia_wars"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "749968763905-cmm8lr56lne2rdje2m54oo3h334i59li.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.mafia_wars",
+            "certificate_hash": "5543660ce47dbfa05b011e2a6284abdf002dd0e2"
+          }
+        },
+        {
+          "client_id": "749968763905-uchgq5sn2jnap61srg3mqpkqmfplvt2h.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAeteTIRMpi__hB14hPQRawLc-DRWThtCE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "749968763905-uchgq5sn2jnap61srg3mqpkqmfplvt2h.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

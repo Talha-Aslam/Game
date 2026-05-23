@@ -52,7 +52,7 @@ class _RewardClaimAnimationState extends State<RewardClaimAnimation>
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
-    return AnimatedBuilder(animation: _ctrl, builder: (_, __) {
+    return AnimatedBuilder(animation: _ctrl, builder: (_, _) {
       final t = _ctrl.value;
       final opacity = (1.0 - t).clamp(0.0, 1.0);
       return IgnorePointer(child: Stack(children: [

@@ -31,7 +31,7 @@ class _ChatTypingIndicatorState extends State<ChatTypingIndicator>
           color: AppColors.white30, fontSize: 10, fontStyle: FontStyle.italic)),
         const SizedBox(width: 4),
         ...List.generate(3, (i) => AnimatedBuilder(animation: _ctrl,
-          builder: (_, __) {
+          builder: (_, _) {
             final offset = ((_ctrl.value * 3 - i) % 3).clamp(0.0, 1.0);
             return Container(
               width: 4, height: 4, margin: const EdgeInsets.symmetric(horizontal: 1),

@@ -50,7 +50,7 @@ class _MicEmojiControlsState extends State<MicEmojiControls>
             return Positioned(
               left: 20 + cos(angle) * radius - 16,
               top: 20 + sin(angle) * radius - 16,
-              child: AnimatedBuilder(animation: _emojiWheel, builder: (_, __) {
+              child: AnimatedBuilder(animation: _emojiWheel, builder: (_, _) {
                 final delay = i / _emojis.length;
                 final t = ((_emojiWheel.value - delay) * 2).clamp(0.0, 1.0);
                 return Transform.scale(
@@ -96,7 +96,7 @@ class _MicEmojiControlsState extends State<MicEmojiControls>
       ]),
       const SizedBox(height: 10),
       // Master mic button
-      AnimatedBuilder(animation: _micPulse, builder: (_, __) {
+      AnimatedBuilder(animation: _micPulse, builder: (_, _) {
         final p = _micPulse.value;
         final isActive = !widget.isMuted && widget.isSpeaking;
         final micColor = widget.isMuted ? AppColors.crimsonRed : AppColors.mintGreen;

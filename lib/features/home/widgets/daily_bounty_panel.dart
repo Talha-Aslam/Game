@@ -61,7 +61,7 @@ class _DailyBountyPanelState extends State<DailyBountyPanel>
     final completedCount = _missions.where((m) => m.current >= m.total).length;
     return AnimatedBuilder(
       animation: _pulse,
-      builder: (_, __) {
+      builder: (_, _) {
         return GestureDetector(
           onTap: () => setState(() => _expanded = !_expanded),
           child: ClipRRect(

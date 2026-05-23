@@ -12,7 +12,7 @@ class VoiceService {
 
   Future<void> initAgora() async {
     if (_isInitialized) return;
-    
+
     await [Permission.microphone].request();
 
     _engine = createAgoraRtcEngine();
@@ -21,33 +21,56 @@ class VoiceService {
     _engine.registerEventHandler(
       RtcEngineEventHandler(
         onJoinChannelSuccess: (RtcConnection connection, int elapsed) {
-          print("Joined channel: ${connection.channelId}");
+          // print("Joined channel: ${connection.channelId}");
         },
         onUserJoined: (RtcConnection connection, int remoteUid, int elapsed) {
-          print("User joined: $remoteUid");
+          // print("User joined: $remoteUid");
         },
-        onUserOffline: (RtcConnection connection, int remoteUid, UserOfflineReasonType reason) {
-          print("User offline: $remoteUid");
-        },
-        onAudioVolumeIndication: (RtcConnection connection, List<AudioVolumeInfo> speakers, int speakerNumber, int totalVolume) {
-          final activeIds = speakers.where((s) => s.volume! > 10).map((s) => s.uid!).toList();
-          _activeSpeakersController.add(activeIds);
-        },
+        onUserOffline:
+            (
+              RtcConnection connection,
+              int remoteUid,
+              UserOfflineReasonType reason,
+            ) {
+              // print("User offline: $remoteUid");
+            },
+        onAudioVolumeIndication:
+            (
+              RtcConnection connection,
+              List<AudioVolumeInfo> speakers,
+              int speakerNumber,
+              int totalVolume,
+            ) {
+              final activeIds = speakers
+                  .where((s) => s.volume! > 10)
+                  .map((s) => s.uid!)
+                  .toList();
+              _activeSpeakersController.add(activeIds);
+            },
       ),
     );
 
     // Enable audio volume indication every 200ms
-    await _engine.enableAudioVolumeIndication(interval: 200, smooth: 3, reportVad: true);
+    await _engine.enableAudioVolumeIndication(
+      interval: 200,
+      smooth: 3,
+      reportVad: true,
+    );
     await _engine.setClientRole(role: ClientRoleType.clientRoleBroadcaster);
     await _engine.enableAudio();
 
     _isInitialized = true;
   }
 
-  Future<void> joinChannel(String token, String channelName, String userId) async {
+  Future<void> joinChannel(
+    String token,
+    String channelName,
+    String userId,
+  ) async {
     if (!_isInitialized) await initAgora();
-    
-    int uid = userId.hashCode.abs(); // Agora uses int uid, we hash the string ID
+
+    int uid = userId.hashCode
+        .abs(); // Agora uses int uid, we hash the string ID
 
     await _engine.joinChannel(
       token: token,
@@ -67,7 +90,11 @@ class VoiceService {
     }
   }
 
-  Future<void> switchChannel(String token, String channelName, String userId) async {
+  Future<void> switchChannel(
+    String token,
+    String channelName,
+    String userId,
+  ) async {
     await leaveChannel();
     await joinChannel(token, channelName, userId);
   }
@@ -77,7 +104,7 @@ class VoiceService {
       await _engine.muteLocalAudioStream(mute);
     }
   }
-  
+
   // Ambient noise for civilians at night
   void setAmbientAudioMode(bool enable) {
     if (!_isInitialized) return;

@@ -85,7 +85,7 @@ class FamilyService {
   }
 
   Future<void> transferOwnership(String userId) async {
-    // TODO: Implement backend endpoint
+    await _api.transferOwnership(userId);
   }
 
   // ── Applications ──

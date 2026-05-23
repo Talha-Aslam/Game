@@ -44,3 +44,59 @@ async def login_user(user_data: UserLogin):
 
     token = create_access_token({"sub": str(user["_id"])})
     return {"access_token": token, "token_type": "bearer"}
+
+from firebase_admin import auth as firebase_auth
+import logging
+
+async def google_login(firebase_token: str):
+    db = get_database()
+    users_collection = db["users"]
+    
+    try:
+        # Verify the Firebase token
+        decoded_token = firebase_auth.verify_id_token(firebase_token)
+        uid = decoded_token.get('uid')
+        email = decoded_token.get('email')
+        name = decoded_token.get('name', 'User')
+        picture = decoded_token.get('picture', '')
+        
+        if not email:
+            raise HTTPException(status_code=400, detail="No email provided by Google")
+            
+        # Check if user exists
+        user = await users_collection.find_one({"email": email})
+        
+        if not user:
+            # Create new user for social login
+            # Give a random generic password since they login with Google
+            random_pw = get_password_hash(str(uuid.uuid4()))
+            
+            # Ensure unique username
+            base_username = name.replace(" ", "").lower()
+            username = base_username
+            counter = 1
+            while await users_collection.find_one({"username": username}):
+                username = f"{base_username}{counter}"
+                counter += 1
+                
+            new_user = UserDB(
+                email=email,
+                username=username,
+                password=random_pw,
+                profile_picture=picture
+            )
+            user_dict = new_user.model_dump(by_alias=True)
+            await users_collection.insert_one(user_dict)
+            user_id = str(new_user.id)
+        else:
+            user_id = str(user["_id"])
+            # Update profile picture if it's empty
+            if not user.get("profile_picture") and picture:
+                await users_collection.update_one({"_id": user["_id"]}, {"$set": {"profile_picture": picture}})
+                
+        token = create_access_token({"sub": user_id})
+        return {"access_token": token, "token_type": "bearer"}
+        
+    except Exception as e:
+        logging.error(f"Google login failed: {e}")
+        raise HTTPException(status_code=401, detail="Invalid Firebase token")

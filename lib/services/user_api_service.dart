@@ -28,4 +28,13 @@ class UserApiService {
       rethrow;
     }
   }
+
+  Future<Map<String, dynamic>> uploadAvatar(String filePath) async {
+    try {
+      final response = await _http.uploadImage('/user/avatar', filePath);
+      return response;
+    } catch (e) {
+      rethrow;
+    }
+  }
 }

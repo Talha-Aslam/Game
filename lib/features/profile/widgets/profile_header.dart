@@ -8,15 +8,18 @@ import '../../../models/rank_model.dart';
 import '../../../models/user_model.dart';
 import '../screens/avatar_inventory_screen.dart';
 
-class AnimatedProfileHeader extends StatefulWidget {
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../providers/auth_provider.dart';
+
+class AnimatedProfileHeader extends ConsumerStatefulWidget {
   final UserModel user;
   const AnimatedProfileHeader({super.key, required this.user});
 
   @override
-  State<AnimatedProfileHeader> createState() => _AnimatedProfileHeaderState();
+  ConsumerState<AnimatedProfileHeader> createState() => _AnimatedProfileHeaderState();
 }
 
-class _AnimatedProfileHeaderState extends State<AnimatedProfileHeader>
+class _AnimatedProfileHeaderState extends ConsumerState<AnimatedProfileHeader>
     with SingleTickerProviderStateMixin {
   late AnimationController _animController;
   late Animation<double> _pulseAnimation;
@@ -53,7 +56,20 @@ class _AnimatedProfileHeaderState extends State<AnimatedProfileHeader>
         setState(() {
           _imageFile = File(pickedFile.path);
         });
-        // TODO: Upload image to Firebase/S3 and update UserModel here
+        
+        // Upload image to backend
+        try {
+          final error = await ref.read(authProvider.notifier).uploadAvatar(pickedFile.path);
+          if (error != null) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Failed to upload: $error'), backgroundColor: AppColors.crimsonRed),
+              );
+            }
+          }
+        } catch (e) {
+          debugPrint("Upload failed: $e");
+        }
       }
     } catch (e) {
       debugPrint("Image picker error: $e");
@@ -108,7 +124,7 @@ class _AnimatedProfileHeaderState extends State<AnimatedProfileHeader>
                   Navigator.pop(context);
                   // Ensure routing to AvatarInventoryScreen is configured or push directly
                   // Using dynamic push as no central router might be bound to it right now
-                  import_inventory();
+                  importInventory();
                 },
               ),
               const SizedBox(height: 8),
@@ -119,11 +135,11 @@ class _AnimatedProfileHeaderState extends State<AnimatedProfileHeader>
     );
   }
 
-  void import_inventory() {
-    import_inventory_internal(context);
+  void importInventory() {
+    importInventoryInternal(context);
   }
 
-  void import_inventory_internal(BuildContext ctx) {
+  void importInventoryInternal(BuildContext ctx) {
     Navigator.push(
       ctx,
       MaterialPageRoute(builder: (_) => const AvatarInventoryScreen()),

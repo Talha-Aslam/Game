@@ -174,6 +174,20 @@ class AuthNotifier extends Notifier<AuthState> {
       return e.toString().replaceFirst('Exception: ', '');
     }
   }
+
+  Future<String?> uploadAvatar(String filePath) async {
+    try {
+      await _authService.uploadAvatar(filePath);
+      // fetchProfile is already called by authService, so just update state
+      final refreshedUser = _authService.currentUser;
+      if (refreshedUser != null) {
+        state = state.copyWith(user: refreshedUser);
+      }
+      return null;
+    } catch (e) {
+      return e.toString().replaceFirst('Exception: ', '');
+    }
+  }
 }
 
 final authProvider = NotifierProvider<AuthNotifier, AuthState>(

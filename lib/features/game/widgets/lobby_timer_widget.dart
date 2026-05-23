@@ -49,7 +49,7 @@ class _LobbyTimerWidgetState extends State<LobbyTimerWidget>
         ? (widget.seconds / widget.maxSeconds).clamp(0.0, 1.0)
         : 0.0;
 
-    return AnimatedBuilder(animation: _pulse, builder: (_, __) {
+    return AnimatedBuilder(animation: _pulse, builder: (_, _) {
       final p = _pulse.value;
       final scale = isUrgent ? 1.0 + p * 0.08 : 1.0;
 

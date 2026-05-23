@@ -144,7 +144,7 @@ class _MatchResultScreenState extends ConsumerState<MatchResultScreen>
   Widget _buildWinnerBanner(WinningSide? winner, bool isWinner, Color winColor) {
     return AnimatedBuilder(
       animation: _bannerSweep,
-      builder: (_, __) {
+      builder: (_, _) {
         final t = Curves.easeOutBack.transform(_bannerSweep.value);
         return Transform.scale(
           scale: 0.5 + t * 0.5,
@@ -154,7 +154,7 @@ class _MatchResultScreenState extends ConsumerState<MatchResultScreen>
               // Victory/Defeat label
               AnimatedBuilder(
                 animation: _glow,
-                builder: (_, __) => NeonText(
+                builder: (_, _) => NeonText(
                   text: isWinner ? '🎉 VICTORY' : '💀 DEFEAT',
                   fontSize: 36,
                   color: isWinner ? AppColors.gold : AppColors.crimsonRed,
@@ -198,7 +198,7 @@ class _MatchResultScreenState extends ConsumerState<MatchResultScreen>
   Widget _buildMvpCard(PlayerModel mvp, Color winColor) {
     return AnimatedBuilder(
       animation: _statsReveal,
-      builder: (_, __) {
+      builder: (_, _) {
         final t = Curves.easeOut.transform(
           (_statsReveal.value * 2).clamp(0.0, 1.0));
         return Opacity(
@@ -286,7 +286,7 @@ class _MatchResultScreenState extends ConsumerState<MatchResultScreen>
 
     return AnimatedBuilder(
       animation: _statsReveal,
-      builder: (_, __) {
+      builder: (_, _) {
         return Wrap(
           spacing: 10,
           runSpacing: 10,
@@ -345,7 +345,7 @@ class _MatchResultScreenState extends ConsumerState<MatchResultScreen>
   Widget _buildRoleTable(GameStateModel gs) {
     return AnimatedBuilder(
       animation: _statsReveal,
-      builder: (_, __) {
+      builder: (_, _) {
         final t = ((_statsReveal.value - 0.6) * 2.5).clamp(0.0, 1.0);
         return Opacity(
           opacity: t,
@@ -455,7 +455,7 @@ class _MatchResultScreenState extends ConsumerState<MatchResultScreen>
   Widget _buildActionButtons(GameStateModel gs, Color winColor) {
     return AnimatedBuilder(
       animation: _buttonSlide,
-      builder: (_, __) {
+      builder: (_, _) {
         final t = Curves.easeOutCubic.transform(_buttonSlide.value);
         return Opacity(
           opacity: t.clamp(0.0, 1.0),

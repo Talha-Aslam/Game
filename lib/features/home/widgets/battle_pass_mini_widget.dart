@@ -10,7 +10,8 @@ import '../../../providers/battle_pass_provider.dart';
 class BattlePassMiniWidget extends ConsumerStatefulWidget {
   const BattlePassMiniWidget({super.key});
   @override
-  ConsumerState<BattlePassMiniWidget> createState() => _BattlePassMiniWidgetState();
+  ConsumerState<BattlePassMiniWidget> createState() =>
+      _BattlePassMiniWidgetState();
 }
 
 class _BattlePassMiniWidgetState extends ConsumerState<BattlePassMiniWidget>
@@ -22,7 +23,10 @@ class _BattlePassMiniWidgetState extends ConsumerState<BattlePassMiniWidget>
   @override
   void initState() {
     super.initState();
-    _shimmer = AnimationController(duration: const Duration(seconds: 3), vsync: this)..repeat();
+    _shimmer = AnimationController(
+      duration: const Duration(seconds: 3),
+      vsync: this,
+    )..repeat();
     _updateTimer();
     _timer = Timer.periodic(const Duration(seconds: 60), (_) => _updateTimer());
   }
@@ -33,7 +37,11 @@ class _BattlePassMiniWidgetState extends ConsumerState<BattlePassMiniWidget>
   }
 
   @override
-  void dispose() { _shimmer.dispose(); _timer.cancel(); super.dispose(); }
+  void dispose() {
+    _shimmer.dispose();
+    _timer.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -43,69 +51,125 @@ class _BattlePassMiniWidgetState extends ConsumerState<BattlePassMiniWidget>
 
     return GestureDetector(
       onTap: () => context.push('/battle-pass'),
-      child: AnimatedBuilder(animation: _shimmer, builder: (_, __) {
-        final s = _shimmer.value;
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(14),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-            child: Container(
-              width: 140, padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(14),
-                color: isClose
-                    ? AppColors.gold.withValues(alpha: 0.04 + s * 0.03)
-                    : AppColors.white05,
-                border: Border.all(color: isClose
-                    ? AppColors.gold.withValues(alpha: 0.3 + s * 0.15)
-                    : AppColors.glassBorder, width: 0.5),
+      child: AnimatedBuilder(
+        animation: _shimmer,
+        builder: (_, _) {
+          final s = _shimmer.value;
+          return ClipRRect(
+            borderRadius: BorderRadius.circular(14),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+              child: Container(
+                width: 140,
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(14),
+                  color: isClose
+                      ? AppColors.gold.withValues(alpha: 0.04 + s * 0.03)
+                      : AppColors.white05,
+                  border: Border.all(
+                    color: isClose
+                        ? AppColors.gold.withValues(alpha: 0.3 + s * 0.15)
+                        : AppColors.glassBorder,
+                    width: 0.5,
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Tier + Premium badge
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 5,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(5),
+                            gradient: const LinearGradient(
+                              colors: [AppColors.gold, Color(0xFFFF8F00)],
+                            ),
+                          ),
+                          child: Text(
+                            'T${bp.currentTier}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        if (bp.isPremium)
+                          const Text('⭐', style: TextStyle(fontSize: 10)),
+                        const Spacer(),
+                        // Countdown
+                        Text(
+                          '${_remaining.inDays}d',
+                          style: TextStyle(
+                            color: _remaining.inDays < 3
+                                ? AppColors.crimsonRed
+                                : AppColors.white30,
+                            fontSize: 8,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    // XP Progress bar
+                    Container(
+                      height: 4,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(2),
+                        color: AppColors.white05,
+                      ),
+                      child: FractionallySizedBox(
+                        alignment: Alignment.centerLeft,
+                        widthFactor: bp.progress.clamp(0.0, 1.0),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(2),
+                            gradient: LinearGradient(
+                              colors: isClose
+                                  ? [AppColors.gold, const Color(0xFFFF8F00)]
+                                  : [
+                                      AppColors.purpleNeon,
+                                      AppColors.purpleDeep,
+                                    ],
+                            ),
+                            boxShadow: isClose
+                                ? [
+                                    BoxShadow(
+                                      color: AppColors.gold.withValues(
+                                        alpha: 0.4,
+                                      ),
+                                      blurRadius: 4,
+                                    ),
+                                  ]
+                                : null,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    // FOMO text
+                    Text(
+                      isClose ? '⚡ $xpToNext XP to reward!' : 'BATTLE PASS',
+                      style: TextStyle(
+                        color: isClose ? AppColors.gold : AppColors.white30,
+                        fontSize: 8,
+                        fontWeight: isClose ? FontWeight.w700 : FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                // Tier + Premium badge
-                Row(children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                    decoration: BoxDecoration(borderRadius: BorderRadius.circular(5),
-                      gradient: const LinearGradient(colors: [AppColors.gold, Color(0xFFFF8F00)])),
-                    child: Text('T${bp.currentTier}', style: const TextStyle(
-                      color: Colors.white, fontSize: 9, fontWeight: FontWeight.w900)),
-                  ),
-                  const SizedBox(width: 4),
-                  if (bp.isPremium) const Text('⭐', style: TextStyle(fontSize: 10)),
-                  const Spacer(),
-                  // Countdown
-                  Text('${_remaining.inDays}d', style: TextStyle(
-                    color: _remaining.inDays < 3 ? AppColors.crimsonRed : AppColors.white30,
-                    fontSize: 8, fontWeight: FontWeight.w600)),
-                ]),
-                const SizedBox(height: 4),
-                // XP Progress bar
-                Container(height: 4, decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(2), color: AppColors.white05),
-                  child: FractionallySizedBox(
-                    alignment: Alignment.centerLeft,
-                    widthFactor: bp.progress.clamp(0.0, 1.0),
-                    child: Container(decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(2),
-                      gradient: LinearGradient(colors: isClose
-                          ? [AppColors.gold, const Color(0xFFFF8F00)]
-                          : [AppColors.purpleNeon, AppColors.purpleDeep]),
-                      boxShadow: isClose ? [BoxShadow(color: AppColors.gold.withValues(alpha: 0.4), blurRadius: 4)] : null)),
-                  ),
-                ),
-                const SizedBox(height: 3),
-                // FOMO text
-                Text(
-                  isClose ? '⚡ ${xpToNext} XP to reward!' : 'BATTLE PASS',
-                  style: TextStyle(
-                    color: isClose ? AppColors.gold : AppColors.white30,
-                    fontSize: 8, fontWeight: isClose ? FontWeight.w700 : FontWeight.w500),
-                ),
-              ]),
             ),
-          ),
-        );
-      }),
+          );
+        },
+      ),
     );
   }
 }

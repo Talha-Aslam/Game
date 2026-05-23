@@ -76,7 +76,7 @@ class _LobbyCountdownOverlayState extends State<LobbyCountdownOverlay>
 
     return AnimatedBuilder(
       animation: Listenable.merge([_tickPulse, _numberPop]),
-      builder: (_, __) {
+      builder: (_, _) {
         final tickScale = isUrgent ? 1.0 + _tickPulse.value * 0.06 : 1.0;
         final popScale = 1.0 + (1.0 - _numberPop.value) * 0.15;
         final combinedScale = tickScale * (widget.countdown <= 5 ? popScale : 1.0);
@@ -166,7 +166,7 @@ class _LobbyCountdownOverlayState extends State<LobbyCountdownOverlay>
   Widget _buildShowBegins() {
     return AnimatedBuilder(
       animation: _showBeginsReveal,
-      builder: (_, __) {
+      builder: (_, _) {
         final t = Curves.easeOutCubic.transform(
           _showBeginsReveal.value.clamp(0.0, 1.0));
         final fadeOut = _showBeginsReveal.value > 0.7

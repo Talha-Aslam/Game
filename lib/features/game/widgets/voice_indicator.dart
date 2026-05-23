@@ -6,11 +6,11 @@ class VoiceIndicator extends StatefulWidget {
   final Widget child;
 
   const VoiceIndicator({
-    Key? key,
+    super.key,
     required this.activeSpeakersStream,
     required this.userId,
     required this.child,
-  }) : super(key: key);
+  });
 
   @override
   State<VoiceIndicator> createState() => _VoiceIndicatorState();
@@ -67,7 +67,7 @@ class _VoiceIndicatorState extends State<VoiceIndicator> with SingleTickerProvid
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.greenAccent.withOpacity(0.6),
+                        color: Colors.greenAccent.withValues(alpha: 0.6),
                         blurRadius: 15,
                         spreadRadius: 5,
                       ),

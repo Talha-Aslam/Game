@@ -151,7 +151,7 @@ class _ClaimButtonState extends State<_ClaimButton> with SingleTickerProviderSta
   void dispose() { _glow.dispose(); super.dispose(); }
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(onTap: widget.onTap, child: AnimatedBuilder(animation: _glow, builder: (_, __) {
+    return GestureDetector(onTap: widget.onTap, child: AnimatedBuilder(animation: _glow, builder: (_, _) {
       final g = _glow.value;
       return Container(
         width: double.infinity, height: 48,
@@ -179,7 +179,7 @@ class _PremiumUpsellButtonState extends State<_PremiumUpsellButton> with SingleT
   void dispose() { _shimmer.dispose(); super.dispose(); }
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(onTap: widget.onTap, child: AnimatedBuilder(animation: _shimmer, builder: (_, __) {
+    return GestureDetector(onTap: widget.onTap, child: AnimatedBuilder(animation: _shimmer, builder: (_, _) {
       return Container(
         width: double.infinity, height: 48,
         decoration: BoxDecoration(borderRadius: BorderRadius.circular(14),

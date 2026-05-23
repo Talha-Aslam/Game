@@ -1,9 +1,10 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../core/constants/app_constants.dart';
 
 class HttpService {
-  static const String baseUrl = 'http://192.168.1.22:8000';
+  static const String baseUrl = AppConstants.apiBaseUrl;
   final _storage = const FlutterSecureStorage();
 
   Future<Map<String, String>> _getHeaders() async {
@@ -47,6 +48,22 @@ class HttpService {
     final url = Uri.parse('$baseUrl$endpoint');
     final headers = await _getHeaders();
     final response = await http.delete(url, headers: headers);
+    return _handleResponse(response);
+  }
+
+  Future<dynamic> uploadImage(String endpoint, String filePath) async {
+    final url = Uri.parse('$baseUrl$endpoint');
+    final token = await _storage.read(key: 'jwt_token');
+    
+    final request = http.MultipartRequest('POST', url);
+    if (token != null) {
+      request.headers['Authorization'] = 'Bearer $token';
+    }
+    
+    request.files.add(await http.MultipartFile.fromPath('file', filePath));
+    
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
     return _handleResponse(response);
   }
 
