@@ -47,7 +47,8 @@ class _MatchmakingScreenState extends ConsumerState<MatchmakingScreen>
 
     ref.listen(matchmakingStateProvider, (prev, next) {
       next.whenData((state) {
-        if (state.status == MatchmakingStatus.found && state.lobbyId != null) {
+        if (state.status == MatchmakingStatus.roomJoined &&
+            state.lobbyId != null) {
           // Connect to the actual game websocket using the lobbyId
           ref.read(gameProvider.notifier).connectToGame(state.lobbyId!);
           context.go('/game');
@@ -212,7 +213,8 @@ class _MatchmakingScreenState extends ConsumerState<MatchmakingScreen>
                       ),
                     ),
                     data: (state) {
-                      if (state.status == MatchmakingStatus.found) {
+                      if (state.status == MatchmakingStatus.found ||
+                          state.status == MatchmakingStatus.accepted) {
                         return Column(
                           children: [
                             const NeonText(
@@ -223,14 +225,22 @@ class _MatchmakingScreenState extends ConsumerState<MatchmakingScreen>
                             ),
                             const SizedBox(height: 16),
                             GlassButton(
-                              label: 'ACCEPT',
-                              glowColor: AppColors.mintGreen,
+                              label: state.status == MatchmakingStatus.accepted
+                                  ? 'ACCEPTED'
+                                  : 'ACCEPT',
+                              glowColor:
+                                  state.status == MatchmakingStatus.accepted
+                                  ? AppColors.purpleNeon
+                                  : AppColors.mintGreen,
                               width: 160,
-                              onPressed: () {
-                                ref
-                                    .read(matchmakingServiceProvider)
-                                    .acceptMatch();
-                              },
+                              onPressed:
+                                  state.status == MatchmakingStatus.accepted
+                                  ? null
+                                  : () {
+                                      ref
+                                          .read(matchmakingServiceProvider)
+                                          .acceptMatch();
+                                    },
                             ),
                           ],
                         );

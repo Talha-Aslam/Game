@@ -4,7 +4,7 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart' as flutter_secure_storage;
 import '../core/constants/app_constants.dart';
 
-enum MatchmakingStatus { idle, searching, found, accepted, failed }
+enum MatchmakingStatus { idle, searching, found, accepted, roomJoined, failed }
 
 class MatchmakingState {
   final MatchmakingStatus status;
@@ -93,7 +93,11 @@ class MatchmakingService {
             );
             _stateController.add(_state);
           } else if (event == "room_joined") {
-            // the backend pushed us to the room
+            _state = _state.copyWith(
+              status: MatchmakingStatus.roomJoined,
+              lobbyId: data['room_id'],
+            );
+            _stateController.add(_state);
           }
         },
         onDone: () {

@@ -27,5 +27,6 @@ COPY . .
 EXPOSE 8000
 
 # Command to run the application with uvicorn directly
-# Using 4 workers for production performance
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4", "--proxy-headers", "--forwarded-allow-ips", "*"]
+# Using 1 worker because the game engine relies on in-memory state (active_rooms).
+# To use multiple workers, a Redis pub/sub layer must be implemented.
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1", "--proxy-headers", "--forwarded-allow-ips", "*"]
