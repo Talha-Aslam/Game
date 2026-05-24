@@ -182,11 +182,25 @@ class _FamilyCreateScreenState extends ConsumerState<FamilyCreateScreen> {
 
   Future<void> _create() async {
     setState(() => _creating = true);
-    await ref.read(familyProvider.notifier).createFamily(
-      name: _nameCtrl.text.trim(), tag: _tagCtrl.text.trim(),
-      description: _descCtrl.text.trim(), slogan: _sloganCtrl.text.trim(),
-      privacy: _privacy,
-    );
-    if (mounted) { setState(() => _creating = false); context.go('/family'); }
+    try {
+      await ref.read(familyProvider.notifier).createFamily(
+        name: _nameCtrl.text.trim(), tag: _tagCtrl.text.trim(),
+        description: _descCtrl.text.trim(), slogan: _sloganCtrl.text.trim(),
+        privacy: _privacy,
+      );
+      if (mounted) {
+        setState(() => _creating = false);
+        context.go('/family');
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _creating = false);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(e.toString().replaceAll('Exception: ', '')),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: AppColors.crimsonRed,
+        ));
+      }
+    }
   }
 }

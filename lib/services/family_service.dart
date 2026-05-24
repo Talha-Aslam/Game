@@ -47,6 +47,10 @@ class FamilyService {
     await _api.leaveFamily();
   }
 
+  Future<void> deleteFamily() async {
+    await _api.deleteFamily();
+  }
+
   Future<void> updateSettings({
     String? name,
     String? tag,

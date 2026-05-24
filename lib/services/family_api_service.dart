@@ -33,6 +33,10 @@ class FamilyApiService {
     await _http.post('/family/leave');
   }
 
+  Future<void> deleteFamily() async {
+    await _http.delete('/family/delete');
+  }
+
   // ── Settings ──
 
   Future<Map<String, dynamic>> updateSettings(Map<String, dynamic> updates) async {

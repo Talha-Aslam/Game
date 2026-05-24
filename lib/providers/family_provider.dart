@@ -127,6 +127,11 @@ class FamilyHubNotifier extends Notifier<FamilyHubState> {
     state = state.copyWith(clearFamily: true);
   }
 
+  Future<void> deleteFamily() async {
+    await _svc.deleteFamily();
+    state = state.copyWith(clearFamily: true);
+  }
+
   // ── Settings ──
   Future<void> updateSettings({
     String? name, String? tag, String? description,

@@ -35,6 +35,8 @@ class UserResponse(BaseModel):
     match_history: List[str]
     created_at: str
     updated_at: str
+    daily_bounties: List[dict] = []
+    bounties_reset_at: Optional[str] = None
 
     class Config:
         from_attributes = True

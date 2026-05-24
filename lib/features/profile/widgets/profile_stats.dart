@@ -121,32 +121,51 @@ class _StatCardData {
 }
 
 class RoleStatsWidget extends StatelessWidget {
-  const RoleStatsWidget({super.key});
+  final UserModel user;
+  const RoleStatsWidget({super.key, required this.user});
 
   @override
   Widget build(BuildContext context) {
+    final stats = user.roleStats;
+    // Calculate win rates (mocking total games per role for now since backend only tracks wins)
+    // For a real app, we'd track games_played_as_mafia etc.
+
+    // We'll just show raw wins or a calculated percentage of total wins
+    int calcRate(int wins) =>
+        user.wins > 0 ? ((wins / user.wins) * 100).round() : 0;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Role Statistics'),
+        const Text('Role Statistics (Win Distribution)'),
         const SizedBox(height: 12),
         _buildRoleStatRow(
           'Mafia',
-          82,
+          calcRate(stats.mafiaWins),
           AppColors.crimsonRed,
           Icons.local_fire_department,
         ),
         const SizedBox(height: 8),
-        _buildRoleStatRow('Detective', 61, AppColors.purpleNeon, Icons.search),
+        _buildRoleStatRow(
+          'Detective',
+          calcRate(stats.detectiveWins),
+          AppColors.purpleNeon,
+          Icons.search,
+        ),
         const SizedBox(height: 8),
         _buildRoleStatRow(
           'Doctor',
-          74,
+          calcRate(stats.doctorSaves), // Using saves as a metric here
           AppColors.mintGreen,
           Icons.local_hospital,
         ),
         const SizedBox(height: 8),
-        _buildRoleStatRow('Civilian', 45, AppColors.cyan, Icons.person),
+        _buildRoleStatRow(
+          'Civilian',
+          calcRate(stats.civilianWins),
+          AppColors.cyan,
+          Icons.person,
+        ),
       ],
     );
   }

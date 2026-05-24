@@ -141,34 +141,7 @@ class PartyService {
   // ── Simulation ──
 
   void _simulateIncomingInvites() {
-    final inviters = [
-      const FriendModel(
-        id: 'inv_1',
-        username: 'ShadowKing',
-        rankTier: 4,
-        familyTag: '[COBRA]',
-        onlineStatus: OnlineStatus.online,
-      ),
-      const FriendModel(
-        id: 'inv_2',
-        username: 'NightViper',
-        rankTier: 3,
-        onlineStatus: OnlineStatus.online,
-      ),
-    ];
-
-    // Add initial mock invites
-    for (int i = 0; i < inviters.length; i++) {
-      _incomingInvites.add(PartyInviteModel(
-        id: 'pinv_$i',
-        partyId: 'party_mock_$i',
-        fromUser: inviters[i],
-        toUserId: 'local_user',
-        timestamp: DateTime.now().subtract(Duration(minutes: i * 5 + 1)),
-        currentPartySize: 2 + _rng.nextInt(4),
-        gameMode: i == 0 ? 'ranked' : 'casual',
-      ));
-    }
+    // Disabled mock invites so they don't spam the user
   }
 
   void dispose() {

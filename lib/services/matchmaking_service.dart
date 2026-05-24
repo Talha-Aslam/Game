@@ -1,4 +1,7 @@
 import 'dart:async';
+import 'dart:convert';
+import 'package:web_socket_channel/web_socket_channel.dart';
+import '../core/constants/app_constants.dart';
 
 enum MatchmakingStatus { idle, searching, found, accepted, failed }
 
@@ -8,13 +11,15 @@ class MatchmakingState {
   final int elapsedSeconds;
   final int playersFound;
   final int playersNeeded;
+  final String? lobbyId;
 
   const MatchmakingState({
     this.status = MatchmakingStatus.idle,
-    this.estimatedWaitSeconds = 30,
+    this.estimatedWaitSeconds = 15,
     this.elapsedSeconds = 0,
     this.playersFound = 0,
-    this.playersNeeded = 8,
+    this.playersNeeded = 15,
+    this.lobbyId,
   });
 
   MatchmakingState copyWith({
@@ -23,6 +28,7 @@ class MatchmakingState {
     int? elapsedSeconds,
     int? playersFound,
     int? playersNeeded,
+    String? lobbyId,
   }) {
     return MatchmakingState(
       status: status ?? this.status,
@@ -30,6 +36,7 @@ class MatchmakingState {
       elapsedSeconds: elapsedSeconds ?? this.elapsedSeconds,
       playersFound: playersFound ?? this.playersFound,
       playersNeeded: playersNeeded ?? this.playersNeeded,
+      lobbyId: lobbyId ?? this.lobbyId,
     );
   }
 }
@@ -37,41 +44,84 @@ class MatchmakingState {
 class MatchmakingService {
   final _stateController = StreamController<MatchmakingState>.broadcast();
   Stream<MatchmakingState> get stateStream => _stateController.stream;
-  Timer? _timer;
+
   MatchmakingState _state = const MatchmakingState();
   MatchmakingState get currentState => _state;
 
-  void startSearching({bool ranked = false}) {
+  WebSocketChannel? _channel;
+  StreamSubscription? _wsSubscription;
+
+  void startSearching(String userId, {bool ranked = false}) {
     _state = const MatchmakingState(status: MatchmakingStatus.searching);
     _stateController.add(_state);
-    int elapsed = 0;
-    int playersFound = 1;
-    _timer = Timer.periodic(const Duration(seconds: 1), (t) {
-      elapsed++;
-      if (elapsed % 2 == 0 && playersFound < 8) playersFound++;
-      _state = _state.copyWith(elapsedSeconds: elapsed, playersFound: playersFound);
+
+    _connectWs(userId, ranked ? "ranked" : "casual");
+  }
+
+  void _connectWs(String userId, String mode) {
+    try {
+      final _wsUrl = AppConstants.wsUrl.replaceAll('http', 'ws');
+      _channel = WebSocketChannel.connect(
+        Uri.parse('$_wsUrl/lobby?token=$userId'),
+      );
+
+      _channel!.sink.add(jsonEncode({"action": "join_queue", "mode": mode}));
+
+      _wsSubscription = _channel!.stream.listen(
+        (message) {
+          final data = jsonDecode(message);
+          final event = data['event'];
+
+          if (event == "queue_update") {
+            _state = _state.copyWith(
+              elapsedSeconds: data['elapsed'] ?? 0,
+              estimatedWaitSeconds: data['estimated_wait'] ?? 15,
+              playersFound: data['players_in_queue'] ?? 0,
+            );
+            _stateController.add(_state);
+          } else if (event == "match_found") {
+            _state = _state.copyWith(
+              status: MatchmakingStatus.found,
+              lobbyId: data['lobby_id'],
+            );
+            _stateController.add(_state);
+          } else if (event == "room_joined") {
+            // the backend pushed us to the room
+          }
+        },
+        onDone: () {
+          if (_state.status == MatchmakingStatus.searching) {
+            _state = const MatchmakingState(status: MatchmakingStatus.failed);
+            _stateController.add(_state);
+          }
+        },
+      );
+    } catch (e) {
+      _state = const MatchmakingState(status: MatchmakingStatus.failed);
       _stateController.add(_state);
-      if (playersFound >= 8) {
-        t.cancel();
-        _state = _state.copyWith(status: MatchmakingStatus.found);
-        _stateController.add(_state);
-      }
-    });
+    }
   }
 
   void acceptMatch() {
     _state = _state.copyWith(status: MatchmakingStatus.accepted);
     _stateController.add(_state);
+
+    // In MVP, backend auto-accepts after 3s, but we could send an action here
+    _channel?.sink.add(jsonEncode({"action": "accept_match"}));
   }
 
   void cancelSearching() {
-    _timer?.cancel();
+    _channel?.sink.add(jsonEncode({"action": "leave_queue"}));
+    _wsSubscription?.cancel();
+    _channel?.sink.close();
+    _channel = null;
+
     _state = const MatchmakingState(status: MatchmakingStatus.idle);
     _stateController.add(_state);
   }
 
   void dispose() {
-    _timer?.cancel();
+    cancelSearching();
     _stateController.close();
   }
 }

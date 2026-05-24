@@ -56,8 +56,9 @@ app.include_router(family_routes.router)
 app.include_router(store_routes.router, prefix="/store", tags=["Store"])
 app.include_router(battle_pass_routes.router, prefix="/battlepass", tags=["Battle Pass"])
 
-from app.routes import voice_routes
+from app.routes import voice_routes, bounty_routes
 app.include_router(voice_routes.router)
+app.include_router(bounty_routes.router, prefix="/bounties")
 
 # WebSockets
 from app.websocket import lobby_ws, game_ws

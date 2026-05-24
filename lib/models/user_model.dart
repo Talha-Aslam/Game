@@ -1,3 +1,38 @@
+/// Role specific statistics
+class RoleStats {
+  final int mafiaWins;
+  final int civilianWins;
+  final int detectiveWins;
+  final int doctorSaves;
+  final int perfectMafiaSweeps;
+
+  const RoleStats({
+    this.mafiaWins = 0,
+    this.civilianWins = 0,
+    this.detectiveWins = 0,
+    this.doctorSaves = 0,
+    this.perfectMafiaSweeps = 0,
+  });
+
+  factory RoleStats.fromJson(Map<String, dynamic> json) {
+    return RoleStats(
+      mafiaWins: json['mafia_wins'] ?? 0,
+      civilianWins: json['civilian_wins'] ?? 0,
+      detectiveWins: json['detective_wins'] ?? 0,
+      doctorSaves: json['doctor_saves'] ?? 0,
+      perfectMafiaSweeps: json['perfect_mafia_sweeps'] ?? 0,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'mafia_wins': mafiaWins,
+    'civilian_wins': civilianWins,
+    'detective_wins': detectiveWins,
+    'doctor_saves': doctorSaves,
+    'perfect_mafia_sweeps': perfectMafiaSweeps,
+  };
+}
+
 /// User profile model
 class UserModel {
   final String id;
@@ -29,6 +64,8 @@ class UserModel {
   final String popularityRank;
   final int friendCount;
   final int onlineFriendCount;
+  final RoleStats roleStats;
+  final List<String> matchHistory;
 
   const UserModel({
     required this.id,
@@ -60,6 +97,8 @@ class UserModel {
     this.popularityRank = 'Rising Star',
     this.friendCount = 0,
     this.onlineFriendCount = 0,
+    this.roleStats = const RoleStats(),
+    this.matchHistory = const [],
   });
 
   double get winRate => totalGames > 0 ? (wins / totalGames * 100) : 0;
@@ -99,6 +138,8 @@ class UserModel {
     String? popularityRank,
     int? friendCount,
     int? onlineFriendCount,
+    RoleStats? roleStats,
+    List<String>? matchHistory,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -130,6 +171,8 @@ class UserModel {
       popularityRank: popularityRank ?? this.popularityRank,
       friendCount: friendCount ?? this.friendCount,
       onlineFriendCount: onlineFriendCount ?? this.onlineFriendCount,
+      roleStats: roleStats ?? this.roleStats,
+      matchHistory: matchHistory ?? this.matchHistory,
     );
   }
 
@@ -212,6 +255,11 @@ class UserModel {
       popularityRank: json['popularityRank']?.toString() ?? 'Rising Star',
       friendCount: friendsList?.length ?? json['friendCount'] ?? 0,
       onlineFriendCount: json['onlineFriendCount'] ?? 0,
+      roleStats: json['role_stats'] != null 
+          ? RoleStats.fromJson(json['role_stats']) 
+          : (json['roleStats'] != null ? RoleStats.fromJson(json['roleStats']) : const RoleStats()),
+      matchHistory: (json['match_history'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? 
+                    (json['matchHistory'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
     );
   }
 
@@ -244,5 +292,7 @@ class UserModel {
     'popularityRank': popularityRank,
     'friendCount': friendCount,
     'onlineFriendCount': onlineFriendCount,
+    'roleStats': roleStats.toJson(),
+    'matchHistory': matchHistory,
   };
 }
