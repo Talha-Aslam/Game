@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:web_socket_channel/web_socket_channel.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart' as flutter_secure_storage;
 import '../core/constants/app_constants.dart';
 
 enum MatchmakingStatus { idle, searching, found, accepted, failed }
@@ -51,18 +52,24 @@ class MatchmakingService {
   WebSocketChannel? _channel;
   StreamSubscription? _wsSubscription;
 
-  void startSearching(String userId, {bool ranked = false}) {
+  void startSearching({bool ranked = false}) async {
     _state = const MatchmakingState(status: MatchmakingStatus.searching);
     _stateController.add(_state);
-
-    _connectWs(userId, ranked ? "ranked" : "casual");
+    
+    final token = await const flutter_secure_storage.FlutterSecureStorage().read(key: 'jwt_token');
+    if (token != null) {
+      _connectWs(token, ranked ? "ranked" : "casual");
+    } else {
+      _state = const MatchmakingState(status: MatchmakingStatus.failed);
+      _stateController.add(_state);
+    }
   }
 
-  void _connectWs(String userId, String mode) {
+  void _connectWs(String token, String mode) {
     try {
       final _wsUrl = AppConstants.wsUrl.replaceAll('http', 'ws');
       _channel = WebSocketChannel.connect(
-        Uri.parse('$_wsUrl/lobby?token=$userId'),
+        Uri.parse('$_wsUrl/lobby?token=$token'),
       );
 
       _channel!.sink.add(jsonEncode({"action": "join_queue", "mode": mode}));

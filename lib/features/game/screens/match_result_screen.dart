@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:mafia_wars/providers/matchmaking_provider.dart';
 import '../../../core/theme/app_colors.dart';
 
 import '../../../models/game_state_model.dart';
@@ -598,8 +599,8 @@ class _MatchResultScreenState extends ConsumerState<MatchResultScreen>
                         height: 44,
                         onPressed: () {
                           ref.read(gameProvider.notifier).resetGame();
-                          ref.read(gameProvider.notifier).startMatchmaking();
-                          context.go('/game');
+                          ref.read(matchmakingServiceProvider).startSearching();
+                          context.go('/matchmaking');
                         },
                       ),
                     ),

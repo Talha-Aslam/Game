@@ -4,6 +4,14 @@ import '../models/game_state_model.dart';
 import '../models/player_model.dart';
 import '../services/websocket_service.dart';
 import '../services/audio/audio_service.dart';
+import '../services/voice_service.dart';
+
+/// Voice service provider
+final voiceServiceProvider = Provider<VoiceService>((ref) {
+  final service = VoiceService();
+  ref.onDispose(() => service.dispose());
+  return service;
+});
 
 /// WebSocket service provider
 final wsServiceProvider = Provider<WebSocketService>((ref) {
@@ -76,8 +84,31 @@ class GameNotifier extends Notifier<GameStateModel> {
         case WsEvent.mafiaChannel:
           _handleMafiaChannel(msg.data);
           break;
+        case 'join_main_voice':
+        case 'join_mafia_voice':
+        case 'join_graveyard_voice':
+          _handleVoiceSwitch(msg);
+          break;
       }
     });
+  }
+
+  void _handleVoiceSwitch(WsMessage msg) async {
+    final channel = msg.data['channel'] as String?;
+    final token = msg.data['token'] as String?;
+    final localPlayerId = state.localPlayerId;
+    
+    if (channel != null && token != null && localPlayerId != null) {
+      final voice = ref.read(voiceServiceProvider);
+      await voice.switchChannel(token, channel, localPlayerId);
+      
+      // Keep state updated on which room we're actually in
+      if (msg.event == 'join_mafia_voice') {
+        state = state.copyWith(mafiaChannelOpen: true);
+      } else {
+        state = state.copyWith(mafiaChannelOpen: false);
+      }
+    }
   }
 
   // ══════════════════════════════════════════════════════════════════════
@@ -382,6 +413,8 @@ class GameNotifier extends Notifier<GameStateModel> {
   void leaveLobby() {
     _audio.stopAll();
     ref.read(wsServiceProvider).send('leave_lobby');
+    ref.read(wsServiceProvider).disconnect();
+    ref.read(voiceServiceProvider).leaveChannel();
     resetGame();
   }
 
@@ -439,12 +472,11 @@ class GameNotifier extends Notifier<GameStateModel> {
     }
   }
 
-  /// Start matchmaking
-  void startMatchmaking() {
+  /// Connect to the actual game websocket
+  void connectToGame(String roomId) {
     final ws = ref.read(wsServiceProvider);
-    ws.connect().then((_) {
-      ws.send('join_matchmaking');
-      state = state.copyWith(phase: GamePhase.matchmaking);
+    ws.connectGame(roomId).then((_) {
+      state = state.copyWith(phase: GamePhase.lobby, gameId: roomId);
     });
   }
 
@@ -502,6 +534,8 @@ class GameNotifier extends Notifier<GameStateModel> {
   /// Reset game
   void resetGame() {
     _audio.stopAll();
+    ref.read(wsServiceProvider).disconnect();
+    ref.read(voiceServiceProvider).leaveChannel();
     state = const GameStateModel(gameId: '');
   }
 }
