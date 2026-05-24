@@ -53,6 +53,7 @@ class _FriendsHubScreenState extends ConsumerState<FriendsHubScreen>
     final partyState = ref.watch(partyProvider);
     final onlineCount = friendsState.onlineCount;
     final requestCount = friendsState.pendingIncomingCount;
+    final unseenCount = friendsState.unseenPendingIncomingCount;
     final partyInviteCount = partyState.inviteCount;
 
     return Scaffold(
@@ -130,7 +131,7 @@ class _FriendsHubScreenState extends ConsumerState<FriendsHubScreen>
                                 size: 20,
                               ),
                             ),
-                            if (requestCount > 0)
+                            if (unseenCount > 0)
                               Positioned(
                                 right: 0,
                                 top: 0,
@@ -150,7 +151,7 @@ class _FriendsHubScreenState extends ConsumerState<FriendsHubScreen>
                                   ),
                                   child: Center(
                                     child: Text(
-                                      '$requestCount',
+                                      '$unseenCount',
                                       style: const TextStyle(
                                         color: Colors.white,
                                         fontSize: 9,

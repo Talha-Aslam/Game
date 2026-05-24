@@ -60,18 +60,47 @@ class _GameScreenState extends ConsumerState<GameScreen>
       }
     });
 
-    return Scaffold(
-      body: Stack(
-        children: [
-          // ── Phase-reactive background ──
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 800),
-            decoration: BoxDecoration(
-              gradient: phase.isNight || phase.isMorning
-                  ? AppGradients.nightOverlay
-                  : AppGradients.backgroundGradient,
-            ),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
+        
+        final confirm = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            backgroundColor: AppColors.surface,
+            title: const Text('Leave Game?', style: TextStyle(color: Colors.white)),
+            content: const Text('Are you sure you want to leave the game in progress?', style: TextStyle(color: Colors.white70)),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Cancel', style: TextStyle(color: AppColors.white50)),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text('Leave', style: TextStyle(color: AppColors.crimsonRed)),
+              ),
+            ],
           ),
+        );
+        
+        if (confirm == true && context.mounted) {
+          ref.read(gameProvider.notifier).leaveLobby();
+          context.go('/home');
+        }
+      },
+      child: Scaffold(
+        body: Stack(
+          children: [
+            // ── Phase-reactive background ──
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 800),
+              decoration: BoxDecoration(
+                gradient: phase.isNight || phase.isMorning
+                    ? AppGradients.nightOverlay
+                    : AppGradients.backgroundGradient,
+              ),
+            ),
 
           // ── Ambient particles ──
           RepaintBoundary(
@@ -225,42 +254,43 @@ class _GameScreenState extends ConsumerState<GameScreen>
                     child: RoleRevealPanel(role: localPlayer!.role),
                   ),
 
-                // ═══ ACTION BAR ═══
-                LobbyActionBar(
-                  phase: phase,
-                  gameState: gameState,
-                  localPlayer: localPlayer,
-                  selectedVoteTarget: _selectedVoteTarget,
-                  nightActionTarget: _nightActionTarget,
-                  onReady: () => ref.read(gameProvider.notifier).toggleReady(),
-                  onLeaveLobby: () {
-                    ref.read(gameProvider.notifier).leaveLobby();
-                    context.go('/home');
-                  },
-                  onConfirmVote: _selectedVoteTarget != null
-                      ? () {
-                          ref
-                              .read(gameProvider.notifier)
-                              .submitVote(_selectedVoteTarget!);
-                        }
-                      : null,
-                  onSkipVote: () => setState(() => _selectedVoteTarget = null),
-                  onConfirmNightAction: _nightActionTarget != null
-                      ? () => _submitNightAction(localPlayer)
-                      : null,
-                  onQueueAgain: () {
-                    ref.read(gameProvider.notifier).resetGame();
-                    ref.read(gameProvider.notifier).startMatchmaking();
-                  },
-                  onReturnHome: () {
-                    ref.read(gameProvider.notifier).resetGame();
-                    context.go('/home');
-                  },
-                ),
-              ],
+                  // ═══ ACTION BAR ═══
+                  LobbyActionBar(
+                    phase: phase,
+                    gameState: gameState,
+                    localPlayer: localPlayer,
+                    selectedVoteTarget: _selectedVoteTarget,
+                    nightActionTarget: _nightActionTarget,
+                    onReady: () => ref.read(gameProvider.notifier).toggleReady(),
+                    onLeaveLobby: () {
+                      ref.read(gameProvider.notifier).leaveLobby();
+                      context.go('/home');
+                    },
+                    onConfirmVote: _selectedVoteTarget != null
+                        ? () {
+                            ref
+                                .read(gameProvider.notifier)
+                                .submitVote(_selectedVoteTarget!);
+                          }
+                        : null,
+                    onSkipVote: () => setState(() => _selectedVoteTarget = null),
+                    onConfirmNightAction: _nightActionTarget != null
+                        ? () => _submitNightAction(localPlayer)
+                        : null,
+                    onQueueAgain: () {
+                      ref.read(gameProvider.notifier).resetGame();
+                      ref.read(gameProvider.notifier).startMatchmaking();
+                    },
+                    onReturnHome: () {
+                      ref.read(gameProvider.notifier).resetGame();
+                      context.go('/home');
+                    },
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

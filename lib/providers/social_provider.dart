@@ -14,6 +14,7 @@ class FriendsState {
   final List<FriendRequestModel> pendingRequests;
   final List<FriendModel> recentPlayers;
   final List<FriendModel> searchResults;
+  final int lastSeenPendingIncomingCount;
   final bool isLoading;
   final String? error;
 
@@ -23,12 +24,16 @@ class FriendsState {
     this.pendingRequests = const [],
     this.recentPlayers = const [],
     this.searchResults = const [],
+    this.lastSeenPendingIncomingCount = 0,
     this.isLoading = false,
     this.error,
   });
 
   int get pendingIncomingCount =>
       pendingRequests.where((r) => r.isIncoming).length;
+      
+  int get unseenPendingIncomingCount => 
+      (pendingIncomingCount - lastSeenPendingIncomingCount).clamp(0, 999);
 
   int get onlineCount => onlineFriends.length;
 
@@ -38,6 +43,7 @@ class FriendsState {
     List<FriendRequestModel>? pendingRequests,
     List<FriendModel>? recentPlayers,
     List<FriendModel>? searchResults,
+    int? lastSeenPendingIncomingCount,
     bool? isLoading,
     String? error,
   }) {
@@ -47,6 +53,7 @@ class FriendsState {
       pendingRequests: pendingRequests ?? this.pendingRequests,
       recentPlayers: recentPlayers ?? this.recentPlayers,
       searchResults: searchResults ?? this.searchResults,
+      lastSeenPendingIncomingCount: lastSeenPendingIncomingCount ?? this.lastSeenPendingIncomingCount,
       isLoading: isLoading ?? this.isLoading,
       error: error,
     );
@@ -128,6 +135,12 @@ class FriendsNotifier extends Notifier<FriendsState> {
 
   void clearSearch() {
     state = state.copyWith(searchResults: []);
+  }
+
+  void markNotificationsSeen() {
+    if (state.pendingIncomingCount > 0 && state.lastSeenPendingIncomingCount != state.pendingIncomingCount) {
+      state = state.copyWith(lastSeenPendingIncomingCount: state.pendingIncomingCount);
+    }
   }
 }
 

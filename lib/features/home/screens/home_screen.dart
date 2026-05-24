@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mafia_wars/providers/social_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_gradients.dart';
 import '../../../providers/auth_provider.dart';
@@ -157,11 +158,15 @@ class HomeScreen extends ConsumerWidget {
                 // ═══ BOTTOM NAV BAR ═══
                 BottomNavBarGlass(
                   currentIndex: -1, // No tab active on home
-                  friendsNotificationCount:
-                      3, // Mock value showing 3 pending friend requests/alerts
+                  friendsNotificationCount: ref
+                      .watch(friendsProvider)
+                      .unseenPendingIncomingCount,
                   onTap: (i) {
                     switch (i) {
                       case 0:
+                        ref
+                            .read(friendsProvider.notifier)
+                            .markNotificationsSeen();
                         context.push('/friends');
                         break;
                       case 1:
