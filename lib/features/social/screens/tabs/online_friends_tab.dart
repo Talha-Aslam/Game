@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../providers/social_provider.dart';
+import '../../../../providers/party_provider.dart';
 import '../../widgets/friend_card_widget.dart';
 
 /// Online Friends tab — shows only currently online friends
@@ -51,7 +52,7 @@ class OnlineFriendsTab extends ConsumerWidget {
           final friend = onlineFriends[index];
           return FriendCardWidget(
             friend: friend,
-            onInvite: () {},
+            onInvite: () => ref.read(partyProvider.notifier).inviteFriend(friend),
             onMessage: () {},
             onViewProfile: () {},
             onSendPopularity: () {},

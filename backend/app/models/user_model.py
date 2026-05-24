@@ -70,6 +70,8 @@ class UserDB(BaseModel):
 
     created_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
     updated_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
+    daily_bounties: List[dict] = []
+    bounties_reset_at: Optional[str] = None
 
     class Config:
         populate_by_name = True

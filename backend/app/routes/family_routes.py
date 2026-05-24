@@ -67,6 +67,12 @@ async def leave(user: dict = Depends(get_current_user)):
     return await leave_family(user["_id"])
 
 
+@router.delete("/delete")
+async def delete_family_route(user: dict = Depends(get_current_user)):
+    from app.services.family_service import delete_family
+    return await delete_family(user["_id"])
+
+
 @router.put("/settings")
 async def settings(req: UpdateSettingsRequest, user: dict = Depends(get_current_user)):
     return await update_family_settings(user["_id"], req.model_dump(exclude_none=True))

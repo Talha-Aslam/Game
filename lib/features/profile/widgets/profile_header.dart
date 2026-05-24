@@ -7,6 +7,7 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../models/rank_model.dart';
 import '../../../models/user_model.dart';
 import '../screens/avatar_inventory_screen.dart';
+import '../../../core/constants/app_constants.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../providers/auth_provider.dart';
@@ -193,7 +194,15 @@ class _AnimatedProfileHeaderState extends ConsumerState<AnimatedProfileHeader>
                     if (_imageFile != null)
                       Image.file(_imageFile!, fit: BoxFit.cover)
                     else if (widget.user.avatarUrl.isNotEmpty)
-                      Image.network(widget.user.avatarUrl, fit: BoxFit.cover)
+                      Image.network(
+                        widget.user.avatarUrl.startsWith('/')
+                            ? '${AppConstants.apiBaseUrl}${widget.user.avatarUrl}'
+                            : widget.user.avatarUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Center(
+                          child: Icon(Icons.error, color: rank.color, size: 30),
+                        ),
+                      )
                     else
                       Center(
                         child: Text(

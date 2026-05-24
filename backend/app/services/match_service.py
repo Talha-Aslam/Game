@@ -48,10 +48,30 @@ async def resolve_match_results(players: List[Any], winner_faction: str) -> None
             if user_doc and user_doc.get("mmr", 0) + mmr_change < 0:
                 update_query["$inc"]["mmr"] = -user_doc.get("mmr", 0) # Only deduct what they have
                 
+            history_entry = {
+                "game_mode": "casual", # default for now
+                "role": p.role,
+                "won": is_winner,
+                "mmr_change": mmr_change
+            }
+            update_query["$push"] = {"match_history": {"$each": [str(history_entry)], "$slice": -50}}
+                
             await users_collection.update_one(
                 {"_id": p.user_id},
                 update_query
             )
             logger.info(f"Updated match stats for user {p.user_id}: Winner={is_winner}")
+            
+            # Update bounties
+            from app.services.bounty_service import update_bounty_progress
+            actions = {}
+            if is_winner:
+                actions["win_match"] = 1
+            if p.is_alive:
+                actions["survive_night"] = 1
+            actions["play_casual"] = 1
+            
+            await update_bounty_progress(p.user_id, actions)
+            
         except Exception as e:
             logger.error(f"Failed to update match results for user {p.user_id}: {e}")

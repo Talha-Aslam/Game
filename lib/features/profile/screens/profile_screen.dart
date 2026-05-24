@@ -206,10 +206,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         OverallStatsWidget(user: user),
 
                         const SizedBox(height: 32),
-                        const RoleStatsWidget(),
+                        RoleStatsWidget(user: user),
 
                         const SizedBox(height: 32),
-                        _buildMatchHistory(),
+                        _buildMatchHistory(user),
 
                         const SizedBox(height: 100), // Padding
                       ],
@@ -373,7 +373,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
   }
 
-  Widget _buildMatchHistory() {
+  Widget _buildMatchHistory(dynamic user) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -392,19 +392,29 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           ],
         ),
         const SizedBox(height: 12),
-        _historyTile(
-          'Victory',
-          'Mafia',
-          '+24 Rank Points',
-          AppColors.mafiaColor,
-        ),
-        const SizedBox(height: 8),
-        _historyTile(
-          'Defeat',
-          'Doctor',
-          '-12 Rank Points',
-          AppColors.doctorColor,
-        ),
+        if (user.matchHistory.isEmpty)
+          const Padding(
+            padding: EdgeInsets.all(16.0),
+            child: Text(
+              'No recent operations.',
+              style: TextStyle(color: Colors.white54, fontStyle: FontStyle.italic),
+            ),
+          )
+        else
+          ...user.matchHistory.map<Widget>((match) {
+            // Mock parse of a string like "Victory:Mafia:+24"
+            final parts = match.split(':');
+            final result = parts.length > 0 ? parts[0] : 'Unknown';
+            final role = parts.length > 1 ? parts[1] : 'Unknown';
+            final desc = parts.length > 2 ? parts[2] : '';
+            final roleColor = role.toLowerCase() == 'mafia' ? AppColors.mafiaColor : 
+                              role.toLowerCase() == 'doctor' ? AppColors.doctorColor : 
+                              role.toLowerCase() == 'detective' ? AppColors.purpleNeon : AppColors.cyan;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8.0),
+              child: _historyTile(result, role, desc, roleColor),
+            );
+          }).toList(),
       ],
     );
   }

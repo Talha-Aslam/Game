@@ -18,6 +18,9 @@ async def create_family(user_id: str, name: str, tag: str, description: str = ""
         raise HTTPException(status_code=404, detail="User not found")
     if user.get("family_id"):
         raise HTTPException(status_code=400, detail="Already in a family")
+    
+    if user.get("syndicate_coins", 0) < 500:
+        raise HTTPException(status_code=400, detail="Insufficient Syndicate Coins. You need 500.")
 
     # Check tag uniqueness
     existing = await db["families"].find_one({"tag": f"[{tag.upper()}]"})
@@ -48,7 +51,13 @@ async def create_family(user_id: str, name: str, tag: str, description: str = ""
     family_dict["audit_log"] = [audit.model_dump()]
 
     await db["families"].insert_one(family_dict)
-    await db["users"].update_one({"_id": user_id}, {"$set": {"family_id": family_id}})
+    await db["users"].update_one(
+        {"_id": user_id}, 
+        {
+            "$set": {"family_id": family_id},
+            "$inc": {"syndicate_coins": -500}
+        }
+    )
 
     return family_dict
 
@@ -126,6 +135,35 @@ async def leave_family(user_id: str):
         await db["families"].delete_one({"_id": family_id})
 
     return {"message": "Left family"}
+
+
+async def delete_family(user_id: str):
+    db = get_database()
+    user = await db["users"].find_one({"_id": user_id})
+    if not user or not user.get("family_id"):
+        raise HTTPException(status_code=400, detail="Not in a family")
+
+    family_id = user["family_id"]
+    family = await db["families"].find_one({"_id": family_id})
+    if not family:
+        raise HTTPException(status_code=404, detail="Family not found")
+        
+    # verify user is boss
+    boss = next((m for m in family.get("members", []) if m["user_id"] == user_id and m.get("role", "").lower() == "boss"), None)
+    if not boss:
+        raise HTTPException(status_code=403, detail="Only the Boss can delete the family")
+        
+    # Delete the family
+    await db["families"].delete_one({"_id": family_id})
+    
+    # Remove family_id from all members
+    member_ids = [m["user_id"] for m in family.get("members", [])]
+    await db["users"].update_many(
+        {"_id": {"$in": member_ids}},
+        {"$set": {"family_id": None}}
+    )
+    
+    return {"message": "Family deleted successfully"}
 
 
 async def update_family_settings(user_id: str, updates: dict):
@@ -485,23 +523,30 @@ def _rank_to_tier(rank_val) -> int:
 
 async def transfer_boss(user_id: str, target_user_id: str) -> dict:
     db = get_database()
-    family = await db["families"].find_one({"members.user_id": user_id, "members.role": "Boss"})
+    family = await db["families"].find_one({
+        "members": {
+            "$elemMatch": {
+                "user_id": user_id,
+                "role": {"$regex": "^boss$", "$options": "i"}
+            }
+        }
+    })
     if not family:
         raise HTTPException(status_code=403, detail="Not the boss of any family")
         
     # Check if target is in family
-    target_in_family = any(m["user_id"] == target_user_id for m in family["members"])
+    target_in_family = any(m["user_id"] == target_user_id for m in family.get("members", []))
     if not target_in_family:
         raise HTTPException(status_code=400, detail="Target user not in family")
         
-    # Demote current boss to Underboss, promote target to Boss
+    # Demote current boss to underboss, promote target to boss
     await db["families"].update_one(
         {"_id": family["_id"], "members.user_id": user_id},
-        {"$set": {"members.$.role": "Underboss"}}
+        {"$set": {"members.$.role": "underboss"}}
     )
     await db["families"].update_one(
         {"_id": family["_id"], "members.user_id": target_user_id},
-        {"$set": {"members.$.role": "Boss"}}
+        {"$set": {"members.$.role": "boss"}}
     )
     return {"status": "success", "message": "Ownership transferred"}
 

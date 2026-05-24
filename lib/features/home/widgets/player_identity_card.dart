@@ -36,10 +36,17 @@ class PlayerIdentityCard extends ConsumerWidget {
                   border: Border.all(color: AppColors.purpleNeon, width: 1.5),
                   color: AppColors.surfaceLight,
                 ),
-                child: Center(child: Text(
-                  user?.username.isNotEmpty == true ? user!.username[0].toUpperCase() : 'G',
-                  style: AppTextStyles.headlineSmall.copyWith(color: AppColors.purpleGlow, fontSize: 16),
-                )),
+                child: ClipOval(
+                  child: user?.avatarUrl.isNotEmpty == true
+                      ? Image.network(
+                          user!.avatarUrl.startsWith('/')
+                              ? 'http://64.227.145.171:8000${user.avatarUrl}' // Quick hack or use AppConstants
+                              : user.avatarUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => _buildFallbackAvatar(user),
+                        )
+                      : _buildFallbackAvatar(user),
+                ),
               ),
               const SizedBox(width: 8),
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -61,6 +68,15 @@ class PlayerIdentityCard extends ConsumerWidget {
             ]),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildFallbackAvatar(dynamic user) {
+    return Center(
+      child: Text(
+        user?.username.isNotEmpty == true ? user!.username[0].toUpperCase() : 'G',
+        style: AppTextStyles.headlineSmall.copyWith(color: AppColors.purpleGlow, fontSize: 16),
       ),
     );
   }

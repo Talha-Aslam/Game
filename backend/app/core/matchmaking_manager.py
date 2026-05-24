@@ -71,39 +71,64 @@ class MatchmakingManager:
             # Find players waiting too long
             longest_waiting = max((current_time - p["join_time"]) for p in queue)
             
-            # If we have 8 players, OR someone has waited too long and we have at least 1 player
+            # Send queue updates to all players in this queue
+            for p in queue:
+                elapsed = int(current_time - p["join_time"])
+                update_event = {
+                    "event": "queue_update",
+                    "elapsed": elapsed,
+                    "estimated_wait": 15,
+                    "players_in_queue": len(queue)
+                }
+                # Create a task to send the message to avoid blocking the matchmaking loop
+                asyncio.create_task(ws_manager.send_personal_message(update_event, p["user_id"]))
+            
+            # If we have PLAYERS_PER_ROOM players, OR someone has waited too long and we have at least 1 player
             if len(queue) >= self.PLAYERS_PER_ROOM or longest_waiting > self.MAX_WAIT_TIME_SECONDS:
                 await self._create_match(mode)
 
     async def _create_match(self, mode: str):
         queue = self.queues[mode]
-        # Take up to 8 players
-        players_to_match = queue[:self.PLAYERS_PER_ROOM]
+        # Take up to 15 players (Lobby schema said 15, let's keep 8 for now per existing code, wait 15 is better for mafia)
+        PLAYERS = 15
+        players_to_match = queue[:PLAYERS]
         
         # Remove from queue
-        self.queues[mode] = queue[self.PLAYERS_PER_ROOM:]
+        self.queues[mode] = queue[PLAYERS:]
         
         matched_users = [p["user_id"] for p in players_to_match]
         
         # Fill with bots if needed
-        bots_needed = self.PLAYERS_PER_ROOM - len(matched_users)
+        bots_needed = PLAYERS - len(matched_users)
         bot_ids = [f"bot_{uuid.uuid4().hex[:6]}" for _ in range(bots_needed)]
         
         all_players = matched_users + bot_ids
-        room_id = f"room_{uuid.uuid4().hex[:8]}"
+        lobby_id = f"lobby_{uuid.uuid4().hex[:8]}"
         
-        logger.info(f"Created {mode} match {room_id} with players: {matched_users} and {bots_needed} bots")
+        logger.info(f"Created {mode} match {lobby_id} with players: {matched_users} and {bots_needed} bots")
         
-        from app.core.game_engine import game_engine
-        await game_engine.create_room(room_id, all_players)
+        # Psychological immersion delays
+        await ws_manager.broadcast_to_group({"event": "queue_status", "message": "Connecting to server..."}, matched_users)
+        await asyncio.sleep(1.5)
+        await ws_manager.broadcast_to_group({"event": "queue_status", "message": "Balancing teams..."}, matched_users)
+        await asyncio.sleep(1.5)
         
-        # Broadcast match found to real players
+        # Broadcast match found to real players - requires Acceptance
         match_event = {
             "event": "match_found",
-            "room_id": room_id,
+            "lobby_id": lobby_id,
             "mode": mode,
-            "players": all_players
+            "timeout": 10
         }
         await ws_manager.broadcast_to_group(match_event, matched_users)
+        
+        # Here we would track who accepted/declined. For MVP, we will assume they accept and move them to room after 3s.
+        await asyncio.sleep(3)
+        
+        from app.core.game_engine import game_engine
+        await game_engine.create_room(lobby_id, all_players)
+        
+        # Tell clients to enter the room
+        await ws_manager.broadcast_to_group({"event": "room_joined", "room_id": lobby_id}, matched_users)
 
 matchmaker = MatchmakingManager()

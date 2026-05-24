@@ -1,45 +1,21 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../providers/bounty_provider.dart';
+import '../../../models/bounty_model.dart';
 
 /// Floating daily missions/bounty panel
-class DailyBountyPanel extends StatefulWidget {
+class DailyBountyPanel extends ConsumerStatefulWidget {
   const DailyBountyPanel({super.key});
   @override
-  State<DailyBountyPanel> createState() => _DailyBountyPanelState();
+  ConsumerState<DailyBountyPanel> createState() => _DailyBountyPanelState();
 }
 
-class _DailyBountyPanelState extends State<DailyBountyPanel>
+class _DailyBountyPanelState extends ConsumerState<DailyBountyPanel>
     with SingleTickerProviderStateMixin {
   late AnimationController _pulse;
   bool _expanded = false;
-
-  static final _missions = [
-    _Mission(
-      'Survive 1 night',
-      Icons.dark_mode,
-      2,
-      3,
-      100,
-      AppColors.purpleGlow,
-    ),
-    _Mission(
-      'Win a Ranked match',
-      Icons.military_tech,
-      1,
-      2,
-      200,
-      AppColors.gold,
-    ),
-    _Mission(
-      'Vote out 3 Mafia',
-      Icons.how_to_vote,
-      1,
-      3,
-      150,
-      AppColors.crimsonRed,
-    ),
-  ];
 
   @override
   void initState() {
@@ -56,66 +32,98 @@ class _DailyBountyPanelState extends State<DailyBountyPanel>
     super.dispose();
   }
 
+  IconData _getIcon(String iconName) {
+    switch (iconName) {
+      case 'trophy': return Icons.emoji_events;
+      case 'shield': return Icons.shield;
+      case 'target': return Icons.my_location;
+      case 'gamepad': return Icons.gamepad;
+      case 'medical_services': return Icons.medical_services;
+      default: return Icons.task_alt;
+    }
+  }
+
+  Color _getColor(String iconName) {
+    switch (iconName) {
+      case 'trophy': return AppColors.gold;
+      case 'shield': return AppColors.purpleGlow;
+      case 'target': return AppColors.crimsonRed;
+      case 'gamepad': return AppColors.cyan;
+      case 'medical_services': return Colors.greenAccent;
+      default: return AppColors.white70;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final completedCount = _missions.where((m) => m.current >= m.total).length;
-    return AnimatedBuilder(
-      animation: _pulse,
-      builder: (_, _) {
-        return GestureDetector(
-          onTap: () => setState(() => _expanded = !_expanded),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeOut,
-                padding: EdgeInsets.all(_expanded ? 10 : 8),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  color: AppColors.white05,
-                  border: Border.all(
-                    color: completedCount > 0
-                        ? AppColors.gold.withValues(
-                            alpha: 0.25 + _pulse.value * 0.1,
-                          )
-                        : AppColors.glassBorder,
-                    width: 0.5,
-                  ),
-                ),
-                child: AnimatedCrossFade(
-                  duration: const Duration(milliseconds: 300),
-                  crossFadeState: _expanded
-                      ? CrossFadeState.showSecond
-                      : CrossFadeState.showFirst,
-                  sizeCurve: Curves.easeOut,
-                  firstCurve: Curves.easeOut,
-                  secondCurve: Curves.easeIn,
-                  alignment: Alignment.topCenter,
-                  firstChild: SizedBox(
-                    width: 26,
-                    height: 38,
-                    child: Center(
-                      child: SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: _buildCollapsed(completedCount),
+    final bountiesState = ref.watch(bountiesProvider);
+
+    return bountiesState.when(
+      data: (bounties) {
+        if (bounties.isEmpty) return const SizedBox.shrink();
+        final completedCount = bounties.where((m) => m.isCompleted).length;
+
+        return AnimatedBuilder(
+          animation: _pulse,
+          builder: (_, _) {
+            return GestureDetector(
+              onTap: () => setState(() => _expanded = !_expanded),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeOut,
+                    padding: EdgeInsets.all(_expanded ? 10 : 8),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      color: AppColors.white05,
+                      border: Border.all(
+                        color: completedCount > 0
+                            ? AppColors.gold.withValues(
+                                alpha: 0.25 + _pulse.value * 0.1,
+                              )
+                            : AppColors.glassBorder,
+                        width: 0.5,
                       ),
                     ),
-                  ),
-                  secondChild: SizedBox(
-                    width: 260,
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: SizedBox(width: 260, child: _buildExpanded()),
+                    child: AnimatedCrossFade(
+                      duration: const Duration(milliseconds: 300),
+                      crossFadeState: _expanded
+                          ? CrossFadeState.showSecond
+                          : CrossFadeState.showFirst,
+                      sizeCurve: Curves.easeOut,
+                      firstCurve: Curves.easeOut,
+                      secondCurve: Curves.easeIn,
+                      alignment: Alignment.topCenter,
+                      firstChild: SizedBox(
+                        width: 26,
+                        height: 38,
+                        child: Center(
+                          child: SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: _buildCollapsed(completedCount),
+                          ),
+                        ),
+                      ),
+                      secondChild: SizedBox(
+                        width: 260,
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: SizedBox(width: 260, child: _buildExpanded(bounties)),
+                        ),
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-          ),
+            );
+          },
         );
       },
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
     );
   }
 
@@ -150,7 +158,7 @@ class _DailyBountyPanelState extends State<DailyBountyPanel>
     );
   }
 
-  Widget _buildExpanded() {
+  Widget _buildExpanded(List<BountyModel> bounties) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
@@ -171,15 +179,19 @@ class _DailyBountyPanelState extends State<DailyBountyPanel>
           ],
         ),
         const SizedBox(height: 6),
-        ..._missions.map((m) {
-          final done = m.current >= m.total;
+        ...bounties.map((m) {
+          final isClaimed = m.isClaimed;
+          final isCompleted = m.isCompleted;
           final progress = (m.current / m.total).clamp(0.0, 1.0);
+          final iconData = _getIcon(m.icon);
+          final mColor = _getColor(m.icon);
+
           return Container(
             margin: const EdgeInsets.only(bottom: 4),
             padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(8),
-              color: done
+              color: isCompleted && !isClaimed
                   ? AppColors.gold.withValues(alpha: 0.06)
                   : AppColors.white05,
             ),
@@ -189,65 +201,84 @@ class _DailyBountyPanelState extends State<DailyBountyPanel>
                 Row(
                   children: [
                     Icon(
-                      m.icon,
-                      color: done ? AppColors.gold : m.color,
+                      iconData,
+                      color: isCompleted ? AppColors.gold : mColor,
                       size: 12,
                     ),
                     const SizedBox(width: 4),
                     Expanded(
                       child: Text(
-                        m.label,
+                        m.description,
                         style: TextStyle(
-                          color: done ? AppColors.gold : AppColors.white70,
+                          color: isCompleted ? AppColors.gold : AppColors.white70,
                           fontSize: 9,
                           fontWeight: FontWeight.w600,
+                          decoration: isClaimed ? TextDecoration.lineThrough : null,
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
+                    if (isCompleted && !isClaimed)
+                      GestureDetector(
+                        onTap: () {
+                          ref.read(bountiesProvider.notifier).claimBounty(m.id);
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: AppColors.gold,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: const Text('CLAIM', style: TextStyle(color: Colors.black, fontSize: 8, fontWeight: FontWeight.bold)),
+                        ),
+                      )
+                    else if (isClaimed)
+                      const Icon(Icons.check_circle, color: AppColors.white30, size: 12)
                   ],
                 ),
-                const SizedBox(height: 3),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Container(
-                        height: 3,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(1.5),
-                          color: AppColors.white05,
-                        ),
-                        child: FractionallySizedBox(
-                          alignment: Alignment.centerLeft,
-                          widthFactor: progress,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(1.5),
-                              color: done ? AppColors.gold : m.color,
+                if (!isClaimed) ...[
+                  const SizedBox(height: 3),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          height: 3,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(1.5),
+                            color: AppColors.white05,
+                          ),
+                          child: FractionallySizedBox(
+                            alignment: Alignment.centerLeft,
+                            widthFactor: progress,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(1.5),
+                                color: isCompleted ? AppColors.gold : mColor,
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${m.current}/${m.total}',
-                      style: const TextStyle(
-                        color: AppColors.white30,
-                        fontSize: 7,
+                      const SizedBox(width: 4),
+                      Text(
+                        '${m.current}/${m.total}',
+                        style: const TextStyle(
+                          color: AppColors.white30,
+                          fontSize: 7,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '+${m.xp}XP',
-                      style: TextStyle(
-                        color: done ? AppColors.gold : AppColors.white30,
-                        fontSize: 7,
-                        fontWeight: FontWeight.w600,
+                      const SizedBox(width: 4),
+                      Text(
+                        '+${m.xp}XP',
+                        style: TextStyle(
+                          color: isCompleted ? AppColors.gold : AppColors.white30,
+                          fontSize: 7,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
+                    ],
+                  ),
+                ],
               ],
             ),
           );
@@ -255,19 +286,4 @@ class _DailyBountyPanelState extends State<DailyBountyPanel>
       ],
     );
   }
-}
-
-class _Mission {
-  final String label;
-  final IconData icon;
-  final int current, total, xp;
-  final Color color;
-  _Mission(
-    this.label,
-    this.icon,
-    this.current,
-    this.total,
-    this.xp,
-    this.color,
-  );
 }

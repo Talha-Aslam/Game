@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../providers/social_provider.dart';
+import '../../../../providers/party_provider.dart';
 import '../../widgets/friend_card_widget.dart';
 
 /// All Friends tab — grouped by online/offline
@@ -76,7 +77,7 @@ class _AllFriendsTabState extends ConsumerState<AllFriendsTab> {
                   ),
                   ...online.map((f) => FriendCardWidget(
                     friend: f,
-                    onInvite: () {},
+                    onInvite: () => ref.read(partyProvider.notifier).inviteFriend(f),
                     onMessage: () {},
                     onViewProfile: () {},
                     onSendPopularity: () {},
@@ -89,7 +90,7 @@ class _AllFriendsTabState extends ConsumerState<AllFriendsTab> {
                   ),
                   ...offline.map((f) => FriendCardWidget(
                     friend: f,
-                    onInvite: () {},
+                    onInvite: () => ref.read(partyProvider.notifier).inviteFriend(f),
                     onMessage: () {},
                     onViewProfile: () {},
                     onSendPopularity: () {},

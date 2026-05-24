@@ -7,6 +7,7 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../core/theme/app_gradients.dart';
 import '../../../providers/game_provider.dart';
 import '../../../providers/matchmaking_provider.dart';
+import '../../../providers/auth_provider.dart';
 import '../../../services/matchmaking_service.dart';
 import '../../../models/game_state_model.dart';
 import '../../../widgets/glass_button.dart';
@@ -26,10 +27,16 @@ class _MatchmakingScreenState extends ConsumerState<MatchmakingScreen>
   @override
   void initState() {
     super.initState();
-    _scanController = AnimationController(duration: const Duration(seconds: 3), vsync: this)..repeat();
+    _scanController = AnimationController(
+      duration: const Duration(seconds: 3),
+      vsync: this,
+    )..repeat();
     // Start matchmaking
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(matchmakingServiceProvider).startSearching();
+      final auth = ref.read(authProvider);
+      ref
+          .read(matchmakingServiceProvider)
+          .startSearching(auth.user?.id ?? 'guest_123');
     });
   }
 
@@ -44,7 +51,8 @@ class _MatchmakingScreenState extends ConsumerState<MatchmakingScreen>
     final mmState = ref.watch(matchmakingStateProvider);
 
     ref.listen(gameProvider, (prev, next) {
-      if (next.phase == GamePhase.lobby || next.phase == GamePhase.roleAssignment) {
+      if (next.phase == GamePhase.lobby ||
+          next.phase == GamePhase.roleAssignment) {
         context.go('/game');
       }
     });
@@ -52,7 +60,11 @@ class _MatchmakingScreenState extends ConsumerState<MatchmakingScreen>
     return Scaffold(
       body: Stack(
         children: [
-          Container(decoration: const BoxDecoration(gradient: AppGradients.backgroundGradient)),
+          Container(
+            decoration: const BoxDecoration(
+              gradient: AppGradients.backgroundGradient,
+            ),
+          ),
           const ParticleField(particleCount: 20, particleColor: AppColors.cyan),
           SafeArea(
             child: Column(
@@ -69,9 +81,18 @@ class _MatchmakingScreenState extends ConsumerState<MatchmakingScreen>
                         context.go('/home');
                       },
                       child: Container(
-                        width: 40, height: 40,
-                        decoration: BoxDecoration(shape: BoxShape.circle, color: AppColors.white05, border: Border.all(color: AppColors.glassBorder)),
-                        child: const Icon(Icons.arrow_back, color: AppColors.white70, size: 20),
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: AppColors.white05,
+                          border: Border.all(color: AppColors.glassBorder),
+                        ),
+                        child: const Icon(
+                          Icons.arrow_back,
+                          color: AppColors.white70,
+                          size: 20,
+                        ),
                       ),
                     ),
                   ),
@@ -83,21 +104,25 @@ class _MatchmakingScreenState extends ConsumerState<MatchmakingScreen>
                   animation: _scanController,
                   builder: (context, _) {
                     return SizedBox(
-                      width: 200, height: 200,
+                      width: 200,
+                      height: 200,
                       child: Stack(
                         alignment: Alignment.center,
                         children: [
                           // Outer rings
                           ...List.generate(3, (i) {
                             final delay = i * 0.33;
-                            final animValue = (_scanController.value + delay) % 1.0;
+                            final animValue =
+                                (_scanController.value + delay) % 1.0;
                             return Container(
                               width: 120 + animValue * 80,
                               height: 120 + animValue * 80,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 border: Border.all(
-                                  color: AppColors.cyan.withValues(alpha: (1 - animValue) * 0.4),
+                                  color: AppColors.cyan.withValues(
+                                    alpha: (1 - animValue) * 0.4,
+                                  ),
                                   width: 1.5,
                                 ),
                               ),
@@ -105,28 +130,46 @@ class _MatchmakingScreenState extends ConsumerState<MatchmakingScreen>
                           }),
                           // Center circle
                           Container(
-                            width: 100, height: 100,
+                            width: 100,
+                            height: 100,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               color: AppColors.cyan.withValues(alpha: 0.1),
-                              border: Border.all(color: AppColors.cyan.withValues(alpha: 0.4), width: 2),
-                              boxShadow: [BoxShadow(color: AppColors.cyan.withValues(alpha: 0.2), blurRadius: 20)],
+                              border: Border.all(
+                                color: AppColors.cyan.withValues(alpha: 0.4),
+                                width: 2,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.cyan.withValues(alpha: 0.2),
+                                  blurRadius: 20,
+                                ),
+                              ],
                             ),
-                            child: const Icon(Icons.radar, color: AppColors.cyan, size: 40),
+                            child: const Icon(
+                              Icons.radar,
+                              color: AppColors.cyan,
+                              size: 40,
+                            ),
                           ),
                           // Sweep line
                           Transform.rotate(
                             angle: _scanController.value * 2 * pi,
                             child: Container(
-                              width: 2, height: 100,
+                              width: 2,
+                              height: 100,
                               alignment: Alignment.topCenter,
                               child: Container(
-                                width: 2, height: 50,
+                                width: 2,
+                                height: 50,
                                 decoration: BoxDecoration(
                                   gradient: LinearGradient(
                                     begin: Alignment.topCenter,
                                     end: Alignment.bottomCenter,
-                                    colors: [AppColors.cyan.withValues(alpha: 0), AppColors.cyan],
+                                    colors: [
+                                      AppColors.cyan.withValues(alpha: 0),
+                                      AppColors.cyan,
+                                    ],
                                   ),
                                 ),
                               ),
@@ -139,25 +182,45 @@ class _MatchmakingScreenState extends ConsumerState<MatchmakingScreen>
                 ),
 
                 const SizedBox(height: 32),
-                const NeonText(text: 'SEARCHING...', fontSize: 22, color: AppColors.cyan, glowRadius: 15),
+                const NeonText(
+                  text: 'SEARCHING...',
+                  fontSize: 22,
+                  color: AppColors.cyan,
+                  glowRadius: 15,
+                ),
                 const SizedBox(height: 12),
 
                 mmState.when(
-                  loading: () => Text('Connecting...', style: AppTextStyles.bodyMedium),
-                  error: (e, _) => Text('Error: $e', style: AppTextStyles.bodyMedium.copyWith(color: AppColors.crimsonRed)),
+                  loading: () =>
+                      Text('Connecting...', style: AppTextStyles.bodyMedium),
+                  error: (e, _) => Text(
+                    'Error: $e',
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: AppColors.crimsonRed,
+                    ),
+                  ),
                   data: (state) {
                     if (state.status == MatchmakingStatus.found) {
                       return Column(
                         children: [
-                          const NeonText(text: 'MATCH FOUND!', fontSize: 24, color: AppColors.gold, glowRadius: 20),
+                          const NeonText(
+                            text: 'MATCH FOUND!',
+                            fontSize: 24,
+                            color: AppColors.gold,
+                            glowRadius: 20,
+                          ),
                           const SizedBox(height: 16),
                           GlassButton(
                             label: 'ACCEPT',
                             glowColor: AppColors.mintGreen,
                             width: 160,
                             onPressed: () {
-                              ref.read(matchmakingServiceProvider).acceptMatch();
-                              ref.read(gameProvider.notifier).startMatchmaking();
+                              ref
+                                  .read(matchmakingServiceProvider)
+                                  .acceptMatch();
+                              ref
+                                  .read(gameProvider.notifier)
+                                  .startMatchmaking();
                             },
                           ),
                         ],
@@ -165,9 +228,15 @@ class _MatchmakingScreenState extends ConsumerState<MatchmakingScreen>
                     }
                     return Column(
                       children: [
-                        Text('Players found: ${state.playersFound} / ${state.playersNeeded}', style: AppTextStyles.bodyMedium),
+                        Text(
+                          'Players found: ${state.playersFound} / ${state.playersNeeded}',
+                          style: AppTextStyles.bodyMedium,
+                        ),
                         const SizedBox(height: 8),
-                        Text('Time: ${state.elapsedSeconds}s', style: AppTextStyles.bodySmall),
+                        Text(
+                          'Time: ${state.elapsedSeconds}s',
+                          style: AppTextStyles.bodySmall,
+                        ),
                         const SizedBox(height: 8),
                         // Progress bar
                         Padding(
@@ -177,7 +246,9 @@ class _MatchmakingScreenState extends ConsumerState<MatchmakingScreen>
                             child: LinearProgressIndicator(
                               value: state.playersFound / state.playersNeeded,
                               backgroundColor: AppColors.white10,
-                              valueColor: const AlwaysStoppedAnimation(AppColors.cyan),
+                              valueColor: const AlwaysStoppedAnimation(
+                                AppColors.cyan,
+                              ),
                               minHeight: 4,
                             ),
                           ),
@@ -193,9 +264,21 @@ class _MatchmakingScreenState extends ConsumerState<MatchmakingScreen>
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Container(width: 8, height: 8, decoration: const BoxDecoration(shape: BoxShape.circle, color: AppColors.online)),
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: AppColors.online,
+                      ),
+                    ),
                     const SizedBox(width: 6),
-                    Text('Voice Connected', style: AppTextStyles.labelSmall.copyWith(color: AppColors.online)),
+                    Text(
+                      'Voice Connected',
+                      style: AppTextStyles.labelSmall.copyWith(
+                        color: AppColors.online,
+                      ),
+                    ),
                   ],
                 ),
 
