@@ -21,6 +21,10 @@ async def websocket_game(websocket: WebSocket, room_id: str, token: str = Query(
         
     await manager.connect(user_id, websocket)
     
+    # Send the current state immediately so the player doesn't miss it while connecting
+    room = game_engine.active_rooms[room_id]
+    await game_engine._broadcast_state(room, "lobby_update", {"status": "connected"})
+    
     try:
         while True:
             data = await websocket.receive_text()
