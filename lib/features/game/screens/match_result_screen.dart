@@ -1,4 +1,3 @@
-
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -36,15 +35,21 @@ class _MatchResultScreenState extends ConsumerState<MatchResultScreen>
   void initState() {
     super.initState();
     _bannerSweep = AnimationController(
-      duration: const Duration(milliseconds: 1200), vsync: this)
-      ..forward();
+      duration: const Duration(milliseconds: 1200),
+      vsync: this,
+    )..forward();
     _statsReveal = AnimationController(
-      duration: const Duration(milliseconds: 1800), vsync: this);
+      duration: const Duration(milliseconds: 1800),
+      vsync: this,
+    );
     _buttonSlide = AnimationController(
-      duration: const Duration(milliseconds: 600), vsync: this);
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    );
     _glow = AnimationController(
-      duration: const Duration(seconds: 2), vsync: this)
-      ..repeat(reverse: true);
+      duration: const Duration(seconds: 2),
+      vsync: this,
+    )..repeat(reverse: true);
 
     // Stagger: banner → stats → buttons
     _bannerSweep.addStatusListener((s) {
@@ -78,70 +83,88 @@ class _MatchResultScreenState extends ConsumerState<MatchResultScreen>
         : AppColors.mintGreen;
     final mvp = gs.players.where((p) => p.id == rd?.mvpPlayerId).firstOrNull;
 
-    return Scaffold(
-      body: Stack(children: [
-        // Background
-        Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter, end: Alignment.bottomCenter,
-              colors: [
-                isWinner
-                    ? winColor.withValues(alpha: 0.08)
-                    : AppColors.background,
-                AppColors.background,
-                AppColors.surface,
-              ],
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        ref.read(gameProvider.notifier).resetGame();
+        context.go('/home');
+      },
+      child: Scaffold(
+        body: Stack(
+          children: [
+            // Background
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    isWinner
+                        ? winColor.withValues(alpha: 0.08)
+                        : AppColors.background,
+                    AppColors.background,
+                    AppColors.surface,
+                  ],
+                ),
+              ),
             ),
-          ),
+
+            // Particles
+            RepaintBoundary(
+              child: ParticleField(
+                particleCount: 20,
+                particleColor: winColor.withValues(alpha: 0.3),
+              ),
+            ),
+
+            SafeArea(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Column(
+                  children: [
+                    const SizedBox(height: 20),
+
+                    // ═══ WINNER BANNER ═══
+                    _buildWinnerBanner(winner, isWinner, winColor),
+
+                    const SizedBox(height: 24),
+
+                    // ═══ MVP CARD ═══
+                    if (mvp != null) _buildMvpCard(mvp, winColor),
+
+                    const SizedBox(height: 20),
+
+                    // ═══ STAT CARDS ═══
+                    if (rd != null) _buildStatCards(rd, winColor),
+
+                    const SizedBox(height: 20),
+
+                    // ═══ ROLE REVEAL TABLE ═══
+                    _buildRoleTable(gs),
+
+                    const SizedBox(height: 20),
+
+                    // ═══ ACTION BUTTONS ═══
+                    _buildActionButtons(gs, winColor),
+
+                    const SizedBox(height: 30),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
-
-        // Particles
-        RepaintBoundary(
-          child: ParticleField(
-            particleCount: 20,
-            particleColor: winColor.withValues(alpha: 0.3)),
-        ),
-
-        SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Column(children: [
-              const SizedBox(height: 20),
-
-              // ═══ WINNER BANNER ═══
-              _buildWinnerBanner(winner, isWinner, winColor),
-
-              const SizedBox(height: 24),
-
-              // ═══ MVP CARD ═══
-              if (mvp != null) _buildMvpCard(mvp, winColor),
-
-              const SizedBox(height: 20),
-
-              // ═══ STAT CARDS ═══
-              if (rd != null) _buildStatCards(rd, winColor),
-
-              const SizedBox(height: 20),
-
-              // ═══ ROLE REVEAL TABLE ═══
-              _buildRoleTable(gs),
-
-              const SizedBox(height: 20),
-
-              // ═══ ACTION BUTTONS ═══
-              _buildActionButtons(gs, winColor),
-
-              const SizedBox(height: 30),
-            ]),
-          ),
-        ),
-      ]),
+      ),
     );
   }
 
   /// ── Winner Banner with sweep-in animation ──
-  Widget _buildWinnerBanner(WinningSide? winner, bool isWinner, Color winColor) {
+  Widget _buildWinnerBanner(
+    WinningSide? winner,
+    bool isWinner,
+    Color winColor,
+  ) {
     return AnimatedBuilder(
       animation: _bannerSweep,
       builder: (_, _) {
@@ -150,44 +173,52 @@ class _MatchResultScreenState extends ConsumerState<MatchResultScreen>
           scale: 0.5 + t * 0.5,
           child: Opacity(
             opacity: t.clamp(0.0, 1.0),
-            child: Column(children: [
-              // Victory/Defeat label
-              AnimatedBuilder(
-                animation: _glow,
-                builder: (_, _) => NeonText(
-                  text: isWinner ? '🎉 VICTORY' : '💀 DEFEAT',
-                  fontSize: 36,
-                  color: isWinner ? AppColors.gold : AppColors.crimsonRed,
-                  glowRadius: 20 + _glow.value * 10,
+            child: Column(
+              children: [
+                // Victory/Defeat label
+                AnimatedBuilder(
+                  animation: _glow,
+                  builder: (_, _) => NeonText(
+                    text: isWinner ? '🎉 VICTORY' : '💀 DEFEAT',
+                    fontSize: 36,
+                    color: isWinner ? AppColors.gold : AppColors.crimsonRed,
+                    glowRadius: 20 + _glow.value * 10,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 8),
-              // Faction
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      color: winColor.withValues(alpha: 0.08),
-                      border: Border.all(color: winColor.withValues(alpha: 0.2)),
-                    ),
-                    child: Text(
-                      winner == WinningSide.mafia
-                          ? 'THE SYNDICATE PREVAILS'
-                          : 'CIVILIANS TRIUMPH',
-                      style: GoogleFonts.outfit(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: winColor,
-                        letterSpacing: 2),
+                const SizedBox(height: 8),
+                // Faction
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        color: winColor.withValues(alpha: 0.08),
+                        border: Border.all(
+                          color: winColor.withValues(alpha: 0.2),
+                        ),
+                      ),
+                      child: Text(
+                        winner == WinningSide.mafia
+                            ? 'THE SYNDICATE PREVAILS'
+                            : 'CIVILIANS TRIUMPH',
+                        style: GoogleFonts.outfit(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: winColor,
+                          letterSpacing: 2,
+                        ),
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ]),
+              ],
+            ),
           ),
         );
       },
@@ -200,7 +231,8 @@ class _MatchResultScreenState extends ConsumerState<MatchResultScreen>
       animation: _statsReveal,
       builder: (_, _) {
         final t = Curves.easeOut.transform(
-          (_statsReveal.value * 2).clamp(0.0, 1.0));
+          (_statsReveal.value * 2).clamp(0.0, 1.0),
+        );
         return Opacity(
           opacity: t,
           child: Transform.translate(
@@ -214,52 +246,87 @@ class _MatchResultScreenState extends ConsumerState<MatchResultScreen>
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(16),
                     color: AppColors.gold.withValues(alpha: 0.06),
-                    border: Border.all(color: AppColors.gold.withValues(alpha: 0.2)),
+                    border: Border.all(
+                      color: AppColors.gold.withValues(alpha: 0.2),
+                    ),
                     boxShadow: [
                       BoxShadow(
                         color: AppColors.gold.withValues(alpha: 0.08),
-                        blurRadius: 20),
+                        blurRadius: 20,
+                      ),
                     ],
                   ),
-                  child: Row(children: [
-                    // Crown + avatar
-                    Stack(clipBehavior: Clip.none, children: [
-                      Container(
-                        width: 48, height: 48,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: AppColors.gold.withValues(alpha: 0.1),
-                          border: Border.all(color: AppColors.gold.withValues(alpha: 0.3))),
-                        child: Center(
-                          child: Text(
-                            mvp.name.isNotEmpty ? mvp.name[0].toUpperCase() : '?',
-                            style: TextStyle(
-                              color: AppColors.gold,
-                              fontSize: 20,
-                              fontWeight: FontWeight.w800)),
+                  child: Row(
+                    children: [
+                      // Crown + avatar
+                      Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          Container(
+                            width: 48,
+                            height: 48,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: AppColors.gold.withValues(alpha: 0.1),
+                              border: Border.all(
+                                color: AppColors.gold.withValues(alpha: 0.3),
+                              ),
+                            ),
+                            child: Center(
+                              child: Text(
+                                mvp.name.isNotEmpty
+                                    ? mvp.name[0].toUpperCase()
+                                    : '?',
+                                style: TextStyle(
+                                  color: AppColors.gold,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ),
+                          ),
+                          Positioned(
+                            top: -8,
+                            left: 12,
+                            child: Text('👑', style: TextStyle(fontSize: 16)),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'MOST VALUABLE PLAYER',
+                              style: TextStyle(
+                                color: AppColors.gold.withValues(alpha: 0.5),
+                                fontSize: 8,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 2,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              mvp.name,
+                              style: TextStyle(
+                                color: AppColors.gold,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            Text(
+                              mvp.role?.displayName ?? '',
+                              style: TextStyle(
+                                color: AppColors.white30,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      Positioned(
-                        top: -8, left: 12,
-                        child: Text('👑', style: TextStyle(fontSize: 16))),
-                    ]),
-                    const SizedBox(width: 14),
-                    Expanded(child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text('MOST VALUABLE PLAYER',
-                        style: TextStyle(
-                          color: AppColors.gold.withValues(alpha: 0.5),
-                          fontSize: 8, fontWeight: FontWeight.w700, letterSpacing: 2)),
-                      const SizedBox(height: 2),
-                      Text(mvp.name,
-                        style: TextStyle(
-                          color: AppColors.gold,
-                          fontSize: 18, fontWeight: FontWeight.w800)),
-                      Text(mvp.role?.displayName ?? '',
-                        style: TextStyle(
-                          color: AppColors.white30, fontSize: 11)),
-                    ])),
-                  ]),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -273,15 +340,30 @@ class _MatchResultScreenState extends ConsumerState<MatchResultScreen>
   Widget _buildStatCards(MatchResultData rd, Color winColor) {
     final stats = [
       _StatItem(Icons.star, 'XP', '+${rd.xpGained}', AppColors.gold),
-      _StatItem(Icons.military_tech, 'RANK',
+      _StatItem(
+        Icons.military_tech,
+        'RANK',
         '${rd.rankDelta > 0 ? '+' : ''}${rd.rankDelta} RP',
-        rd.rankDelta >= 0 ? AppColors.mintGreen : AppColors.crimsonRed),
-      _StatItem(Icons.local_fire_department, 'BATTLE PASS',
-        '+${rd.bpXpGained}', AppColors.purpleGlow),
-      _StatItem(Icons.bolt, 'INFLUENCE',
-        '+${rd.influenceGained}', AppColors.cyan),
-      _StatItem(Icons.favorite, 'POPULARITY',
-        '+${rd.popularityGained}', AppColors.giftPink),
+        rd.rankDelta >= 0 ? AppColors.mintGreen : AppColors.crimsonRed,
+      ),
+      _StatItem(
+        Icons.local_fire_department,
+        'BATTLE PASS',
+        '+${rd.bpXpGained}',
+        AppColors.purpleGlow,
+      ),
+      _StatItem(
+        Icons.bolt,
+        'INFLUENCE',
+        '+${rd.influenceGained}',
+        AppColors.cyan,
+      ),
+      _StatItem(
+        Icons.favorite,
+        'POPULARITY',
+        '+${rd.popularityGained}',
+        AppColors.giftPink,
+      ),
     ];
 
     return AnimatedBuilder(
@@ -294,7 +376,8 @@ class _MatchResultScreenState extends ConsumerState<MatchResultScreen>
           children: List.generate(stats.length, (i) {
             final delay = 0.2 + i * 0.12;
             final t = Curves.easeOutBack.transform(
-              ((_statsReveal.value - delay) * 3).clamp(0.0, 1.0));
+              ((_statsReveal.value - delay) * 3).clamp(0.0, 1.0),
+            );
             final stat = stats[i];
 
             return Opacity(
@@ -323,19 +406,30 @@ class _MatchResultScreenState extends ConsumerState<MatchResultScreen>
             color: stat.color.withValues(alpha: 0.06),
             border: Border.all(color: stat.color.withValues(alpha: 0.15)),
           ),
-          child: Column(children: [
-            Icon(stat.icon, color: stat.color, size: 20),
-            const SizedBox(height: 6),
-            Text(stat.label,
-              style: TextStyle(
-                color: AppColors.white30, fontSize: 8,
-                fontWeight: FontWeight.w700, letterSpacing: 1)),
-            const SizedBox(height: 2),
-            Text(stat.value,
-              style: GoogleFonts.outfit(
-                fontSize: 18, fontWeight: FontWeight.w800,
-                color: stat.color)),
-          ]),
+          child: Column(
+            children: [
+              Icon(stat.icon, color: stat.color, size: 20),
+              const SizedBox(height: 6),
+              Text(
+                stat.label,
+                style: TextStyle(
+                  color: AppColors.white30,
+                  fontSize: 8,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                stat.value,
+                style: GoogleFonts.outfit(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: stat.color,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -363,10 +457,15 @@ class _MatchResultScreenState extends ConsumerState<MatchResultScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('ROLE STATISTICS',
+                    Text(
+                      'ROLE STATISTICS',
                       style: TextStyle(
-                        color: AppColors.white50, fontSize: 10,
-                        fontWeight: FontWeight.w700, letterSpacing: 2)),
+                        color: AppColors.white50,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 2,
+                      ),
+                    ),
                     const SizedBox(height: 10),
                     ...gs.players.map((p) => _buildPlayerRow(p, gs)),
                   ],
@@ -386,68 +485,93 @@ class _MatchResultScreenState extends ConsumerState<MatchResultScreen>
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(children: [
-        // Avatar
-        Container(
-          width: 28, height: 28,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: p.isAlive
-                ? roleColor.withValues(alpha: 0.1)
-                : AppColors.darkGrey.withValues(alpha: 0.3),
-            border: Border.all(
-              color: isLocal
-                  ? AppColors.purpleNeon.withValues(alpha: 0.5)
-                  : AppColors.white10)),
-          child: Center(
-            child: Text(
-              p.name.isNotEmpty ? p.name[0].toUpperCase() : '?',
-              style: TextStyle(
-                color: p.isAlive ? roleColor : AppColors.white30,
-                fontSize: 11, fontWeight: FontWeight.w700)),
-          ),
-        ),
-        const SizedBox(width: 8),
-        // Name
-        Expanded(
-          child: Row(children: [
-            Text(p.name,
-              style: TextStyle(
-                color: isLocal ? AppColors.purpleGlow : AppColors.white70,
-                fontSize: 12, fontWeight: FontWeight.w600)),
-            if (isMvp) ...[
-              const SizedBox(width: 4),
-              Text('👑', style: TextStyle(fontSize: 10)),
-            ],
-            if (isLocal) ...[
-              const SizedBox(width: 4),
-              Text('(YOU)',
+      child: Row(
+        children: [
+          // Avatar
+          Container(
+            width: 28,
+            height: 28,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: p.isAlive
+                  ? roleColor.withValues(alpha: 0.1)
+                  : AppColors.darkGrey.withValues(alpha: 0.3),
+              border: Border.all(
+                color: isLocal
+                    ? AppColors.purpleNeon.withValues(alpha: 0.5)
+                    : AppColors.white10,
+              ),
+            ),
+            child: Center(
+              child: Text(
+                p.name.isNotEmpty ? p.name[0].toUpperCase() : '?',
                 style: TextStyle(
-                  color: AppColors.purpleNeon.withValues(alpha: 0.5),
-                  fontSize: 8, fontWeight: FontWeight.w700)),
-            ],
-          ]),
-        ),
-        // Role badge
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(6),
-            color: roleColor.withValues(alpha: 0.08),
-            border: Border.all(color: roleColor.withValues(alpha: 0.2))),
-          child: Text(p.role?.displayName ?? '?',
-            style: TextStyle(
-              color: roleColor, fontSize: 9, fontWeight: FontWeight.w700)),
-        ),
-        const SizedBox(width: 6),
-        // Status
-        Icon(
-          p.isAlive ? Icons.check_circle : Icons.cancel,
-          color: p.isAlive
-              ? AppColors.mintGreen.withValues(alpha: 0.5)
-              : AppColors.crimsonRed.withValues(alpha: 0.4),
-          size: 14),
-      ]),
+                  color: p.isAlive ? roleColor : AppColors.white30,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          // Name
+          Expanded(
+            child: Row(
+              children: [
+                Text(
+                  p.name,
+                  style: TextStyle(
+                    color: isLocal ? AppColors.purpleGlow : AppColors.white70,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                if (isMvp) ...[
+                  const SizedBox(width: 4),
+                  Text('👑', style: TextStyle(fontSize: 10)),
+                ],
+                if (isLocal) ...[
+                  const SizedBox(width: 4),
+                  Text(
+                    '(YOU)',
+                    style: TextStyle(
+                      color: AppColors.purpleNeon.withValues(alpha: 0.5),
+                      fontSize: 8,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          // Role badge
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(6),
+              color: roleColor.withValues(alpha: 0.08),
+              border: Border.all(color: roleColor.withValues(alpha: 0.2)),
+            ),
+            child: Text(
+              p.role?.displayName ?? '?',
+              style: TextStyle(
+                color: roleColor,
+                fontSize: 9,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          const SizedBox(width: 6),
+          // Status
+          Icon(
+            p.isAlive ? Icons.check_circle : Icons.cancel,
+            color: p.isAlive
+                ? AppColors.mintGreen.withValues(alpha: 0.5)
+                : AppColors.crimsonRed.withValues(alpha: 0.4),
+            size: 14,
+          ),
+        ],
+      ),
     );
   }
 
@@ -461,86 +585,102 @@ class _MatchResultScreenState extends ConsumerState<MatchResultScreen>
           opacity: t.clamp(0.0, 1.0),
           child: Transform.translate(
             offset: Offset(0, 30 * (1 - t)),
-            child: Column(children: [
-              // Primary row
-              Row(children: [
-                Expanded(child: GlassButton(
-                  label: 'PLAY AGAIN',
-                  glowColor: AppColors.purpleNeon,
-                  icon: Icons.replay,
-                  height: 44,
-                  onPressed: () {
-                    ref.read(gameProvider.notifier).resetGame();
-                    ref.read(gameProvider.notifier).startMatchmaking();
-                    context.go('/game');
-                  },
-                )),
-                const SizedBox(width: 10),
-                GlassButton(
-                  label: 'HOME',
-                  isOutlined: true,
-                  icon: Icons.home,
-                  width: 90, height: 44,
-                  onPressed: () {
-                    ref.read(gameProvider.notifier).resetGame();
-                    context.go('/home');
-                  },
-                ),
-              ]),
-              const SizedBox(height: 10),
-              // Secondary row
-              Row(children: [
-                Expanded(child: GlassButton(
-                  label: 'ADD FRIEND',
-                  isOutlined: true,
-                  icon: Icons.person_add,
-                  height: 38,
-                  onPressed: () {
-                    // Add friend action stub
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Friend request sent!'),
-                        backgroundColor: AppColors.surface,
-                        behavior: SnackBarBehavior.floating,
+            child: Column(
+              children: [
+                // Primary row
+                Row(
+                  children: [
+                    Expanded(
+                      child: GlassButton(
+                        label: 'PLAY AGAIN',
+                        glowColor: AppColors.purpleNeon,
+                        icon: Icons.replay,
+                        height: 44,
+                        onPressed: () {
+                          ref.read(gameProvider.notifier).resetGame();
+                          ref.read(gameProvider.notifier).startMatchmaking();
+                          context.go('/game');
+                        },
                       ),
-                    );
-                  },
-                )),
-                const SizedBox(width: 8),
-                Expanded(child: GlassButton(
-                  label: _commendationSent ? 'SENT ✓' : 'COMMEND',
-                  isOutlined: true,
-                  icon: Icons.thumb_up,
-                  height: 38,
-                  onPressed: _commendationSent
-                      ? null
-                      : () {
-                          final mvpId = gs.resultData?.mvpPlayerId;
-                          if (mvpId != null) {
-                            ref.read(gameProvider.notifier).sendCommendation(mvpId);
-                          }
-                          setState(() => _commendationSent = true);
+                    ),
+                    const SizedBox(width: 10),
+                    GlassButton(
+                      label: 'HOME',
+                      isOutlined: true,
+                      icon: Icons.home,
+                      width: 90,
+                      height: 44,
+                      onPressed: () {
+                        ref.read(gameProvider.notifier).resetGame();
+                        context.go('/home');
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                // Secondary row
+                Row(
+                  children: [
+                    Expanded(
+                      child: GlassButton(
+                        label: 'ADD FRIEND',
+                        isOutlined: true,
+                        icon: Icons.person_add,
+                        height: 38,
+                        onPressed: () {
+                          // Add friend action stub
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text('Commendation sent!'),
+                              content: Text('Friend request sent!'),
                               backgroundColor: AppColors.surface,
                               behavior: SnackBarBehavior.floating,
                             ),
                           );
                         },
-                )),
-                const SizedBox(width: 8),
-                GlassButton(
-                  label: 'STATS',
-                  isOutlined: true,
-                  icon: Icons.bar_chart,
-                  width: 80, height: 38,
-                  onPressed: () {
-                    // View stats action — scroll to role table
-                  },
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: GlassButton(
+                        label: _commendationSent ? 'SENT ✓' : 'COMMEND',
+                        isOutlined: true,
+                        icon: Icons.thumb_up,
+                        height: 38,
+                        onPressed: _commendationSent
+                            ? null
+                            : () {
+                                final mvpId = gs.resultData?.mvpPlayerId;
+                                if (mvpId != null) {
+                                  ref
+                                      .read(gameProvider.notifier)
+                                      .sendCommendation(mvpId);
+                                }
+                                setState(() => _commendationSent = true);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Commendation sent!'),
+                                    backgroundColor: AppColors.surface,
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
+                              },
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    GlassButton(
+                      label: 'STATS',
+                      isOutlined: true,
+                      icon: Icons.bar_chart,
+                      width: 80,
+                      height: 38,
+                      onPressed: () {
+                        // View stats action — scroll to role table
+                      },
+                    ),
+                  ],
                 ),
-              ]),
-            ]),
+              ],
+            ),
           ),
         );
       },
@@ -549,11 +689,16 @@ class _MatchResultScreenState extends ConsumerState<MatchResultScreen>
 
   Color _roleColor(GameRole? role) {
     switch (role) {
-      case GameRole.mafia: return AppColors.crimsonRed;
-      case GameRole.doctor: return AppColors.mintGreen;
-      case GameRole.detective: return AppColors.purpleNeon;
-      case GameRole.civilian: return AppColors.cyan;
-      default: return AppColors.white30;
+      case GameRole.mafia:
+        return AppColors.crimsonRed;
+      case GameRole.doctor:
+        return AppColors.mintGreen;
+      case GameRole.detective:
+        return AppColors.purpleNeon;
+      case GameRole.civilian:
+        return AppColors.cyan;
+      default:
+        return AppColors.white30;
     }
   }
 }

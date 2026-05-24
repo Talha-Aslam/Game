@@ -105,7 +105,6 @@ class _LobbyCountdownOverlayState extends State<LobbyCountdownOverlay>
                       fontWeight: FontWeight.w700,
                       letterSpacing: 3)),
                 ),
-                const SizedBox(height: 8),
                 // Big countdown number
                 Transform.scale(
                   scale: combinedScale,
@@ -127,7 +126,6 @@ class _LobbyCountdownOverlayState extends State<LobbyCountdownOverlay>
                     ),
                   ),
                 ),
-                const SizedBox(height: 6),
                 // Ticking indicator
                 if (isUrgent)
                   AnimatedOpacity(

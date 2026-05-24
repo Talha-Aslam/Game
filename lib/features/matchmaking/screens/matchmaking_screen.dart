@@ -57,251 +57,266 @@ class _MatchmakingScreenState extends ConsumerState<MatchmakingScreen>
       }
     });
 
-    return Scaffold(
-      body: Stack(
-        children: [
-          Container(
-            decoration: const BoxDecoration(
-              gradient: AppGradients.backgroundGradient,
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        ref.read(matchmakingServiceProvider).cancelSearching();
+        context.go('/home');
+      },
+      child: Scaffold(
+        body: Stack(
+          children: [
+            Container(
+              decoration: const BoxDecoration(
+                gradient: AppGradients.backgroundGradient,
+              ),
             ),
-          ),
-          const ParticleField(particleCount: 20, particleColor: AppColors.cyan),
-          SafeArea(
-            child: Column(
-              children: [
-                const SizedBox(height: 16),
-                // Back button
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Padding(
-                    padding: const EdgeInsets.only(left: 16),
-                    child: GestureDetector(
-                      onTap: () {
-                        ref.read(matchmakingServiceProvider).cancelSearching();
-                        context.go('/home');
-                      },
-                      child: Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: AppColors.white05,
-                          border: Border.all(color: AppColors.glassBorder),
-                        ),
-                        child: const Icon(
-                          Icons.arrow_back,
-                          color: AppColors.white70,
-                          size: 20,
+            const ParticleField(
+              particleCount: 20,
+              particleColor: AppColors.cyan,
+            ),
+            SafeArea(
+              child: Column(
+                children: [
+                  const SizedBox(height: 16),
+                  // Back button
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 16),
+                      child: GestureDetector(
+                        onTap: () {
+                          ref
+                              .read(matchmakingServiceProvider)
+                              .cancelSearching();
+                          context.go('/home');
+                        },
+                        child: Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: AppColors.white05,
+                            border: Border.all(color: AppColors.glassBorder),
+                          ),
+                          child: const Icon(
+                            Icons.arrow_back,
+                            color: AppColors.white70,
+                            size: 20,
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
-                const Spacer(),
+                  const Spacer(),
 
-                // Scanning animation
-                AnimatedBuilder(
-                  animation: _scanController,
-                  builder: (context, _) {
-                    return SizedBox(
-                      width: 200,
-                      height: 200,
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          // Outer rings
-                          ...List.generate(3, (i) {
-                            final delay = i * 0.33;
-                            final animValue =
-                                (_scanController.value + delay) % 1.0;
-                            return Container(
-                              width: 120 + animValue * 80,
-                              height: 120 + animValue * 80,
+                  // Scanning animation
+                  AnimatedBuilder(
+                    animation: _scanController,
+                    builder: (context, _) {
+                      return SizedBox(
+                        width: 200,
+                        height: 200,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            // Outer rings
+                            ...List.generate(3, (i) {
+                              final delay = i * 0.33;
+                              final animValue =
+                                  (_scanController.value + delay) % 1.0;
+                              return Container(
+                                width: 120 + animValue * 80,
+                                height: 120 + animValue * 80,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: AppColors.cyan.withValues(
+                                      alpha: (1 - animValue) * 0.4,
+                                    ),
+                                    width: 1.5,
+                                  ),
+                                ),
+                              );
+                            }),
+                            // Center circle
+                            Container(
+                              width: 100,
+                              height: 100,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
+                                color: AppColors.cyan.withValues(alpha: 0.1),
                                 border: Border.all(
-                                  color: AppColors.cyan.withValues(
-                                    alpha: (1 - animValue) * 0.4,
+                                  color: AppColors.cyan.withValues(alpha: 0.4),
+                                  width: 2,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppColors.cyan.withValues(
+                                      alpha: 0.2,
+                                    ),
+                                    blurRadius: 20,
                                   ),
-                                  width: 1.5,
-                                ),
+                                ],
                               ),
-                            );
-                          }),
-                          // Center circle
-                          Container(
-                            width: 100,
-                            height: 100,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: AppColors.cyan.withValues(alpha: 0.1),
-                              border: Border.all(
-                                color: AppColors.cyan.withValues(alpha: 0.4),
-                                width: 2,
+                              child: const Icon(
+                                Icons.radar,
+                                color: AppColors.cyan,
+                                size: 40,
                               ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppColors.cyan.withValues(alpha: 0.2),
-                                  blurRadius: 20,
-                                ),
-                              ],
                             ),
-                            child: const Icon(
-                              Icons.radar,
-                              color: AppColors.cyan,
-                              size: 40,
-                            ),
-                          ),
-                          // Sweep line
-                          Transform.rotate(
-                            angle: _scanController.value * 2 * pi,
-                            child: Container(
-                              width: 2,
-                              height: 100,
-                              alignment: Alignment.topCenter,
+                            // Sweep line
+                            Transform.rotate(
+                              angle: _scanController.value * 2 * pi,
                               child: Container(
                                 width: 2,
-                                height: 50,
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    begin: Alignment.topCenter,
-                                    end: Alignment.bottomCenter,
-                                    colors: [
-                                      AppColors.cyan.withValues(alpha: 0),
-                                      AppColors.cyan,
-                                    ],
+                                height: 100,
+                                alignment: Alignment.topCenter,
+                                child: Container(
+                                  width: 2,
+                                  height: 50,
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topCenter,
+                                      end: Alignment.bottomCenter,
+                                      colors: [
+                                        AppColors.cyan.withValues(alpha: 0),
+                                        AppColors.cyan,
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-
-                const SizedBox(height: 32),
-                const NeonText(
-                  text: 'SEARCHING...',
-                  fontSize: 22,
-                  color: AppColors.cyan,
-                  glowRadius: 15,
-                ),
-                const SizedBox(height: 12),
-
-                mmState.when(
-                  loading: () =>
-                      Text('Connecting...', style: AppTextStyles.bodyMedium),
-                  error: (e, _) => Text(
-                    'Error: $e',
-                    style: AppTextStyles.bodyMedium.copyWith(
-                      color: AppColors.crimsonRed,
-                    ),
+                          ],
+                        ),
+                      );
+                    },
                   ),
-                  data: (state) {
-                    if (state.status == MatchmakingStatus.found) {
+
+                  const SizedBox(height: 32),
+                  const NeonText(
+                    text: 'SEARCHING...',
+                    fontSize: 22,
+                    color: AppColors.cyan,
+                    glowRadius: 15,
+                  ),
+                  const SizedBox(height: 12),
+
+                  mmState.when(
+                    loading: () =>
+                        Text('Connecting...', style: AppTextStyles.bodyMedium),
+                    error: (e, _) => Text(
+                      'Error: $e',
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: AppColors.crimsonRed,
+                      ),
+                    ),
+                    data: (state) {
+                      if (state.status == MatchmakingStatus.found) {
+                        return Column(
+                          children: [
+                            const NeonText(
+                              text: 'MATCH FOUND!',
+                              fontSize: 24,
+                              color: AppColors.gold,
+                              glowRadius: 20,
+                            ),
+                            const SizedBox(height: 16),
+                            GlassButton(
+                              label: 'ACCEPT',
+                              glowColor: AppColors.mintGreen,
+                              width: 160,
+                              onPressed: () {
+                                ref
+                                    .read(matchmakingServiceProvider)
+                                    .acceptMatch();
+                                ref
+                                    .read(gameProvider.notifier)
+                                    .startMatchmaking();
+                              },
+                            ),
+                          ],
+                        );
+                      }
                       return Column(
                         children: [
-                          const NeonText(
-                            text: 'MATCH FOUND!',
-                            fontSize: 24,
-                            color: AppColors.gold,
-                            glowRadius: 20,
+                          Text(
+                            'Players found: ${state.playersFound} / ${state.playersNeeded}',
+                            style: AppTextStyles.bodyMedium,
                           ),
-                          const SizedBox(height: 16),
-                          GlassButton(
-                            label: 'ACCEPT',
-                            glowColor: AppColors.mintGreen,
-                            width: 160,
-                            onPressed: () {
-                              ref
-                                  .read(matchmakingServiceProvider)
-                                  .acceptMatch();
-                              ref
-                                  .read(gameProvider.notifier)
-                                  .startMatchmaking();
-                            },
+                          const SizedBox(height: 8),
+                          Text(
+                            'Time: ${state.elapsedSeconds}s',
+                            style: AppTextStyles.bodySmall,
+                          ),
+                          const SizedBox(height: 8),
+                          // Progress bar
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 60),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(4),
+                              child: LinearProgressIndicator(
+                                value: state.playersFound / state.playersNeeded,
+                                backgroundColor: AppColors.white10,
+                                valueColor: const AlwaysStoppedAnimation(
+                                  AppColors.cyan,
+                                ),
+                                minHeight: 4,
+                              ),
+                            ),
                           ),
                         ],
                       );
-                    }
-                    return Column(
-                      children: [
-                        Text(
-                          'Players found: ${state.playersFound} / ${state.playersNeeded}',
-                          style: AppTextStyles.bodyMedium,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Time: ${state.elapsedSeconds}s',
-                          style: AppTextStyles.bodySmall,
-                        ),
-                        const SizedBox(height: 8),
-                        // Progress bar
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 60),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(4),
-                            child: LinearProgressIndicator(
-                              value: state.playersFound / state.playersNeeded,
-                              backgroundColor: AppColors.white10,
-                              valueColor: const AlwaysStoppedAnimation(
-                                AppColors.cyan,
-                              ),
-                              minHeight: 4,
-                            ),
-                          ),
-                        ),
-                      ],
-                    );
-                  },
-                ),
-
-                const SizedBox(height: 12),
-
-                // Voice status
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: AppColors.online,
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      'Voice Connected',
-                      style: AppTextStyles.labelSmall.copyWith(
-                        color: AppColors.online,
-                      ),
-                    ),
-                  ],
-                ),
-
-                const Spacer(),
-
-                // Cancel
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 40),
-                  child: GlassButton(
-                    label: 'CANCEL',
-                    isOutlined: true,
-                    glowColor: AppColors.crimsonRed,
-                    width: 160,
-                    onPressed: () {
-                      ref.read(matchmakingServiceProvider).cancelSearching();
-                      context.go('/home');
                     },
                   ),
-                ),
-              ],
+
+                  const SizedBox(height: 12),
+
+                  // Voice status
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: AppColors.online,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Voice Connected',
+                        style: AppTextStyles.labelSmall.copyWith(
+                          color: AppColors.online,
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const Spacer(),
+
+                  // Cancel
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 40),
+                    child: GlassButton(
+                      label: 'CANCEL',
+                      isOutlined: true,
+                      glowColor: AppColors.crimsonRed,
+                      width: 160,
+                      onPressed: () {
+                        ref.read(matchmakingServiceProvider).cancelSearching();
+                        context.go('/home');
+                      },
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

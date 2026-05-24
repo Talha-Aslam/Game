@@ -98,6 +98,11 @@ class WebSocketService {
       case 'add_friend':
         // stub — in production, server handles this
         break;
+      case 'leave_lobby':
+        _timer?.cancel();
+        _voiceSimTimer?.cancel();
+        _currentState = const GameStateModel(gameId: '');
+        break;
     }
   }
 

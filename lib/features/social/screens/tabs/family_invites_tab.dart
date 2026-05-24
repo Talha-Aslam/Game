@@ -3,48 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../models/social/family_invite_model.dart';
-import '../../../../models/social/friend_model.dart';
 
 /// Mock family invites provider for demo
 final _familyInvitesProvider = Provider<List<FamilyInviteModel>>((ref) {
-  return [
-    FamilyInviteModel(
-      id: 'finv_1',
-      familyId: 'fam_1',
-      familyName: 'Cobra Dynasty',
-      familyTag: '[COBRA]',
-      fromUser: const FriendModel(
-        id: 'user_ghost',
-        username: 'GhostWalker',
-        rankTier: 3,
-      ),
-      toUserId: 'local_user',
-      memberCount: 28,
-      maxMembers: 50,
-      familyReputation: 4500,
-      familySeasonPoints: 12000,
-      familyTotalWins: 340,
-      timestamp: DateTime.now().subtract(const Duration(hours: 2)),
-    ),
-    FamilyInviteModel(
-      id: 'finv_2',
-      familyId: 'fam_2',
-      familyName: 'Venom Syndicate',
-      familyTag: '[VENOM]',
-      fromUser: const FriendModel(
-        id: 'user_viper',
-        username: 'NightViper',
-        rankTier: 4,
-      ),
-      toUserId: 'local_user',
-      memberCount: 42,
-      maxMembers: 50,
-      familyReputation: 6200,
-      familySeasonPoints: 18500,
-      familyTotalWins: 520,
-      timestamp: DateTime.now().subtract(const Duration(hours: 5)),
-    ),
-  ];
+  return [];
 });
 
 /// Family Invites tab
@@ -112,10 +74,12 @@ class _FamilyInviteCard extends StatelessWidget {
                 height: 52,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  gradient: LinearGradient(colors: [
-                    AppColors.purpleNeon.withValues(alpha: 0.2),
-                    AppColors.purpleDeep.withValues(alpha: 0.1),
-                  ]),
+                  gradient: LinearGradient(
+                    colors: [
+                      AppColors.purpleNeon.withValues(alpha: 0.2),
+                      AppColors.purpleDeep.withValues(alpha: 0.1),
+                    ],
+                  ),
                   border: Border.all(
                     color: AppColors.purpleNeon.withValues(alpha: 0.4),
                     width: 2,
