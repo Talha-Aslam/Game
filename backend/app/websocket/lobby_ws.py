@@ -7,16 +7,22 @@ import json
 router = APIRouter(prefix="/ws", tags=["WebSocket"])
 logger = logging.getLogger(__name__)
 
-# Very basic auth extraction from query params
-# In a real system, you'd decode the JWT token here
+from app.utils.jwt_handler import verify_access_token
+
 async def get_user_from_token(token: str) -> str:
-    # Assuming token is passed as user_id for simplicity during this phase
-    # Replace with JWT decoding
-    return token
+    payload = verify_access_token(token)
+    if not payload or "sub" not in payload:
+        raise ValueError("Invalid token")
+    return payload["sub"]
 
 @router.websocket("/lobby")
 async def websocket_lobby(websocket: WebSocket, token: str = Query(...)):
-    user_id = await get_user_from_token(token)
+    try:
+        user_id = await get_user_from_token(token)
+    except ValueError:
+        await websocket.close(code=4001, reason="Invalid token")
+        return
+
     await manager.connect(user_id, websocket)
     
     try:

@@ -15,11 +15,45 @@ import '../widgets/daily_bounty_panel.dart';
 import '../widgets/character_showcase_widget.dart';
 import '../widgets/event_carousel_widget.dart';
 
-class HomeScreen extends ConsumerWidget {
+import '../../../providers/game_provider.dart';
+
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final ws = ref.read(wsServiceProvider);
+      if (!ws.isConnected) {
+        ws.connectLobby();
+      }
+      ws.eventStream.listen((msg) {
+        if (msg.event == 'friend_request_accepted') {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  (msg.data['message'] as String?) ??
+                      'Friend request accepted!',
+                ),
+                backgroundColor: AppColors.purpleNeon,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
+        }
+      });
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final user = ref.watch(authProvider).user;
 
     return Scaffold(

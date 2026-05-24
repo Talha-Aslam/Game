@@ -14,6 +14,7 @@ class FriendCardWidget extends StatelessWidget {
   final VoidCallback? onViewProfile;
   final VoidCallback? onSendPopularity;
   final VoidCallback? onAddFriend;
+  final VoidCallback? onRemove;
   final bool showActions;
   final bool showAddFriend;
 
@@ -25,6 +26,7 @@ class FriendCardWidget extends StatelessWidget {
     this.onViewProfile,
     this.onSendPopularity,
     this.onAddFriend,
+    this.onRemove,
     this.showActions = true,
     this.showAddFriend = false,
   });
@@ -221,6 +223,15 @@ class FriendCardWidget extends StatelessWidget {
           color: AppColors.gold,
           onTap: onSendPopularity,
         ),
+        if (onRemove != null) ...[
+          const SizedBox(width: 6),
+          _ActionChip(
+            icon: Icons.person_remove,
+            label: 'Remove',
+            color: AppColors.crimsonRed,
+            onTap: onRemove,
+          ),
+        ],
         const Spacer(),
         GestureDetector(
           onTap: onViewProfile,
