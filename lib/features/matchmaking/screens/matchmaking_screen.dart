@@ -7,9 +7,7 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../core/theme/app_gradients.dart';
 import '../../../providers/game_provider.dart';
 import '../../../providers/matchmaking_provider.dart';
-import '../../../providers/auth_provider.dart';
 import '../../../services/matchmaking_service.dart';
-import '../../../models/game_state_model.dart';
 import '../../../widgets/glass_button.dart';
 import '../../../widgets/neon_text.dart';
 import '../../../widgets/particle_field.dart';
@@ -33,10 +31,7 @@ class _MatchmakingScreenState extends ConsumerState<MatchmakingScreen>
     )..repeat();
     // Start matchmaking
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final auth = ref.read(authProvider);
-      ref
-          .read(matchmakingServiceProvider)
-          .startSearching(auth.user?.id ?? 'guest_123');
+      ref.read(matchmakingServiceProvider).startSearching();
     });
   }
 
@@ -50,11 +45,14 @@ class _MatchmakingScreenState extends ConsumerState<MatchmakingScreen>
   Widget build(BuildContext context) {
     final mmState = ref.watch(matchmakingStateProvider);
 
-    ref.listen(gameProvider, (prev, next) {
-      if (next.phase == GamePhase.lobby ||
-          next.phase == GamePhase.roleAssignment) {
-        context.go('/game');
-      }
+    ref.listen(matchmakingStateProvider, (prev, next) {
+      next.whenData((state) {
+        if (state.status == MatchmakingStatus.found && state.lobbyId != null) {
+          // Connect to the actual game websocket using the lobbyId
+          ref.read(gameProvider.notifier).connectToGame(state.lobbyId!);
+          context.go('/game');
+        }
+      });
     });
 
     return PopScope(
@@ -232,9 +230,6 @@ class _MatchmakingScreenState extends ConsumerState<MatchmakingScreen>
                                 ref
                                     .read(matchmakingServiceProvider)
                                     .acceptMatch();
-                                ref
-                                    .read(gameProvider.notifier)
-                                    .startMatchmaking();
                               },
                             ),
                           ],

@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mafia_wars/providers/matchmaking_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/theme/app_gradients.dart';
@@ -64,26 +65,38 @@ class _GameScreenState extends ConsumerState<GameScreen>
       canPop: false,
       onPopInvokedWithResult: (didPop, _) async {
         if (didPop) return;
-        
+
         final confirm = await showDialog<bool>(
           context: context,
           builder: (ctx) => AlertDialog(
             backgroundColor: AppColors.surface,
-            title: const Text('Leave Game?', style: TextStyle(color: Colors.white)),
-            content: const Text('Are you sure you want to leave the game in progress?', style: TextStyle(color: Colors.white70)),
+            title: const Text(
+              'Leave Game?',
+              style: TextStyle(color: Colors.white),
+            ),
+            content: const Text(
+              'Are you sure you want to leave the game in progress?',
+              style: TextStyle(color: Colors.white70),
+            ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx, false),
-                child: const Text('Cancel', style: TextStyle(color: AppColors.white50)),
+                child: const Text(
+                  'Cancel',
+                  style: TextStyle(color: AppColors.white50),
+                ),
               ),
               TextButton(
                 onPressed: () => Navigator.pop(ctx, true),
-                child: const Text('Leave', style: TextStyle(color: AppColors.crimsonRed)),
+                child: const Text(
+                  'Leave',
+                  style: TextStyle(color: AppColors.crimsonRed),
+                ),
               ),
             ],
           ),
         );
-        
+
         if (confirm == true && context.mounted) {
           ref.read(gameProvider.notifier).leaveLobby();
           context.go('/home');
@@ -102,157 +115,162 @@ class _GameScreenState extends ConsumerState<GameScreen>
               ),
             ),
 
-          // ── Ambient particles ──
-          RepaintBoundary(
-            child: ParticleField(
-              particleCount: phase.isNight ? 10 : 18,
-              particleColor: phase.isNight
-                  ? AppColors.purpleDeep
-                  : AppColors.purpleNeon,
+            // ── Ambient particles ──
+            RepaintBoundary(
+              child: ParticleField(
+                particleCount: phase.isNight ? 10 : 18,
+                particleColor: phase.isNight
+                    ? AppColors.purpleDeep
+                    : AppColors.purpleNeon,
+              ),
             ),
-          ),
 
-          SafeArea(
-            child: Column(
-              children: [
-                const SizedBox(height: 6),
+            SafeArea(
+              child: Column(
+                children: [
+                  const SizedBox(height: 6),
 
-                // ═══ HEADER PILL ═══
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: LobbyHeaderPill(
-                    phase: phase,
-                    roundNumber: gameState.roundNumber,
-                    aliveCount: gameState.alivePlayers.length,
-                  ),
-                ),
-
-                const SizedBox(height: 4),
-
-                // ═══ PLAYER CIRCLE + TIMER + OVERLAYS ═══
-                Expanded(
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      return Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          // Circular player layout
-                          _buildPlayerCircle(
-                            gameState,
-                            constraints.maxWidth,
-                            constraints.maxHeight,
-                          ),
-
-                          // Center timer (not during lobby countdown, result, or morning)
-                          if (gameState.timeRemaining > 0 &&
-                              phase != GamePhase.result &&
-                              phase != GamePhase.morningReveal &&
-                              phase != GamePhase.lobby)
-                            LobbyTimerWidget(
-                              seconds: gameState.timeRemaining,
-                              maxSeconds: _maxSecondsForPhase(phase, gameState),
-                              phase: phase,
-                            ),
-
-                          // ── LOBBY COUNTDOWN OVERLAY ──
-                          if (phase == GamePhase.lobby)
-                            Positioned.fill(
-                              child: LobbyCountdownOverlay(
-                                countdown: gameState.lobbyCountdown,
-                                tickingActive: gameState.lobbyTickingActive,
-                                showBeginsCinematic:
-                                    gameState.showBeginsCinematic,
-                              ),
-                            ),
-
-                          // ── NIGHT PHASE OVERLAY ──
-                          if (phase.isNight)
-                            Positioned.fill(
-                              child: NightOverlayPanel(
-                                subPhase: gameState.nightSubPhase,
-                                localPlayer: localPlayer,
-                                detectiveResult: gameState.detectiveResult,
-                                detectiveTargetId: gameState.detectiveTargetId,
-                                detectiveResultRevealed:
-                                    gameState.detectiveResultRevealed,
-                                mafiaChannelOpen: gameState.mafiaChannelOpen,
-                                players: gameState.players,
-                              ),
-                            ),
-
-                          // ── MORNING / DAWN REVEAL ──
-                          if (phase.isMorning)
-                            Positioned.fill(
-                              child: _buildDawnOverlay(gameState),
-                            ),
-
-                          // ── RUNOFF OVERLAY ──
-                          if (phase.isRunoff &&
-                              gameState.tiedPlayerIds.isNotEmpty)
-                            Positioned.fill(
-                              child: _buildRunoffOverlay(gameState),
-                            ),
-
-                          if (_showMicControls(phase))
-                            Builder(
-                              builder: (context) {
-                                final isForcedMuted =
-                                    phase == GamePhase.roleAssignment ||
-                                    (phase.isNight &&
-                                        !(localPlayer?.isMafia == true &&
-                                            gameState.mafiaChannelOpen) &&
-                                        !(localPlayer?.role ==
-                                                GameRole.detective &&
-                                            gameState.nightSubPhase ==
-                                                NightSubPhase.detectiveActing));
-                                final effectivelyMuted =
-                                    localPlayer?.voiceState ==
-                                        VoiceState.muted ||
-                                    isForcedMuted;
-
-                                return Positioned(
-                                  bottom: 4,
-                                  right: 12,
-                                  child: MicEmojiControls(
-                                    isMuted: effectivelyMuted,
-                                    isSpeaking:
-                                        localPlayer?.isSpeaking ?? false,
-                                    onToggleMic: isForcedMuted
-                                        ? null
-                                        : () => ref
-                                              .read(gameProvider.notifier)
-                                              .toggleMute(),
-                                    onEmojiSend: (emoji) => _sendEmoji(
-                                      gameState.localPlayerId,
-                                      emoji,
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                        ],
-                      );
-                    },
-                  ),
-                ),
-
-                // ═══ GRAVEYARD PANEL ═══
-                if (gameState.deadPlayers.isNotEmpty &&
-                    phase != GamePhase.lobby &&
-                    phase != GamePhase.matchmaking &&
-                    phase != GamePhase.result)
-                  GraveyardPanel(deadPlayers: gameState.deadPlayers),
-
-                // ═══ ROLE REVEAL (during role assignment) ═══
-                if (phase == GamePhase.roleAssignment &&
-                    localPlayer?.role != null)
+                  // ═══ HEADER PILL ═══
                   Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 2,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: LobbyHeaderPill(
+                      phase: phase,
+                      roundNumber: gameState.roundNumber,
+                      aliveCount: gameState.alivePlayers.length,
                     ),
-                    child: RoleRevealPanel(role: localPlayer!.role),
                   ),
+
+                  const SizedBox(height: 4),
+
+                  // ═══ PLAYER CIRCLE + TIMER + OVERLAYS ═══
+                  Expanded(
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        return Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            // Circular player layout
+                            _buildPlayerCircle(
+                              gameState,
+                              constraints.maxWidth,
+                              constraints.maxHeight,
+                            ),
+
+                            // Center timer (not during lobby countdown, result, or morning)
+                            if (gameState.timeRemaining > 0 &&
+                                phase != GamePhase.result &&
+                                phase != GamePhase.morningReveal &&
+                                phase != GamePhase.lobby)
+                              LobbyTimerWidget(
+                                seconds: gameState.timeRemaining,
+                                maxSeconds: _maxSecondsForPhase(
+                                  phase,
+                                  gameState,
+                                ),
+                                phase: phase,
+                              ),
+
+                            // ── LOBBY COUNTDOWN OVERLAY ──
+                            if (phase == GamePhase.lobby)
+                              Positioned.fill(
+                                child: LobbyCountdownOverlay(
+                                  countdown: gameState.lobbyCountdown,
+                                  tickingActive: gameState.lobbyTickingActive,
+                                  showBeginsCinematic:
+                                      gameState.showBeginsCinematic,
+                                ),
+                              ),
+
+                            // ── NIGHT PHASE OVERLAY ──
+                            if (phase.isNight)
+                              Positioned.fill(
+                                child: NightOverlayPanel(
+                                  subPhase: gameState.nightSubPhase,
+                                  localPlayer: localPlayer,
+                                  detectiveResult: gameState.detectiveResult,
+                                  detectiveTargetId:
+                                      gameState.detectiveTargetId,
+                                  detectiveResultRevealed:
+                                      gameState.detectiveResultRevealed,
+                                  mafiaChannelOpen: gameState.mafiaChannelOpen,
+                                  players: gameState.players,
+                                ),
+                              ),
+
+                            // ── MORNING / DAWN REVEAL ──
+                            if (phase.isMorning)
+                              Positioned.fill(
+                                child: _buildDawnOverlay(gameState),
+                              ),
+
+                            // ── RUNOFF OVERLAY ──
+                            if (phase.isRunoff &&
+                                gameState.tiedPlayerIds.isNotEmpty)
+                              Positioned.fill(
+                                child: _buildRunoffOverlay(gameState),
+                              ),
+
+                            if (_showMicControls(phase))
+                              Builder(
+                                builder: (context) {
+                                  final isForcedMuted =
+                                      phase == GamePhase.roleAssignment ||
+                                      (phase.isNight &&
+                                          !(localPlayer?.isMafia == true &&
+                                              gameState.mafiaChannelOpen) &&
+                                          !(localPlayer?.role ==
+                                                  GameRole.detective &&
+                                              gameState.nightSubPhase ==
+                                                  NightSubPhase
+                                                      .detectiveActing));
+                                  final effectivelyMuted =
+                                      localPlayer?.voiceState ==
+                                          VoiceState.muted ||
+                                      isForcedMuted;
+
+                                  return Positioned(
+                                    bottom: 4,
+                                    right: 12,
+                                    child: MicEmojiControls(
+                                      isMuted: effectivelyMuted,
+                                      isSpeaking:
+                                          localPlayer?.isSpeaking ?? false,
+                                      onToggleMic: isForcedMuted
+                                          ? null
+                                          : () => ref
+                                                .read(gameProvider.notifier)
+                                                .toggleMute(),
+                                      onEmojiSend: (emoji) => _sendEmoji(
+                                        gameState.localPlayerId,
+                                        emoji,
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                          ],
+                        );
+                      },
+                    ),
+                  ),
+
+                  // ═══ GRAVEYARD PANEL ═══
+                  if (gameState.deadPlayers.isNotEmpty &&
+                      phase != GamePhase.lobby &&
+                      phase != GamePhase.matchmaking &&
+                      phase != GamePhase.result)
+                    GraveyardPanel(deadPlayers: gameState.deadPlayers),
+
+                  // ═══ ROLE REVEAL (during role assignment) ═══
+                  if (phase == GamePhase.roleAssignment &&
+                      localPlayer?.role != null)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 2,
+                      ),
+                      child: RoleRevealPanel(role: localPlayer!.role),
+                    ),
 
                   // ═══ ACTION BAR ═══
                   LobbyActionBar(
@@ -261,7 +279,8 @@ class _GameScreenState extends ConsumerState<GameScreen>
                     localPlayer: localPlayer,
                     selectedVoteTarget: _selectedVoteTarget,
                     nightActionTarget: _nightActionTarget,
-                    onReady: () => ref.read(gameProvider.notifier).toggleReady(),
+                    onReady: () =>
+                        ref.read(gameProvider.notifier).toggleReady(),
                     onLeaveLobby: () {
                       ref.read(gameProvider.notifier).leaveLobby();
                       context.go('/home');
@@ -273,13 +292,15 @@ class _GameScreenState extends ConsumerState<GameScreen>
                                 .submitVote(_selectedVoteTarget!);
                           }
                         : null,
-                    onSkipVote: () => setState(() => _selectedVoteTarget = null),
+                    onSkipVote: () =>
+                        setState(() => _selectedVoteTarget = null),
                     onConfirmNightAction: _nightActionTarget != null
                         ? () => _submitNightAction(localPlayer)
                         : null,
                     onQueueAgain: () {
                       ref.read(gameProvider.notifier).resetGame();
-                      ref.read(gameProvider.notifier).startMatchmaking();
+                      ref.read(matchmakingServiceProvider).startSearching();
+                      context.go('/matchmaking');
                     },
                     onReturnHome: () {
                       ref.read(gameProvider.notifier).resetGame();

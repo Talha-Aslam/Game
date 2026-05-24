@@ -89,8 +89,7 @@ class MatchmakingManager:
 
     async def _create_match(self, mode: str):
         queue = self.queues[mode]
-        # Take up to 15 players (Lobby schema said 15, let's keep 8 for now per existing code, wait 15 is better for mafia)
-        PLAYERS = 15
+        PLAYERS = 8
         players_to_match = queue[:PLAYERS]
         
         # Remove from queue
