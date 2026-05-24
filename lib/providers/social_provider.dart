@@ -66,7 +66,15 @@ class FriendsNotifier extends Notifier<FriendsState> {
   @override
   FriendsState build() {
     _loadAll();
+    _initWebSocket();
     return const FriendsState(isLoading: true);
+  }
+
+  void _initWebSocket() {
+    // Import wsServiceProvider manually or use ref.read (need to import game_provider for wsServiceProvider or define it here)
+    // Actually we can just define a WebSocketService for Social if we want, or use the global one.
+    // Let's import the one from game_provider or we can just read it since it's global
+    // But since we can't easily add the import line right here, I'll update social_provider's imports first.
   }
 
   SocialService get _service => ref.read(socialServiceProvider);

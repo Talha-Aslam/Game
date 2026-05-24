@@ -78,9 +78,25 @@ class _AllFriendsTabState extends ConsumerState<AllFriendsTab> {
                   ...online.map((f) => FriendCardWidget(
                     friend: f,
                     onInvite: () => ref.read(partyProvider.notifier).inviteFriend(f),
-                    onMessage: () {},
-                    onViewProfile: () {},
-                    onSendPopularity: () {},
+                    onMessage: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Messaging coming soon!')),
+                      );
+                    },
+                    onViewProfile: () {
+                      _showProfileDialog(context, f);
+                    },
+                    onSendPopularity: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Popularity gift sent!')),
+                      );
+                    },
+                    onRemove: () {
+                      ref.read(friendsProvider.notifier).removeFriend(f.id);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('${f.username} removed from friends.')),
+                      );
+                    },
                   )),
                 ],
                 if (offline.isNotEmpty) ...[
@@ -91,9 +107,25 @@ class _AllFriendsTabState extends ConsumerState<AllFriendsTab> {
                   ...offline.map((f) => FriendCardWidget(
                     friend: f,
                     onInvite: () => ref.read(partyProvider.notifier).inviteFriend(f),
-                    onMessage: () {},
-                    onViewProfile: () {},
-                    onSendPopularity: () {},
+                    onMessage: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Messaging coming soon!')),
+                      );
+                    },
+                    onViewProfile: () {
+                      _showProfileDialog(context, f);
+                    },
+                    onSendPopularity: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Popularity gift sent!')),
+                      );
+                    },
+                    onRemove: () {
+                      ref.read(friendsProvider.notifier).removeFriend(f.id);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('${f.username} removed from friends.')),
+                      );
+                    },
                   )),
                 ],
                 const SizedBox(height: 16),
@@ -102,6 +134,40 @@ class _AllFriendsTabState extends ConsumerState<AllFriendsTab> {
           ),
         ),
       ],
+    );
+  }
+
+  void _showProfileDialog(BuildContext context, friend) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        title: Text(friend.username, style: const TextStyle(color: Colors.white)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircleAvatar(
+              radius: 40,
+              backgroundColor: AppColors.surfaceLight,
+              child: Text(
+                friend.username.isNotEmpty ? friend.username[0].toUpperCase() : '?',
+                style: const TextStyle(fontSize: 32, color: Colors.white),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text('Rank: ${friend.rankName}', style: const TextStyle(color: Colors.white70)),
+            Text('Popularity: ${friend.popularityScore}', style: const TextStyle(color: Colors.white70)),
+            if (friend.familyTag != null)
+              Text('Family: ${friend.familyTag}', style: const TextStyle(color: AppColors.purpleGlow)),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close', style: TextStyle(color: AppColors.cyan)),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -2,6 +2,7 @@ from fastapi import HTTPException, status
 from app.config.database import get_database
 from datetime import datetime
 import uuid
+from app.core.websocket_manager import manager
 
 
 # ══════════════════════════════════════════════════════
@@ -27,7 +28,7 @@ async def get_friends_list(user_id: str):
             "rankTier": _rank_to_tier(f.get("rank", "Bronze")),
             "familyTag": None,  # resolved later if needed
             "popularityScore": f.get("popularity", 0),
-            "onlineStatus": "offline",  # real-time presence needs WebSocket
+            "onlineStatus": "online" if f["_id"] in manager.active_connections else "offline",
             "currentActivity": "idle",
             "mutualFriendCount": 0,
         })
@@ -121,8 +122,16 @@ async def accept_friend_request(user_id: str, request_id: str):
         {"_id": req["from_user_id"]},
         {"$addToSet": {"friends": user_id}}
     )
+    
+    # Notify both users via WebSocket
+    event = {
+        "type": "friend_request_accepted",
+        "message": "Friend request accepted!"
+    }
+    await manager.send_personal_message(event, user_id)
+    await manager.send_personal_message(event, req["from_user_id"])
+    
     return {"message": "Friend request accepted"}
-
 
 async def reject_friend_request(user_id: str, request_id: str):
     db = get_database()

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../models/social/family_invite_model.dart';
@@ -27,6 +28,25 @@ class FamilyInvitesTab extends ConsumerWidget {
             Text(
               'No family invites',
               style: TextStyle(color: AppColors.white30, fontSize: 14),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: () {
+                // Navigate to family create screen
+                GoRouter.of(context).push('/family/create');
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.purpleNeon,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              ),
+              child: const Text(
+                'Create Family',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
             ),
           ],
         ),
