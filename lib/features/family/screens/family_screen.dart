@@ -6,6 +6,7 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../models/family/family_war_model.dart';
 import '../../../core/theme/app_gradients.dart';
 import '../../../providers/family_provider.dart';
+import '../../../providers/auth_provider.dart';
 import '../../../models/family_model.dart';
 import '../../../widgets/particle_field.dart';
 import '../widgets/family_crest_widget.dart';
@@ -110,7 +111,39 @@ class _FamilyScreenState extends ConsumerState<FamilyScreen>
                   const SizedBox(height: 32),
                   // Create
                   GestureDetector(
-                    onTap: () => context.push('/family/create'),
+                    onTap: () {
+                      final user = ref.read(authProvider).user;
+                      if (user == null) return;
+                      if (user.syndicateCoins < 500) {
+                        showDialog(
+                          context: context,
+                          builder: (ctx) => AlertDialog(
+                            backgroundColor: AppColors.surface,
+                            title: const Text('Not Enough Coins', style: TextStyle(color: Colors.white)),
+                            content: const Text(
+                              'You need 500 Syndicate Coins to create a family.',
+                              style: TextStyle(color: AppColors.white70),
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(ctx),
+                                child: const Text('Cancel', style: TextStyle(color: AppColors.white50)),
+                              ),
+                              ElevatedButton(
+                                onPressed: () {
+                                  Navigator.pop(ctx);
+                                  context.push('/store');
+                                },
+                                style: ElevatedButton.styleFrom(backgroundColor: AppColors.gold),
+                                child: const Text('Buy with Syndicate Coins', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                              ),
+                            ],
+                          ),
+                        );
+                      } else {
+                        context.push('/family/create');
+                      }
+                    },
                     child: Container(
                       width: double.infinity,
                       height: 50,

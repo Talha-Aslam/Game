@@ -402,11 +402,27 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           )
         else
           ...user.matchHistory.map<Widget>((match) {
-            // Mock parse of a string like "Victory:Mafia:+24"
-            final parts = match.split(':');
-            final result = parts.length > 0 ? parts[0] : 'Unknown';
-            final role = parts.length > 1 ? parts[1] : 'Unknown';
-            final desc = parts.length > 2 ? parts[2] : '';
+            String result = 'Unknown';
+            String role = 'Unknown';
+            String desc = '';
+            
+            if (match.startsWith('{') && match.contains('role')) {
+              final roleMatch = RegExp(r"'role':\s*'([^']+)'").firstMatch(match);
+              final wonMatch = RegExp(r"'won':\s*'([^']+)'").firstMatch(match);
+              final modeMatch = RegExp(r"'game_mode':\s*'([^']+)'").firstMatch(match);
+              
+              if (roleMatch != null) role = roleMatch.group(1)!;
+              if (wonMatch != null) result = wonMatch.group(1)!.toLowerCase() == 'won' || wonMatch.group(1)!.toLowerCase() == 'true' ? 'Victory' : 'Defeat';
+              if (modeMatch != null) desc = modeMatch.group(1)!.toUpperCase();
+              
+              if (role.isNotEmpty) role = role[0].toUpperCase() + role.substring(1);
+            } else {
+              final parts = match.split(':');
+              result = parts.isNotEmpty ? parts[0] : 'Unknown';
+              role = parts.length > 1 ? parts[1] : 'Unknown';
+              desc = parts.length > 2 ? parts[2] : '';
+            }
+            
             final roleColor = role.toLowerCase() == 'mafia' ? AppColors.mafiaColor : 
                               role.toLowerCase() == 'doctor' ? AppColors.doctorColor : 
                               role.toLowerCase() == 'detective' ? AppColors.purpleNeon : AppColors.cyan;

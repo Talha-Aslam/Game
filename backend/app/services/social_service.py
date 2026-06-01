@@ -164,9 +164,12 @@ async def search_users(query: str, current_user_id: str):
         return []
 
     results = []
-    async for u in db["users"].find(
-        {"username": {"$regex": query, "$options": "i"}},
-    ).limit(20):
+    async for u in db["users"].find({
+        "$or": [
+            {"username": {"$regex": query, "$options": "i"}},
+            {"_id": {"$regex": f"^{query}", "$options": "i"}}
+        ]
+    }).limit(20):
         if u["_id"] == current_user_id:
             continue
         results.append({

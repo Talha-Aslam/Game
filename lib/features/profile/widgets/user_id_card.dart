@@ -9,6 +9,7 @@ class UserIdCardWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final shortId = userId.length >= 8 ? userId.substring(0, 8).toUpperCase() : userId.toUpperCase();
     return ClipRRect(
       borderRadius: BorderRadius.circular(12),
       child: BackdropFilter(
@@ -27,7 +28,7 @@ class UserIdCardWidget extends StatelessWidget {
               const SizedBox(width: 8),
               Flexible(
                 child: Text(
-                  userId.toUpperCase(),
+                  shortId,
                   style: const TextStyle(
                     color: Colors.white70,
                     letterSpacing: 2,
@@ -40,7 +41,7 @@ class UserIdCardWidget extends StatelessWidget {
               const SizedBox(width: 16),
               GestureDetector(
                 onTap: () {
-                  Clipboard.setData(ClipboardData(text: userId));
+                  Clipboard.setData(ClipboardData(text: shortId));
                   final messenger = ScaffoldMessenger.of(context);
                   messenger
                     ..hideCurrentSnackBar()

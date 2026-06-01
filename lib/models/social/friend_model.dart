@@ -61,6 +61,7 @@ class FriendModel {
   final String username;
   final String avatarUrl;
   final int rankTier;
+  final String? equippedTitle;
   final String? familyTag;
   final String? familyName;
   final int popularityScore;
@@ -72,11 +73,15 @@ class FriendModel {
   final bool isBlocked;
   final int unreadCount;
 
+  final int gamesPlayed;
+  final double winRate;
+
   const FriendModel({
     required this.id,
     required this.username,
     this.avatarUrl = '',
     this.rankTier = 0,
+    this.equippedTitle,
     this.familyTag,
     this.familyName,
     this.popularityScore = 0,
@@ -87,6 +92,8 @@ class FriendModel {
     this.mutualFriendCount = 0,
     this.isBlocked = false,
     this.unreadCount = 0,
+    this.gamesPlayed = 0,
+    this.winRate = 0.0,
   });
 
   bool get isOnline => onlineStatus != OnlineStatus.offline;
@@ -118,6 +125,7 @@ class FriendModel {
     String? username,
     String? avatarUrl,
     int? rankTier,
+    String? equippedTitle,
     String? familyTag,
     String? familyName,
     int? popularityScore,
@@ -127,12 +135,15 @@ class FriendModel {
     DateTime? lastSeen,
     int? mutualFriendCount,
     bool? isBlocked,
+    int? gamesPlayed,
+    double? winRate,
   }) {
     return FriendModel(
       id: id ?? this.id,
       username: username ?? this.username,
       avatarUrl: avatarUrl ?? this.avatarUrl,
       rankTier: rankTier ?? this.rankTier,
+      equippedTitle: equippedTitle ?? this.equippedTitle,
       familyTag: familyTag ?? this.familyTag,
       familyName: familyName ?? this.familyName,
       popularityScore: popularityScore ?? this.popularityScore,
@@ -142,6 +153,8 @@ class FriendModel {
       lastSeen: lastSeen ?? this.lastSeen,
       mutualFriendCount: mutualFriendCount ?? this.mutualFriendCount,
       isBlocked: isBlocked ?? this.isBlocked,
+      gamesPlayed: gamesPlayed ?? this.gamesPlayed,
+      winRate: winRate ?? this.winRate,
     );
   }
 }
