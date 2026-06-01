@@ -10,7 +10,6 @@ class BountyApiService {
       final List bountiesList = response['bounties'];
       return bountiesList.map((e) => BountyModel.fromJson(e)).toList();
     } catch (e) {
-      print('Error fetching daily bounties: $e');
       return [];
     }
   }
@@ -20,7 +19,6 @@ class BountyApiService {
       final response = await _http.post('/bounties/$bountyId/claim');
       return response != null;
     } catch (e) {
-      print('Error claiming bounty: $e');
       return false;
     }
   }

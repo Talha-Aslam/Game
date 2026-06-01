@@ -7,7 +7,6 @@ import '../../../core/theme/app_gradients.dart';
 import '../../../providers/social_provider.dart';
 import '../../../providers/party_provider.dart';
 import '../../../widgets/particle_field.dart';
-import '../widgets/friend_search_delegate.dart';
 import 'tabs/online_friends_tab.dart';
 import 'tabs/all_friends_tab.dart';
 import 'tabs/friend_requests_tab.dart';
@@ -92,27 +91,6 @@ class _FriendsHubScreenState extends ConsumerState<FriendsHubScreen>
                       const SizedBox(width: 14),
                       Text('Friends Hub', style: AppTextStyles.headlineMedium),
                       const Spacer(),
-                      GestureDetector(
-                        onTap: () {
-                          ref
-                              .read(friendsProvider.notifier)
-                              .markNotificationsSeen();
-                          _openSearch(context);
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: AppColors.white05,
-                            border: Border.all(color: AppColors.glassBorder),
-                          ),
-                          child: const Icon(
-                            Icons.search,
-                            color: Colors.white,
-                            size: 20,
-                          ),
-                        ),
-                      ),
                     ],
                   ),
                 ),
@@ -216,93 +194,6 @@ class _FriendsHubScreenState extends ConsumerState<FriendsHubScreen>
         }).toList(),
       ),
     );
-  }
-
-  void _openSearch(BuildContext context) async {
-    final player = await showSearch(
-      context: context,
-      delegate: FriendSearchDelegate(
-        onSearch: (query) => ref.read(socialServiceProvider).searchUsers(query),
-        onAddFriend: (player) async {
-          try {
-            await ref
-                .read(friendsProvider.notifier)
-                .sendFriendRequest(player.id);
-            if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Friend request sent to ${player.username}'),
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
-            }
-          } catch (e) {
-            if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    'Failed to send request: ${e.toString().replaceAll('Exception: ', '')}',
-                  ),
-                  backgroundColor: AppColors.crimsonRed,
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
-            }
-          }
-        },
-      ),
-    );
-
-    if (player != null && context.mounted) {
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          backgroundColor: AppColors.surface,
-          title: Text(
-            player.username,
-            style: const TextStyle(color: Colors.white),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CircleAvatar(
-                radius: 40,
-                backgroundColor: AppColors.surfaceLight,
-                child: Text(
-                  player.username.isNotEmpty
-                      ? player.username[0].toUpperCase()
-                      : '?',
-                  style: const TextStyle(fontSize: 32, color: Colors.white),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Rank: ${player.rankName}',
-                style: const TextStyle(color: Colors.white70),
-              ),
-              Text(
-                'Popularity: ${player.popularityScore}',
-                style: const TextStyle(color: Colors.white70),
-              ),
-              if (player.familyTag != null)
-                Text(
-                  'Family: ${player.familyTag}',
-                  style: const TextStyle(color: AppColors.purpleGlow),
-                ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text(
-                'Close',
-                style: TextStyle(color: AppColors.cyan),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
   }
 }
 

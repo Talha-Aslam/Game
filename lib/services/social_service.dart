@@ -122,6 +122,7 @@ class SocialService {
       username: json['username'] ?? '',
       avatarUrl: json['avatarUrl'] ?? json['avatar_url'] ?? '',
       rankTier: json['rankTier'] ?? json['rank_tier'] ?? 0,
+      equippedTitle: json['title'] ?? json['equippedTitle'],
       familyTag: json['familyTag'] ?? json['family_tag'],
       familyName: json['familyName'] ?? json['family_name'],
       popularityScore: json['popularityScore'] ?? json['popularity_score'] ?? 0,
@@ -129,6 +130,8 @@ class SocialService {
       currentActivity: _parseActivity(json['currentActivity'] ?? json['current_activity'] ?? 'idle'),
       mutualFriendCount: json['mutualFriendCount'] ?? json['mutual_friend_count'] ?? 0,
       unreadCount: json['unreadCount'] ?? json['unread_count'] ?? 0,
+      gamesPlayed: json['gamesPlayed'] ?? json['games_played'] ?? 0,
+      winRate: (json['winRate'] ?? json['win_rate'] ?? 0).toDouble(),
     );
   }
 

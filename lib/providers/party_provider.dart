@@ -3,7 +3,6 @@ import 'package:mafia_wars/providers/game_provider.dart';
 import '../models/social/party_model.dart';
 import '../models/social/friend_model.dart';
 import '../services/party_service.dart';
-import '../services/websocket_service.dart';
 
 final partyServiceProvider = Provider<PartyService>((ref) => PartyService());
 

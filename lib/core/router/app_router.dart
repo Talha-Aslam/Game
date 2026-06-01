@@ -20,6 +20,7 @@ import '../../features/rankings/screens/rankings_screen.dart';
 import '../../features/leaderboard/screens/leaderboard_screen.dart';
 import '../../features/profile/screens/profile_screen.dart';
 import '../../features/profile/screens/edit_profile_screen.dart';
+import '../../features/profile/screens/public_profile_screen.dart';
 import '../../features/settings/screens/settings_screen.dart';
 import '../../features/social/screens/friends_hub_screen.dart';
 import '../../features/social/screens/private_chat_screen.dart';
@@ -57,6 +58,13 @@ class AppRouter {
         builder: (c, s) {
           final friend = s.extra as FriendModel;
           return PrivateChatScreen(friend: friend);
+        },
+      ),
+      GoRoute(
+        path: '/public-profile',
+        builder: (c, s) {
+          final friend = s.extra as FriendModel;
+          return PublicProfileScreen(friend: friend);
         },
       ),
     ],

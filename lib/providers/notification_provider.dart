@@ -132,6 +132,7 @@ class NotificationNotifier extends Notifier<NotificationState> {
     final messenger = globalsnackBarKey.currentState;
     if (messenger == null) return;
 
+    messenger.hideCurrentSnackBar();
     messenger.showSnackBar(
       SnackBar(
         content: Row(
@@ -162,6 +163,7 @@ class NotificationNotifier extends Notifier<NotificationState> {
     final messenger = globalsnackBarKey.currentState;
     if (messenger == null) return;
 
+    messenger.hideCurrentSnackBar();
     messenger.showSnackBar(
       SnackBar(
         content: Container(
