@@ -14,8 +14,8 @@ async def update_profile(update_data: UserUpdate, user_id: str = Depends(get_cur
     return await user_service.update_user_profile(user_id, update_data)
 
 @router.post("/gift-popularity/{target_id}")
-async def gift_popularity(target_id: str, user_id: str = Depends(get_current_user_id)):
-    return await user_service.gift_popularity(user_id, target_id)
+async def gift_popularity(target_id: str, amount: int = 100, user_id: str = Depends(get_current_user_id)):
+    return await user_service.gift_popularity(user_id, target_id, amount)
 from fastapi import APIRouter, Depends, UploadFile, File, HTTPException
 import os
 import uuid

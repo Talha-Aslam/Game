@@ -64,4 +64,13 @@ async def gift_popularity(sender_id: str, target_id: str, amount: int = 10) -> d
     await users_collection.update_one({"_id": sender_id}, {"$inc": {"influence": -amount}})
     await users_collection.update_one({"_id": target_id}, {"$inc": {"popularity": amount}})
     
+    from app.core.websocket_manager import manager
+    await manager.send_personal_message({
+        "event": "gift_received",
+        "data": {
+            "amount": amount,
+            "senderName": sender.get("username", "Someone")
+        }
+    }, target_id)
+    
     return {"message": f"Successfully gifted {amount} popularity points", "target_id": target_id}

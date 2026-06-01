@@ -8,6 +8,7 @@ import '../../../core/theme/app_gradients.dart';
 import '../../../models/social/friend_model.dart';
 import '../../../models/social/private_chat_message.dart';
 import '../../../providers/social_provider.dart';
+import '../../../providers/notification_provider.dart';
 import '../../../providers/game_provider.dart';
 import '../../../providers/auth_provider.dart';
 
@@ -30,6 +31,12 @@ class _PrivateChatScreenState extends ConsumerState<PrivateChatScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(activeChatFriendIdProvider.notifier).state = widget.friend.id;
+      ref
+          .read(notificationProvider.notifier)
+          .markMessagesRead(widget.friend.id);
+    });
     _loadHistory();
     _initWebSocket();
   }
@@ -71,6 +78,12 @@ class _PrivateChatScreenState extends ConsumerState<PrivateChatScreen> {
     _msgController.dispose();
     _scrollController.dispose();
     _wsSubscription?.cancel();
+    // Clear active chat when leaving screen
+    Future.microtask(() {
+      try {
+        ref.read(activeChatFriendIdProvider.notifier).state = null;
+      } catch (_) {}
+    });
     super.dispose();
   }
 
@@ -253,7 +266,11 @@ class _ChatBubble extends StatelessWidget {
           style: const TextStyle(
             color: Colors.white,
             fontSize: 14,
-            fontFamilyFallback: ['Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji'],
+            fontFamilyFallback: [
+              'Apple Color Emoji',
+              'Segoe UI Emoji',
+              'Noto Color Emoji',
+            ],
           ),
         ),
       ),

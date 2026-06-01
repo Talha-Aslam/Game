@@ -21,9 +21,9 @@ class UserApiService {
     }
   }
 
-  Future<void> giftPopularity(String targetId) async {
+  Future<void> giftPopularity(String targetId, int amount) async {
     try {
-      await _http.post('/user/gift-popularity/$targetId');
+      await _http.post('/user/gift-popularity/$targetId?amount=$amount');
     } catch (e) {
       rethrow;
     }
