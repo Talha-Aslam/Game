@@ -6,14 +6,18 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../models/social/friend_model.dart';
 import '../../../providers/party_provider.dart';
 import '../../../providers/social_provider.dart';
+import '../../../providers/notification_provider.dart';
 import 'friend_card_widget.dart';
-
 class SharedFriendHelper {
   static Widget buildFriendCard(BuildContext context, WidgetRef ref, FriendModel friend) {
+    final unreadCount = ref.watch(notificationProvider).unreadMessages[friend.id] ?? 0;
+    
     return FriendCardWidget(
       friend: friend,
+      hasUnreadMessages: unreadCount > 0,
       onInvite: () => ref.read(partyProvider.notifier).inviteFriend(friend),
       onMessage: () {
+        ref.read(notificationProvider.notifier).markMessagesRead(friend.id);
         GoRouter.of(context).push('/chat/${friend.id}', extra: friend);
       },
       onViewProfile: () => _showProfileDialog(context, friend),
@@ -84,11 +88,16 @@ class SharedFriendHelper {
               children: [
                 CircleAvatar(
                   radius: 40,
-                  backgroundColor: AppColors.purpleNeon.withValues(alpha: 0.2),
-                  child: Text(
-                    friend.username[0].toUpperCase(),
-                    style: const TextStyle(fontSize: 32, color: AppColors.purpleNeon),
-                  ),
+                  backgroundColor: AppColors.surfaceLight,
+                  backgroundImage: friend.avatarUrl.isNotEmpty
+                      ? NetworkImage('http://10.0.2.2:8000${friend.avatarUrl}')
+                      : null,
+                  child: friend.avatarUrl.isEmpty
+                      ? Text(
+                          friend.username.isNotEmpty ? friend.username[0].toUpperCase() : '?',
+                          style: const TextStyle(fontSize: 32, color: AppColors.white50),
+                        )
+                      : null,
                 ),
                 const SizedBox(height: 16),
                 Text(

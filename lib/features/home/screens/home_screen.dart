@@ -2,7 +2,8 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:mafia_wars/providers/social_provider.dart';
+import '../../../providers/social_provider.dart';
+import '../../../providers/notification_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_gradients.dart';
 import '../../../providers/auth_provider.dart';
@@ -55,6 +56,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(authProvider).user;
+    final notifications = ref.watch(notificationProvider);
+    final unreadMessages = notifications.unreadMessages.values.fold(0, (sum, count) => sum + count);
 
     return Scaffold(
       body: Stack(
@@ -188,34 +191,27 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
 
                 const SizedBox(height: 10),
-
-                // ═══ BOTTOM NAV BAR ═══
-                BottomNavBarGlass(
-                  currentIndex: -1, // No tab active on home
-                  friendsNotificationCount: ref
-                      .watch(friendsProvider)
-                      .unseenPendingIncomingCount,
-                  onTap: (i) {
-                    switch (i) {
-                      case 0:
-                        ref
-                            .read(friendsProvider.notifier)
-                            .markNotificationsSeen();
-                        context.push('/friends');
-                        break;
-                      case 1:
-                        context.push('/family');
-                        break;
-                      case 2:
-                        context.push('/store');
-                        break;
-                      case 3:
-                        context.push('/rankings');
-                        break;
-                    }
-                  },
-                ),
               ],
+            ),
+          ),
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: BottomNavBarGlass(
+              currentIndex: -1,
+              friendsNotificationCount: unreadMessages > 0 ? unreadMessages : 0,
+              onTap: (index) {
+                if (index == 0) {
+                  context.push('/friends');
+                } else if (index == 1) {
+                  context.push('/family');
+                } else if (index == 2) {
+                  context.push('/store');
+                } else if (index == 3) {
+                  context.push('/rankings');
+                }
+              },
             ),
           ),
         ],
