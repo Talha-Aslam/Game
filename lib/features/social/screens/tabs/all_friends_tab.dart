@@ -17,7 +17,10 @@ class AllFriendsTab extends ConsumerStatefulWidget {
   ConsumerState<AllFriendsTab> createState() => _AllFriendsTabState();
 }
 
-class _AllFriendsTabState extends ConsumerState<AllFriendsTab> {
+class _AllFriendsTabState extends ConsumerState<AllFriendsTab> with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
   String _searchQuery = '';
   bool _isSearching = false;
   bool _isSearchLoading = false;
@@ -69,6 +72,7 @@ class _AllFriendsTabState extends ConsumerState<AllFriendsTab> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final state = ref.watch(friendsProvider);
     final allFriends = state.allFriends;
 

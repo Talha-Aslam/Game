@@ -63,7 +63,9 @@ class _FriendsHubScreenState extends ConsumerState<FriendsHubScreen>
               gradient: AppGradients.backgroundGradient,
             ),
           ),
-          const ParticleField(particleCount: 20),
+          const RepaintBoundary(
+            child: ParticleField(particleCount: 20),
+          ),
           SafeArea(
             child: Column(
               children: [
