@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mafia_wars/providers/auth_provider.dart';
 import 'package:mafia_wars/services/user_api_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../models/social/friend_model.dart';
@@ -36,7 +37,8 @@ class SharedFriendHelper {
         ref.read(socialServiceProvider).markMessagesRead(friend.id);
         GoRouter.of(context).push('/chat/${friend.id}', extra: friend);
       },
-      onViewProfile: () => GoRouter.of(context).push('/public-profile', extra: friend),
+      onViewProfile: () =>
+          GoRouter.of(context).push('/public-profile', extra: friend),
       onSendPopularity: () {
         _showGiftDialog(context, ref, friend);
       },
@@ -91,13 +93,13 @@ class SharedFriendHelper {
     );
   }
 
-
-
   static void _showGiftDialog(
     BuildContext context,
     WidgetRef ref,
     FriendModel friend,
   ) {
+    final myInfluence = ref.read(authProvider).user?.influencePoints ?? 0;
+
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -109,6 +111,22 @@ class SharedFriendHelper {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.star, color: AppColors.gold, size: 18),
+                const SizedBox(width: 6),
+                Text(
+                  'Your Balance: $myInfluence',
+                  style: const TextStyle(
+                    color: AppColors.gold,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
             Text(
               'Select amount to send to ${friend.username}:',
               style: const TextStyle(color: AppColors.white70),
@@ -146,7 +164,21 @@ class SharedFriendHelper {
     return InkWell(
       onTap: () async {
         final messenger = ScaffoldMessenger.of(context);
+        final myInfluence = ref.read(authProvider).user?.influencePoints ?? 0;
+
         Navigator.pop(context);
+
+        if (myInfluence < amount) {
+          messenger.hideCurrentSnackBar();
+          messenger.showSnackBar(
+            const SnackBar(
+              content: Text('Not enough popularity tokens!'),
+              backgroundColor: Colors.redAccent,
+            ),
+          );
+          return;
+        }
+
         try {
           await ref
               .read(userApiServiceProvider)

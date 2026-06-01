@@ -42,8 +42,8 @@ class UserDB(BaseModel):
 
     mmr: int = 1500
     rank: str = "Bronze"
-    influence: int = 0
-    syndicate_coins: int = 0
+    influence: int = 3000
+    syndicate_coins: int = 3000
 
     battle_pass_tier: int = 1
     battle_pass_xp: int = 0
