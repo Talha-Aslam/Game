@@ -1,6 +1,7 @@
 import 'dart:async';
 import '../models/social/friend_model.dart';
 import '../models/social/friend_request_model.dart';
+import '../models/social/private_chat_message.dart';
 import 'social_api_service.dart';
 
 /// Social service backed by FastAPI
@@ -58,6 +59,23 @@ class SocialService {
 
   Future<void> cancelFriendRequest(String requestId) async {
     await _api.rejectFriendRequest(requestId);
+  }
+
+  // ── Leaderboard ──
+
+  Future<List<Map<String, dynamic>>> getLeaderboard({int limit = 50}) async {
+    return await _api.getLeaderboard(limit: limit);
+  }
+
+  // ── Private Chat ──
+
+  Future<List<PrivateChatMessage>> getPrivateChatHistory(String friendId, {int limit = 50}) async {
+    try {
+      final data = await _api.getPrivateChatHistory(friendId, limit: limit);
+      return data.map((json) => PrivateChatMessage.fromJson(json)).toList();
+    } catch (_) {
+      return [];
+    }
   }
 
   // ── Block ──

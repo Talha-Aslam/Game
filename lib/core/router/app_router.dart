@@ -22,6 +22,8 @@ import '../../features/profile/screens/profile_screen.dart';
 import '../../features/profile/screens/edit_profile_screen.dart';
 import '../../features/settings/screens/settings_screen.dart';
 import '../../features/social/screens/friends_hub_screen.dart';
+import '../../features/social/screens/private_chat_screen.dart';
+import '../../models/social/friend_model.dart';
 
 class AppRouter {
   static final GoRouter router = GoRouter(
@@ -50,6 +52,13 @@ class AppRouter {
       GoRoute(path: '/profile/edit', builder: (c, s) => const EditProfileScreen()),
       GoRoute(path: '/settings', builder: (c, s) => const SettingsScreen()),
       GoRoute(path: '/friends', builder: (c, s) => const FriendsHubScreen()),
+      GoRoute(
+        path: '/chat/:id',
+        builder: (c, s) {
+          final friend = s.extra as FriendModel;
+          return PrivateChatScreen(friend: friend);
+        },
+      ),
     ],
   );
 }

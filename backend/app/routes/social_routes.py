@@ -3,7 +3,7 @@ from app.middleware.auth_middleware import get_current_user
 from app.services.social_service import (
     get_friends_list, get_friend_requests, send_friend_request,
     accept_friend_request, reject_friend_request, remove_friend,
-    search_users, get_leaderboard,
+    search_users, get_leaderboard, get_private_chat_history
 )
 from pydantic import BaseModel
 from typing import Optional
@@ -50,3 +50,8 @@ async def search(query: str = "", user: dict = Depends(get_current_user)):
 @router.get("/leaderboard")
 async def leaderboard(limit: int = 50):
     return await get_leaderboard(limit)
+
+
+@router.get("/chat/{friend_id}")
+async def get_private_chat(friend_id: str, limit: int = 50, user: dict = Depends(get_current_user)):
+    return await get_private_chat_history(user["_id"], friend_id, limit)
