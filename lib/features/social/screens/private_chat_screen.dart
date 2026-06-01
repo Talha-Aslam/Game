@@ -250,7 +250,11 @@ class _ChatBubble extends StatelessWidget {
         ),
         child: Text(
           message.content,
-          style: const TextStyle(color: Colors.white, fontSize: 14),
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 14,
+            fontFamilyFallback: ['Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji'],
+          ),
         ),
       ),
     );

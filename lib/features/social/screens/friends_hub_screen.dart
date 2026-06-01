@@ -53,7 +53,6 @@ class _FriendsHubScreenState extends ConsumerState<FriendsHubScreen>
     final partyState = ref.watch(partyProvider);
     final onlineCount = friendsState.onlineCount;
     final requestCount = friendsState.pendingIncomingCount;
-    final unseenCount = friendsState.unseenPendingIncomingCount;
     final partyInviteCount = partyState.inviteCount;
 
     return Scaffold(
@@ -93,6 +92,27 @@ class _FriendsHubScreenState extends ConsumerState<FriendsHubScreen>
                       const SizedBox(width: 14),
                       Text('Friends Hub', style: AppTextStyles.headlineMedium),
                       const Spacer(),
+                      GestureDetector(
+                        onTap: () {
+                          ref
+                              .read(friendsProvider.notifier)
+                              .markNotificationsSeen();
+                          _openSearch(context);
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: AppColors.white05,
+                            border: Border.all(color: AppColors.glassBorder),
+                          ),
+                          child: const Icon(
+                            Icons.search,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -137,15 +157,14 @@ class _FriendsHubScreenState extends ConsumerState<FriendsHubScreen>
         indicator: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
           color: AppColors.purpleNeon.withValues(alpha: 0.2),
-          border: Border.all(color: AppColors.purpleNeon.withValues(alpha: 0.4)),
+          border: Border.all(
+            color: AppColors.purpleNeon.withValues(alpha: 0.4),
+          ),
         ),
         dividerColor: Colors.transparent,
         labelColor: AppColors.purpleGlow,
         unselectedLabelColor: AppColors.white30,
-        labelStyle: const TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
-        ),
+        labelStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
         unselectedLabelStyle: const TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.w500,
@@ -203,11 +222,12 @@ class _FriendsHubScreenState extends ConsumerState<FriendsHubScreen>
     final player = await showSearch(
       context: context,
       delegate: FriendSearchDelegate(
-        onSearch: (query) =>
-            ref.read(socialServiceProvider).searchUsers(query),
+        onSearch: (query) => ref.read(socialServiceProvider).searchUsers(query),
         onAddFriend: (player) async {
           try {
-            await ref.read(friendsProvider.notifier).sendFriendRequest(player.id);
+            await ref
+                .read(friendsProvider.notifier)
+                .sendFriendRequest(player.id);
             if (context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -220,7 +240,9 @@ class _FriendsHubScreenState extends ConsumerState<FriendsHubScreen>
             if (context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('Failed to send request: ${e.toString().replaceAll('Exception: ', '')}'),
+                  content: Text(
+                    'Failed to send request: ${e.toString().replaceAll('Exception: ', '')}',
+                  ),
                   backgroundColor: AppColors.crimsonRed,
                   behavior: SnackBarBehavior.floating,
                 ),
@@ -236,7 +258,10 @@ class _FriendsHubScreenState extends ConsumerState<FriendsHubScreen>
         context: context,
         builder: (context) => AlertDialog(
           backgroundColor: AppColors.surface,
-          title: Text(player.username, style: const TextStyle(color: Colors.white)),
+          title: Text(
+            player.username,
+            style: const TextStyle(color: Colors.white),
+          ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -244,21 +269,35 @@ class _FriendsHubScreenState extends ConsumerState<FriendsHubScreen>
                 radius: 40,
                 backgroundColor: AppColors.surfaceLight,
                 child: Text(
-                  player.username.isNotEmpty ? player.username[0].toUpperCase() : '?',
+                  player.username.isNotEmpty
+                      ? player.username[0].toUpperCase()
+                      : '?',
                   style: const TextStyle(fontSize: 32, color: Colors.white),
                 ),
               ),
               const SizedBox(height: 16),
-              Text('Rank: ${player.rankName}', style: const TextStyle(color: Colors.white70)),
-              Text('Popularity: ${player.popularityScore}', style: const TextStyle(color: Colors.white70)),
+              Text(
+                'Rank: ${player.rankName}',
+                style: const TextStyle(color: Colors.white70),
+              ),
+              Text(
+                'Popularity: ${player.popularityScore}',
+                style: const TextStyle(color: Colors.white70),
+              ),
               if (player.familyTag != null)
-                Text('Family: ${player.familyTag}', style: const TextStyle(color: AppColors.purpleGlow)),
+                Text(
+                  'Family: ${player.familyTag}',
+                  style: const TextStyle(color: AppColors.purpleGlow),
+                ),
             ],
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Close', style: TextStyle(color: AppColors.cyan)),
+              child: const Text(
+                'Close',
+                style: TextStyle(color: AppColors.cyan),
+              ),
             ),
           ],
         ),

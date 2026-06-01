@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../models/player_model.dart';
 import '../services/websocket_service.dart';
 import 'game_provider.dart';
 import 'auth_provider.dart';
@@ -43,11 +42,11 @@ class NotificationNotifier extends Notifier<NotificationState> {
   NotificationState build() {
     final ws = ref.watch(wsServiceProvider);
     _listen(ws);
-    
+
     ref.onDispose(() {
       _sub?.cancel();
     });
-    
+
     return const NotificationState();
   }
 
@@ -56,20 +55,27 @@ class NotificationNotifier extends Notifier<NotificationState> {
     _sub = ws.eventStream.listen((msg) {
       if (msg.event == 'private_message') {
         final data = msg.data;
-        if (data is Map<String, dynamic>) {
-          final senderId = data['senderId'] as String?;
-          final currentUserId = ref.read(authProvider).user?.id;
-          
-          if (senderId != null && senderId != currentUserId) {
-            _handleNewMessage(senderId);
-            _showTopSnackbar('New message from ${data['senderName'] ?? 'a friend'}');
-          }
+        final senderId = data['senderId'] as String?;
+        final currentUserId = ref.read(authProvider).user?.id;
+
+        if (senderId != null && senderId != currentUserId) {
+          _handleNewMessage(senderId);
+          _showTopSnackbar(
+            'New message from ${data['senderName'] ?? 'a friend'}',
+          );
         }
       } else if (msg.event == 'gift_received') {
-        _showTopSnackbar('You received a popularity gift! 🪙', icon: Icons.local_fire_department, color: AppColors.gold);
+        _showTopSnackbar(
+          'You received a popularity gift! 🪙',
+          icon: Icons.local_fire_department,
+          color: AppColors.gold,
+        );
         state = state.copyWith(unseenGifts: state.unseenGifts + 1);
       } else if (msg.event == 'party_invite') {
-        _showAmazingSnackbar('Party Invite', 'You have been invited to a party!');
+        _showAmazingSnackbar(
+          'Party Invite',
+          'You have been invited to a party!',
+        );
         state = state.copyWith(unseenInvites: state.unseenInvites + 1);
       }
     });
@@ -87,17 +93,46 @@ class NotificationNotifier extends Notifier<NotificationState> {
     state = state.copyWith(unreadMessages: updatedMap);
   }
 
-  void _showTopSnackbar(String text, {IconData icon = Icons.chat_bubble, Color color = AppColors.cyan}) {
+  void syncUnreadCounts(Map<String, int> counts) {
+    // Only update if they differ to prevent unnecessary rebuilds
+    bool changed = false;
+    final updatedMap = Map<String, int>.from(state.unreadMessages);
+    
+    for (final entry in counts.entries) {
+      if (entry.value > 0 && (updatedMap[entry.key] ?? 0) < entry.value) {
+        updatedMap[entry.key] = entry.value;
+        changed = true;
+      }
+    }
+    
+    if (changed) {
+      state = state.copyWith(unreadMessages: updatedMap);
+    }
+  }
+
+  void _showTopSnackbar(
+    String text, {
+    IconData icon = Icons.chat_bubble,
+    Color color = AppColors.cyan,
+  }) {
     final messenger = globalsnackBarKey.currentState;
     if (messenger == null) return;
-    
+
     messenger.showSnackBar(
       SnackBar(
         content: Row(
           children: [
             Icon(icon, color: color, size: 20),
             const SizedBox(width: 12),
-            Expanded(child: Text(text, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold))),
+            Expanded(
+              child: Text(
+                text,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
           ],
         ),
         backgroundColor: AppColors.surfaceLight,
@@ -112,7 +147,7 @@ class NotificationNotifier extends Notifier<NotificationState> {
   void _showAmazingSnackbar(String title, String message) {
     final messenger = globalsnackBarKey.currentState;
     if (messenger == null) return;
-    
+
     messenger.showSnackBar(
       SnackBar(
         content: Container(
@@ -125,8 +160,8 @@ class NotificationNotifier extends Notifier<NotificationState> {
                 color: AppColors.purpleNeon.withValues(alpha: 0.5),
                 blurRadius: 12,
                 spreadRadius: 2,
-              )
-            ]
+              ),
+            ],
           ),
           child: Row(
             children: [
@@ -137,8 +172,21 @@ class NotificationNotifier extends Notifier<NotificationState> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 16)),
-                    Text(message, style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 16,
+                      ),
+                    ),
+                    Text(
+                      message,
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 12,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -155,4 +203,15 @@ class NotificationNotifier extends Notifier<NotificationState> {
   }
 }
 
-final notificationProvider = NotifierProvider<NotificationNotifier, NotificationState>(() => NotificationNotifier());
+final notificationProvider =
+    NotifierProvider<NotificationNotifier, NotificationState>(
+      () => NotificationNotifier(),
+    );
+
+final hasActiveInvitesProvider = Provider<bool>((ref) {
+  return ref.watch(notificationProvider).unseenInvites > 0;
+});
+
+final hasUnreadMessagesProvider = Provider<bool>((ref) {
+  return ref.watch(notificationProvider).hasUnreadMessages;
+});

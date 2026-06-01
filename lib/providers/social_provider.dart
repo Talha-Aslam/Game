@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/social/friend_model.dart';
 import '../models/social/friend_request_model.dart';
 import '../services/social_service.dart';
+import '../services/websocket_service.dart';
+import 'notification_provider.dart';
 
 // ── Service Provider ──
 final socialServiceProvider = Provider<SocialService>((ref) => SocialService());
@@ -79,6 +81,10 @@ class FriendsNotifier extends Notifier<FriendsState> {
   }
 
   Future<void> _pollOnlineFriends() async {
+    final ws = ref.read(wsServiceProvider);
+    if (!ws.isConnected) {
+      ws.connectLobby();
+    }
     try {
       await _loadAll();
     } catch (_) {}
@@ -92,6 +98,10 @@ class FriendsNotifier extends Notifier<FriendsState> {
       final online = await _service.getOnlineFriends();
       final requests = await _service.getFriendRequests();
       final recent = await _service.getRecentPlayers();
+      
+      final counts = {for (var f in friends) f.id: f.unreadCount};
+      ref.read(notificationProvider.notifier).syncUnreadCounts(counts);
+
       state = state.copyWith(
         allFriends: friends,
         onlineFriends: online,

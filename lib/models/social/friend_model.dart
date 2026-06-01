@@ -70,6 +70,7 @@ class FriendModel {
   final DateTime? lastSeen;
   final int mutualFriendCount;
   final bool isBlocked;
+  final int unreadCount;
 
   const FriendModel({
     required this.id,
@@ -85,6 +86,7 @@ class FriendModel {
     this.lastSeen,
     this.mutualFriendCount = 0,
     this.isBlocked = false,
+    this.unreadCount = 0,
   });
 
   bool get isOnline => onlineStatus != OnlineStatus.offline;
