@@ -80,8 +80,7 @@ class FriendsNotifier extends Notifier<FriendsState> {
 
   Future<void> _pollOnlineFriends() async {
     try {
-      final online = await _service.getOnlineFriends();
-      state = state.copyWith(onlineFriends: online);
+      await _loadAll();
     } catch (_) {}
   }
 

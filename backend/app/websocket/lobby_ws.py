@@ -49,13 +49,13 @@ async def websocket_lobby(websocket: WebSocket, token: str = Query(...)):
                         msg = await save_private_message(user_id, target_id, content)
                         # Send to target
                         await manager.send_personal_message({
-                            "type": "private_message",
-                            "message": msg
+                            "event": "private_message",
+                            "data": msg
                         }, target_id)
                         # Echo back to sender
                         await manager.send_personal_message({
-                            "type": "private_message",
-                            "message": msg
+                            "event": "private_message",
+                            "data": msg
                         }, user_id)
                     
             except json.JSONDecodeError:

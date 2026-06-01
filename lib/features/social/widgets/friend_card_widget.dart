@@ -17,6 +17,7 @@ class FriendCardWidget extends StatelessWidget {
   final VoidCallback? onRemove;
   final bool showActions;
   final bool showAddFriend;
+  final bool hasUnreadMessages;
 
   const FriendCardWidget({
     super.key,
@@ -29,6 +30,7 @@ class FriendCardWidget extends StatelessWidget {
     this.onRemove,
     this.showActions = true,
     this.showAddFriend = false,
+    this.hasUnreadMessages = false,
   });
 
   @override
@@ -96,15 +98,14 @@ class FriendCardWidget extends StatelessWidget {
               width: 2,
             ),
           ),
-          child: Center(
-            child: Text(
-              friend.username.isNotEmpty
-                  ? friend.username[0].toUpperCase()
-                  : '?',
-              style: AppTextStyles.headlineSmall.copyWith(
-                color: friend.isOnline ? AppColors.online : AppColors.white50,
-              ),
-            ),
+          child: ClipOval(
+            child: friend.avatarUrl.isNotEmpty
+                ? Image.network(
+                    'http://10.0.2.2:8000${friend.avatarUrl}',
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => _buildFallbackAvatar(),
+                  )
+                : _buildFallbackAvatar(),
           ),
         ),
         Positioned(
@@ -113,6 +114,17 @@ class FriendCardWidget extends StatelessWidget {
           child: OnlineStatusIndicator(status: friend.onlineStatus, size: 14),
         ),
       ],
+    );
+  }
+
+  Widget _buildFallbackAvatar() {
+    return Center(
+      child: Text(
+        friend.username.isNotEmpty ? friend.username[0].toUpperCase() : '?',
+        style: AppTextStyles.headlineSmall.copyWith(
+          color: friend.isOnline ? AppColors.online : AppColors.white50,
+        ),
+      ),
     );
   }
 
@@ -217,6 +229,7 @@ class FriendCardWidget extends StatelessWidget {
                 label: 'Msg',
                 color: AppColors.purpleGlow,
                 onTap: onMessage,
+                showRedDot: hasUnreadMessages,
               ),
               _ActionChip(
                 icon: Icons.card_giftcard,
@@ -261,40 +274,61 @@ class _ActionChip extends StatelessWidget {
   final String label;
   final Color color;
   final VoidCallback? onTap;
+  final bool showRedDot;
 
   const _ActionChip({
     required this.icon,
     required this.label,
     required this.color,
     this.onTap,
+    this.showRedDot = false,
   });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(8),
-          color: color.withValues(alpha: 0.1),
-          border: Border.all(color: color.withValues(alpha: 0.3)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: color, size: 13),
-            const SizedBox(width: 4),
-            Text(
-              label,
-              style: TextStyle(
-                color: color,
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              border: Border.all(color: color.withValues(alpha: 0.3)),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: 14, color: color),
+                const SizedBox(width: 4),
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (showRedDot)
+            Positioned(
+              top: -2,
+              right: -2,
+              child: Container(
+                width: 10,
+                height: 10,
+                decoration: BoxDecoration(
+                  color: AppColors.crimsonRed,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: AppColors.surface, width: 1.5),
+                ),
               ),
             ),
-          ],
-        ),
+        ],
       ),
     );
   }

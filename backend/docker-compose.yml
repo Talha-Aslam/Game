@@ -9,6 +9,8 @@ services:
       - .env
     ports:
       - "8000:8000"
+    volumes:
+      - uploads:/app/uploads
     networks:
       - game_network
 
@@ -40,3 +42,4 @@ networks:
 
 volumes:
   mongo_data:
+  uploads:
