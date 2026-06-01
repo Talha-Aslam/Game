@@ -344,26 +344,40 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               ],
             ),
           ),
-          // Send popularity button (visible when viewing other profiles)
+          // Influence/Popularity Tokens Balance
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(10),
-              color: popColor.withValues(alpha: 0.12),
-              border: Border.all(color: popColor.withValues(alpha: 0.3)),
+              color: AppColors.gold.withValues(alpha: 0.12),
+              border: Border.all(color: AppColors.gold.withValues(alpha: 0.3)),
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Icon(Icons.card_giftcard, color: popColor, size: 16),
-                const SizedBox(width: 4),
-                Text(
-                  'Gift',
+                const Text(
+                  'TOKENS',
                   style: TextStyle(
-                    color: popColor,
-                    fontSize: 12,
+                    color: AppColors.white30,
+                    fontSize: 8,
                     fontWeight: FontWeight.w600,
+                    letterSpacing: 1.0,
                   ),
+                ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.stars, color: AppColors.gold, size: 14),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${user.influencePoints}',
+                      style: const TextStyle(
+                        color: AppColors.gold,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
