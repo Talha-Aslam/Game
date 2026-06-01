@@ -24,7 +24,7 @@ class PopularityService {
   Future<bool> sendFreePopularity(String toUserId, PopularityGift gift) async {
     try {
       if (gift.isPremium) return false;
-      await _api.giftPopularity(toUserId);
+      await _api.giftPopularity(toUserId, gift.value);
       return true;
     } catch (_) {
       return false;
@@ -38,7 +38,7 @@ class PopularityService {
   ) async {
     try {
       if (!gift.isPremium || availableCoins < gift.cost) return false;
-      await _api.giftPopularity(toUserId);
+      await _api.giftPopularity(toUserId, gift.value);
       return true;
     } catch (_) {
       return false;

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/constants/app_constants.dart';
 import '../../../models/social/friend_model.dart';
 import '../../../widgets/rank_badge.dart';
 import 'online_status_indicator.dart';
@@ -101,7 +102,7 @@ class FriendCardWidget extends StatelessWidget {
           child: ClipOval(
             child: friend.avatarUrl.isNotEmpty
                 ? Image.network(
-                    'http://10.0.2.2:8000${friend.avatarUrl}',
+                    '${AppConstants.apiBaseUrl}${friend.avatarUrl}',
                     fit: BoxFit.cover,
                     errorBuilder: (_, __, ___) => _buildFallbackAvatar(),
                   )
