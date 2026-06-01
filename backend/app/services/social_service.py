@@ -176,6 +176,49 @@ async def search_users(query: str, current_user_id: str):
 
 
 # ══════════════════════════════════════════════════════
+#  PRIVATE CHAT
+# ══════════════════════════════════════════════════════
+
+async def get_private_chat_history(user_id: str, friend_id: str, limit: int = 50):
+    db = get_database()
+    messages = []
+    
+    # Sort by timestamp descending
+    cursor = db["private_messages"].find({
+        "$or": [
+            {"from_user_id": user_id, "to_user_id": friend_id},
+            {"from_user_id": friend_id, "to_user_id": user_id}
+        ]
+    }).sort("timestamp", -1).limit(limit)
+    
+    async for msg in cursor:
+        messages.append({
+            "id": str(msg["_id"]),
+            "senderId": msg["from_user_id"],
+            "content": msg["content"],
+            "timestamp": msg["timestamp"].isoformat() if isinstance(msg["timestamp"], datetime) else msg["timestamp"]
+        })
+    
+    # Return ascending order for UI
+    return list(reversed(messages))
+
+async def save_private_message(from_user_id: str, to_user_id: str, content: str):
+    db = get_database()
+    msg = {
+        "from_user_id": from_user_id,
+        "to_user_id": to_user_id,
+        "content": content,
+        "timestamp": datetime.utcnow()
+    }
+    result = await db["private_messages"].insert_one(msg)
+    return {
+        "id": str(result.inserted_id),
+        "senderId": from_user_id,
+        "content": content,
+        "timestamp": msg["timestamp"].isoformat()
+    }
+
+# ══════════════════════════════════════════════════════
 #  LEADERBOARD
 # ══════════════════════════════════════════════════════
 

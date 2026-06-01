@@ -3,8 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../providers/social_provider.dart';
-import '../../../../providers/party_provider.dart';
-import '../../widgets/friend_card_widget.dart';
+import '../../widgets/shared_friend_list.dart';
 
 /// All Friends tab — grouped by online/offline
 class AllFriendsTab extends ConsumerStatefulWidget {
@@ -75,58 +74,14 @@ class _AllFriendsTabState extends ConsumerState<AllFriendsTab> {
                     'ONLINE — ${online.length}',
                     AppColors.online,
                   ),
-                  ...online.map((f) => FriendCardWidget(
-                    friend: f,
-                    onInvite: () => ref.read(partyProvider.notifier).inviteFriend(f),
-                    onMessage: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Messaging coming soon!')),
-                      );
-                    },
-                    onViewProfile: () {
-                      _showProfileDialog(context, f);
-                    },
-                    onSendPopularity: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Popularity gift sent!')),
-                      );
-                    },
-                    onRemove: () {
-                      ref.read(friendsProvider.notifier).removeFriend(f.id);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('${f.username} removed from friends.')),
-                      );
-                    },
-                  )),
+                  ...online.map((f) => SharedFriendHelper.buildFriendCard(context, ref, f)),
                 ],
                 if (offline.isNotEmpty) ...[
                   _SectionLabel(
                     'OFFLINE — ${offline.length}',
                     AppColors.white30,
                   ),
-                  ...offline.map((f) => FriendCardWidget(
-                    friend: f,
-                    onInvite: () => ref.read(partyProvider.notifier).inviteFriend(f),
-                    onMessage: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Messaging coming soon!')),
-                      );
-                    },
-                    onViewProfile: () {
-                      _showProfileDialog(context, f);
-                    },
-                    onSendPopularity: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Popularity gift sent!')),
-                      );
-                    },
-                    onRemove: () {
-                      ref.read(friendsProvider.notifier).removeFriend(f.id);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('${f.username} removed from friends.')),
-                      );
-                    },
-                  )),
+                  ...offline.map((f) => SharedFriendHelper.buildFriendCard(context, ref, f)),
                 ],
                 const SizedBox(height: 16),
               ],
@@ -136,59 +91,41 @@ class _AllFriendsTabState extends ConsumerState<AllFriendsTab> {
       ],
     );
   }
-
-  void _showProfileDialog(BuildContext context, friend) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        title: Text(friend.username, style: const TextStyle(color: Colors.white)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CircleAvatar(
-              radius: 40,
-              backgroundColor: AppColors.surfaceLight,
-              child: Text(
-                friend.username.isNotEmpty ? friend.username[0].toUpperCase() : '?',
-                style: const TextStyle(fontSize: 32, color: Colors.white),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text('Rank: ${friend.rankName}', style: const TextStyle(color: Colors.white70)),
-            Text('Popularity: ${friend.popularityScore}', style: const TextStyle(color: Colors.white70)),
-            if (friend.familyTag != null)
-              Text('Family: ${friend.familyTag}', style: const TextStyle(color: AppColors.purpleGlow)),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close', style: TextStyle(color: AppColors.cyan)),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 class _SectionLabel extends StatelessWidget {
-  final String text;
+  final String title;
   final Color color;
-  const _SectionLabel(this.text, this.color);
+
+  const _SectionLabel(this.title, this.color);
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(top: 12, bottom: 6),
-      child: Text(
-        text,
-        style: TextStyle(
-          color: color,
-          fontSize: 10,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 1.5,
-        ),
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: Row(
+        children: [
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(shape: BoxShape.circle, color: color),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            title,
+            style: AppTextStyles.labelMedium.copyWith(
+              color: color,
+              letterSpacing: 1.2,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Container(
+              height: 1,
+              color: color.withValues(alpha: 0.2),
+            ),
+          ),
+        ],
       ),
     );
   }

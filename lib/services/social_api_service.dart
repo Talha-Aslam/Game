@@ -47,4 +47,11 @@ class SocialApiService {
     final data = await _http.get('/social/leaderboard?limit=$limit');
     return List<Map<String, dynamic>>.from(data ?? []);
   }
+
+  // ── Private Chat ──
+
+  Future<List<Map<String, dynamic>>> getPrivateChatHistory(String friendId, {int limit = 50}) async {
+    final data = await _http.get('/social/chat/$friendId?limit=$limit');
+    return List<Map<String, dynamic>>.from(data ?? []);
+  }
 }

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../models/social/family_invite_model.dart';
+import '../../../../providers/auth_provider.dart';
 
 /// Mock family invites provider for demo
 final _familyInvitesProvider = Provider<List<FamilyInviteModel>>((ref) {
@@ -32,8 +33,34 @@ class FamilyInvitesTab extends ConsumerWidget {
             const SizedBox(height: 24),
             ElevatedButton(
               onPressed: () {
-                // Navigate to family create screen
-                GoRouter.of(context).push('/family/create');
+                final user = ref.read(authProvider).user;
+                if (user != null && user.influencePoints < 500) {
+                  showDialog(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      backgroundColor: AppColors.surface,
+                      title: const Text(
+                        'Insufficient Credits',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                      content: const Text(
+                        'Creating a family requires 500 🪙. Play more matches to earn credits!',
+                        style: TextStyle(color: AppColors.white70),
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          child: const Text(
+                            'OK',
+                            style: TextStyle(color: AppColors.purpleNeon),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                } else {
+                  GoRouter.of(context).push('/family/create');
+                }
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.purpleNeon,
@@ -41,7 +68,10 @@ class FamilyInvitesTab extends ConsumerWidget {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
               ),
               child: const Text(
                 'Create Family',

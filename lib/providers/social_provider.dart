@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/social/friend_model.dart';
 import '../models/social/friend_request_model.dart';
@@ -63,18 +64,25 @@ class FriendsState {
 // ── Notifier ──
 
 class FriendsNotifier extends Notifier<FriendsState> {
+  Timer? _refreshTimer;
+
   @override
   FriendsState build() {
     _loadAll();
-    _initWebSocket();
+    _refreshTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+      _pollOnlineFriends();
+    });
+    ref.onDispose(() {
+      _refreshTimer?.cancel();
+    });
     return const FriendsState(isLoading: true);
   }
 
-  void _initWebSocket() {
-    // Import wsServiceProvider manually or use ref.read (need to import game_provider for wsServiceProvider or define it here)
-    // Actually we can just define a WebSocketService for Social if we want, or use the global one.
-    // Let's import the one from game_provider or we can just read it since it's global
-    // But since we can't easily add the import line right here, I'll update social_provider's imports first.
+  Future<void> _pollOnlineFriends() async {
+    try {
+      final online = await _service.getOnlineFriends();
+      state = state.copyWith(onlineFriends: online);
+    } catch (_) {}
   }
 
   SocialService get _service => ref.read(socialServiceProvider);

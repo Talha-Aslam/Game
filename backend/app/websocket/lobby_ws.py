@@ -41,6 +41,23 @@ async def websocket_lobby(websocket: WebSocket, token: str = Query(...)):
                     matchmaker.leave_queue(user_id)
                     await manager.send_personal_message({"event": "dequeued"}, user_id)
                     
+                elif action == "private_message":
+                    target_id = payload.get("targetId")
+                    content = payload.get("content")
+                    if target_id and content:
+                        from app.services.social_service import save_private_message
+                        msg = await save_private_message(user_id, target_id, content)
+                        # Send to target
+                        await manager.send_personal_message({
+                            "type": "private_message",
+                            "message": msg
+                        }, target_id)
+                        # Echo back to sender
+                        await manager.send_personal_message({
+                            "type": "private_message",
+                            "message": msg
+                        }, user_id)
+                    
             except json.JSONDecodeError:
                 logger.warning("Invalid JSON received")
                 

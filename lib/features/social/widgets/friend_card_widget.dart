@@ -110,10 +110,7 @@ class FriendCardWidget extends StatelessWidget {
         Positioned(
           right: 0,
           bottom: 0,
-          child: OnlineStatusIndicator(
-            status: friend.onlineStatus,
-            size: 14,
-          ),
+          child: OnlineStatusIndicator(status: friend.onlineStatus, size: 14),
         ),
       ],
     );
@@ -135,10 +132,7 @@ class FriendCardWidget extends StatelessWidget {
             if (friend.familyTag != null) ...[
               const SizedBox(width: 6),
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 5,
-                  vertical: 1,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(4),
                   color: AppColors.purpleNeon.withValues(alpha: 0.15),
@@ -160,10 +154,7 @@ class FriendCardWidget extends StatelessWidget {
           children: [
             RankBadge(tier: friend.rankTier, size: 14, showLabel: false),
             const SizedBox(width: 4),
-            Text(
-              friend.rankName,
-              style: AppTextStyles.labelSmall,
-            ),
+            Text(friend.rankName, style: AppTextStyles.labelSmall),
             const SizedBox(width: 8),
             Text(
               '• ${friend.statusText}',
@@ -184,18 +175,25 @@ class FriendCardWidget extends StatelessWidget {
     if (showAddFriend) {
       return Row(
         children: [
-          _ActionChip(
-            icon: Icons.person_add,
-            label: 'Add Friend',
-            color: AppColors.cyan,
-            onTap: onAddFriend,
-          ),
-          const SizedBox(width: 8),
-          _ActionChip(
-            icon: Icons.visibility,
-            label: 'Profile',
-            color: AppColors.white50,
-            onTap: onViewProfile,
+          Expanded(
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 6,
+              children: [
+                _ActionChip(
+                  icon: Icons.person_add,
+                  label: 'Add Friend',
+                  color: AppColors.cyan,
+                  onTap: onAddFriend,
+                ),
+                _ActionChip(
+                  icon: Icons.visibility,
+                  label: 'Profile',
+                  color: AppColors.white50,
+                  onTap: onViewProfile,
+                ),
+              ],
+            ),
           ),
         ],
       );
@@ -203,36 +201,40 @@ class FriendCardWidget extends StatelessWidget {
 
     return Row(
       children: [
-        _ActionChip(
-          icon: Icons.sports_esports,
-          label: 'Invite',
-          color: AppColors.cyan,
-          onTap: onInvite,
-        ),
-        const SizedBox(width: 6),
-        _ActionChip(
-          icon: Icons.chat_bubble_outline,
-          label: 'Msg',
-          color: AppColors.purpleGlow,
-          onTap: onMessage,
-        ),
-        const SizedBox(width: 6),
-        _ActionChip(
-          icon: Icons.card_giftcard,
-          label: 'Gift',
-          color: AppColors.gold,
-          onTap: onSendPopularity,
-        ),
-        if (onRemove != null) ...[
-          const SizedBox(width: 6),
-          _ActionChip(
-            icon: Icons.person_remove,
-            label: 'Remove',
-            color: AppColors.crimsonRed,
-            onTap: onRemove,
+        Expanded(
+          child: Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              _ActionChip(
+                icon: Icons.sports_esports,
+                label: 'Invite',
+                color: AppColors.cyan,
+                onTap: onInvite,
+              ),
+              _ActionChip(
+                icon: Icons.chat_bubble_outline,
+                label: 'Msg',
+                color: AppColors.purpleGlow,
+                onTap: onMessage,
+              ),
+              _ActionChip(
+                icon: Icons.card_giftcard,
+                label: 'Gift',
+                color: AppColors.gold,
+                onTap: onSendPopularity,
+              ),
+              if (onRemove != null)
+                _ActionChip(
+                  icon: Icons.person_remove,
+                  label: 'Remove',
+                  color: AppColors.crimsonRed,
+                  onTap: onRemove,
+                ),
+            ],
           ),
-        ],
-        const Spacer(),
+        ),
+        const SizedBox(width: 6),
         GestureDetector(
           onTap: onViewProfile,
           child: Container(
