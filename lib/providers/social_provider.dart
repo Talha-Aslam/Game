@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mafia_wars/providers/game_provider.dart';
 import '../models/social/friend_model.dart';
 import '../models/social/friend_request_model.dart';
 import '../services/social_service.dart';
@@ -32,8 +33,8 @@ class FriendsState {
 
   int get pendingIncomingCount =>
       pendingRequests.where((r) => r.isIncoming).length;
-      
-  int get unseenPendingIncomingCount => 
+
+  int get unseenPendingIncomingCount =>
       (pendingIncomingCount - lastSeenPendingIncomingCount).clamp(0, 999);
 
   int get onlineCount => onlineFriends.length;
@@ -54,7 +55,8 @@ class FriendsState {
       pendingRequests: pendingRequests ?? this.pendingRequests,
       recentPlayers: recentPlayers ?? this.recentPlayers,
       searchResults: searchResults ?? this.searchResults,
-      lastSeenPendingIncomingCount: lastSeenPendingIncomingCount ?? this.lastSeenPendingIncomingCount,
+      lastSeenPendingIncomingCount:
+          lastSeenPendingIncomingCount ?? this.lastSeenPendingIncomingCount,
       isLoading: isLoading ?? this.isLoading,
       error: error,
     );
@@ -79,6 +81,10 @@ class FriendsNotifier extends Notifier<FriendsState> {
   }
 
   Future<void> _pollOnlineFriends() async {
+    final ws = ref.read(wsServiceProvider);
+    if (!ws.isConnected) {
+      ws.connectLobby();
+    }
     try {
       await _loadAll();
     } catch (_) {}
@@ -153,8 +159,11 @@ class FriendsNotifier extends Notifier<FriendsState> {
   }
 
   void markNotificationsSeen() {
-    if (state.pendingIncomingCount > 0 && state.lastSeenPendingIncomingCount != state.pendingIncomingCount) {
-      state = state.copyWith(lastSeenPendingIncomingCount: state.pendingIncomingCount);
+    if (state.pendingIncomingCount > 0 &&
+        state.lastSeenPendingIncomingCount != state.pendingIncomingCount) {
+      state = state.copyWith(
+        lastSeenPendingIncomingCount: state.pendingIncomingCount,
+      );
     }
   }
 }

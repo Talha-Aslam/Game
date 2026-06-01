@@ -15,9 +15,18 @@ class SharedFriendHelper {
     return FriendCardWidget(
       friend: friend,
       hasUnreadMessages: unreadCount > 0,
-      onInvite: () => ref.read(partyProvider.notifier).inviteFriend(friend),
+      onInvite: () {
+        ref.read(partyProvider.notifier).inviteFriend(friend);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Party Invite sent to ${friend.username}!'),
+            backgroundColor: AppColors.purpleNeon,
+          ),
+        );
+      },
       onMessage: () {
         ref.read(notificationProvider.notifier).markMessagesRead(friend.id);
+        ref.read(socialServiceProvider).markMessagesRead(friend.id);
         GoRouter.of(context).push('/chat/${friend.id}', extra: friend);
       },
       onViewProfile: () => _showProfileDialog(context, friend),

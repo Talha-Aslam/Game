@@ -78,6 +78,12 @@ class SocialService {
     }
   }
 
+  Future<void> markMessagesRead(String friendId) async {
+    try {
+      await _api.markMessagesRead(friendId);
+    } catch (_) {}
+  }
+
   // ── Block ──
 
   Future<void> blockUser(String userId) async {
@@ -122,6 +128,7 @@ class SocialService {
       onlineStatus: _parseOnlineStatus(json['onlineStatus'] ?? json['online_status'] ?? 'offline'),
       currentActivity: _parseActivity(json['currentActivity'] ?? json['current_activity'] ?? 'idle'),
       mutualFriendCount: json['mutualFriendCount'] ?? json['mutual_friend_count'] ?? 0,
+      unreadCount: json['unreadCount'] ?? json['unread_count'] ?? 0,
     );
   }
 

@@ -2,7 +2,6 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../providers/social_provider.dart';
 import '../../../providers/notification_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_gradients.dart';
@@ -57,9 +56,30 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget build(BuildContext context) {
     final user = ref.watch(authProvider).user;
     final notifications = ref.watch(notificationProvider);
-    final unreadMessages = notifications.unreadMessages.values.fold(0, (sum, count) => sum + count);
+    final unreadMessages = notifications.unreadMessages.values.fold(
+      0,
+      (sum, count) => sum + count,
+    );
 
     return Scaffold(
+      extendBody: true,
+      bottomNavigationBar: SafeArea(
+        child: BottomNavBarGlass(
+          currentIndex: -1,
+          friendsNotificationCount: unreadMessages > 0 ? unreadMessages : 0,
+          onTap: (index) {
+            if (index == 0) {
+              context.push('/friends');
+            } else if (index == 1) {
+              context.push('/family');
+            } else if (index == 2) {
+              context.push('/store');
+            } else if (index == 3) {
+              context.push('/rankings');
+            }
+          },
+        ),
+      ),
       body: Stack(
         children: [
           // ── Background ──
@@ -190,28 +210,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                 ),
 
-                const SizedBox(height: 10),
+                const SizedBox(height: 12),
               ],
-            ),
-          ),
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: BottomNavBarGlass(
-              currentIndex: -1,
-              friendsNotificationCount: unreadMessages > 0 ? unreadMessages : 0,
-              onTap: (index) {
-                if (index == 0) {
-                  context.push('/friends');
-                } else if (index == 1) {
-                  context.push('/family');
-                } else if (index == 2) {
-                  context.push('/store');
-                } else if (index == 3) {
-                  context.push('/rankings');
-                }
-              },
             ),
           ),
         ],

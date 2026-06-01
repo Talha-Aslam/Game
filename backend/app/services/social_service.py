@@ -31,6 +31,11 @@ async def get_friends_list(user_id: str):
             "onlineStatus": "online" if f["_id"] in manager.active_connections else "offline",
             "currentActivity": "idle",
             "mutualFriendCount": 0,
+            "unreadCount": await db["private_messages"].count_documents({
+                "from_user_id": f["_id"],
+                "to_user_id": user_id,
+                "is_read": False
+            }),
         })
 
     # Resolve family tags
@@ -199,8 +204,8 @@ async def get_private_chat_history(user_id: str, friend_id: str, limit: int = 50
             "timestamp": msg["timestamp"].isoformat() if isinstance(msg["timestamp"], datetime) else msg["timestamp"]
         })
     
-    # Return ascending order for UI
-    return list(reversed(messages))
+    # Return ascending order for UI (index 0 is bottom in reverse ListView)
+    return messages
 
 async def save_private_message(from_user_id: str, to_user_id: str, content: str):
     db = get_database()
@@ -208,7 +213,8 @@ async def save_private_message(from_user_id: str, to_user_id: str, content: str)
         "from_user_id": from_user_id,
         "to_user_id": to_user_id,
         "content": content,
-        "timestamp": datetime.utcnow()
+        "timestamp": datetime.utcnow(),
+        "is_read": False
     }
     result = await db["private_messages"].insert_one(msg)
     return {
@@ -217,6 +223,14 @@ async def save_private_message(from_user_id: str, to_user_id: str, content: str)
         "content": content,
         "timestamp": msg["timestamp"].isoformat()
     }
+
+async def mark_messages_read(user_id: str, friend_id: str):
+    db = get_database()
+    await db["private_messages"].update_many(
+        {"from_user_id": friend_id, "to_user_id": user_id, "is_read": False},
+        {"$set": {"is_read": True}}
+    )
+    return {"message": "Messages marked as read"}
 
 # ══════════════════════════════════════════════════════
 #  LEADERBOARD

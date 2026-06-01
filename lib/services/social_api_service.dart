@@ -54,4 +54,8 @@ class SocialApiService {
     final data = await _http.get('/social/chat/$friendId?limit=$limit');
     return List<Map<String, dynamic>>.from(data ?? []);
   }
+
+  Future<void> markMessagesRead(String friendId) async {
+    await _http.post('/social/chat/$friendId/read');
+  }
 }
