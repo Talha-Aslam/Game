@@ -67,9 +67,9 @@ class MatchmakingService {
 
   void _connectWs(String token, String mode) {
     try {
-      final _wsUrl = AppConstants.wsUrl.replaceAll('http', 'ws');
+      final wsUrl = AppConstants.wsUrl.replaceAll('http', 'ws');
       _channel = WebSocketChannel.connect(
-        Uri.parse('$_wsUrl/lobby?token=$token'),
+        Uri.parse('$wsUrl/lobby?token=$token'),
       );
 
       _channel!.sink.add(jsonEncode({"action": "join_queue", "mode": mode}));
