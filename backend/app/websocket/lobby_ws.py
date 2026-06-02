@@ -73,6 +73,27 @@ async def websocket_lobby(websocket: WebSocket, token: str = Query(...)):
                                 "senderName": sender_name
                             }
                         }, target_id)
+
+                elif action == "family_invite":
+                    target_id = payload.get("targetId")
+                    family_id = payload.get("familyId")
+                    family_name = payload.get("familyName")
+                    if target_id and family_id:
+                        from app.config.database import get_database
+                        db = get_database()
+                        sender = await db["users"].find_one({"_id": user_id})
+                        sender_name = sender.get("username", "A friend") if sender else "A friend"
+                        
+                        await manager.send_personal_message({
+                            "event": "family_invite",
+                            "data": {
+                                "senderId": user_id,
+                                "senderName": sender_name,
+                                "familyId": family_id,
+                                "familyName": family_name or "their family"
+                            }
+                        }, target_id)
+
                     
             except json.JSONDecodeError:
                 logger.warning("Invalid JSON received")

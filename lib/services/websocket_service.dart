@@ -121,6 +121,24 @@ class WebSocketService {
     }
   }
 
+  void sendPartyInvite(String targetId) {
+    if (!_isConnected || _channel == null) return;
+    _channel!.sink.add(jsonEncode({
+      'action': 'party_invite',
+      'targetId': targetId,
+    }));
+  }
+
+  void sendFamilyInvite(String targetId, String familyId, String familyName) {
+    if (!_isConnected || _channel == null) return;
+    _channel!.sink.add(jsonEncode({
+      'action': 'family_invite',
+      'targetId': targetId,
+      'familyId': familyId,
+      'familyName': familyName,
+    }));
+  }
+
   void dispose() {
     disconnect();
     if (!_eventController.isClosed) {

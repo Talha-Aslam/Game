@@ -6,6 +6,7 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../models/family/family_war_model.dart';
 import '../../../core/theme/app_gradients.dart';
 import '../../../providers/family_provider.dart';
+import '../../../providers/social_provider.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../models/family_model.dart';
 import '../../../widgets/particle_field.dart';
@@ -401,13 +402,13 @@ class _FamilyScreenState extends ConsumerState<FamilyScreen>
 // ═══════════════════════════════════════════════════════════
 //  OVERVIEW TAB
 // ═══════════════════════════════════════════════════════════
-class _OverviewTab extends StatelessWidget {
+class _OverviewTab extends ConsumerWidget {
   final FamilyHubState state;
   final VoidCallback onChatTap;
   const _OverviewTab({required this.state, required this.onChatTap});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final f = state.family!;
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -493,16 +494,7 @@ class _OverviewTab extends StatelessWidget {
           Row(
             children: [
               _QuickAction(Icons.person_add, 'Invite', AppColors.cyan, () {
-                final tag = state.family?.tag ?? '';
-                if (tag.isNotEmpty) {
-                  // Copy to clipboard
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Family Tag [$tag] copied to clipboard! Share it with friends so they can search and apply!'),
-                      backgroundColor: AppColors.cyan,
-                    ),
-                  );
-                }
+                _showInviteDialog(context, ref, state.family);
               }),
               const SizedBox(width: 8),
               _QuickAction(
@@ -595,10 +587,14 @@ class _MembersTab extends StatelessWidget {
             (m) => FamilyMemberCard(
               member: m,
               onTap: () {
+                final currentUserId = ref.read(authProvider).user?.id;
+                final myMember = state.family?.members.where((m) => m.userId == currentUserId).firstOrNull;
+                final myRole = myMember?.role ?? FamilyRole.associate;
+                
                 MemberActionSheet.show(
                   context,
                   member: m,
-                  myRole: FamilyRole.boss,
+                  myRole: myRole,
                   onPromote: () =>
                       ref.read(familyProvider.notifier).promoteMember(m.userId),
                   onDemote: () =>
@@ -1007,4 +1003,66 @@ class _AchievementsTab extends StatelessWidget {
       ),
     );
   }
+}
+
+void _showInviteDialog(BuildContext context, WidgetRef ref, FamilyModel? family) {
+  if (family == null) return;
+  final friendsState = ref.read(friendsProvider);
+  final friends = friendsState.allFriends;
+  
+  showDialog(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      backgroundColor: AppColors.surface,
+      title: const Text('Invite Friends', style: TextStyle(color: Colors.white)),
+      content: SizedBox(
+        width: double.maxFinite,
+        height: 300,
+        child: friends.isEmpty
+            ? const Center(
+                child: Text(
+                  'No friends to invite.',
+                  style: TextStyle(color: AppColors.white50),
+                ),
+              )
+            : ListView.builder(
+                shrinkWrap: true,
+                itemCount: friends.length,
+                itemBuilder: (context, index) {
+                  final friend = friends[index];
+                  return ListTile(
+                    leading: CircleAvatar(
+                      backgroundColor: AppColors.purpleNeon.withValues(alpha: 0.2),
+                      child: const Icon(Icons.person, color: AppColors.purpleNeon),
+                    ),
+                    title: Text(friend.username, style: const TextStyle(color: Colors.white)),
+                    trailing: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.cyan,
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                      ),
+                      onPressed: () {
+                        ref.read(familyProvider.notifier).inviteFriendToFamily(friend.id);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Invited ${friend.username} to family!'),
+                            backgroundColor: AppColors.cyan,
+                          ),
+                        );
+                        Navigator.pop(ctx);
+                      },
+                      child: const Text('Invite', style: TextStyle(color: Colors.black, fontSize: 12, fontWeight: FontWeight.bold)),
+                    ),
+                  );
+                },
+              ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx),
+          child: const Text('Close', style: TextStyle(color: AppColors.white50)),
+        ),
+      ],
+    ),
+  );
 }

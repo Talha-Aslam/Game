@@ -8,13 +8,14 @@ import '../models/family/family_audit_log_model.dart';
 import '../models/family/family_chat_model.dart';
 import '../services/family_service.dart';
 import '../services/family_chat_service.dart';
-import '../services/bounty_api_service.dart';
 import 'game_provider.dart';
 import 'dart:async';
 
 // ── Service Providers ──
 final familyServiceProvider = Provider<FamilyService>((ref) => FamilyService());
-final familyChatServiceProvider = Provider<FamilyChatService>((ref) => FamilyChatService());
+final familyChatServiceProvider = Provider<FamilyChatService>(
+  (ref) => FamilyChatService(),
+);
 
 // ── State ──
 class FamilyHubState {
@@ -46,7 +47,8 @@ class FamilyHubState {
 
   bool get hasFamily => family != null;
   int get onlineCount => family?.onlineCount ?? 0;
-  int get pendingApps => applications.where((a) => a.status == ApplicationStatus.pending).length;
+  int get pendingApps =>
+      applications.where((a) => a.status == ApplicationStatus.pending).length;
 
   FamilyHubState copyWith({
     FamilyModel? family,
@@ -85,22 +87,24 @@ class FamilyHubNotifier extends Notifier<FamilyHubState> {
   @override
   FamilyHubState build() {
     _loadAll();
-    
+
     final ws = ref.watch(wsServiceProvider);
     _sub?.cancel();
     _sub = ws.eventStream.listen((msg) {
       if (msg.event == 'family_chat') {
         final chatMsg = _chat.parseMessage(msg.data['message']);
         if (!state.chatMessages.any((m) => m.id == chatMsg.id)) {
-          state = state.copyWith(chatMessages: [chatMsg, ...state.chatMessages]);
+          state = state.copyWith(
+            chatMessages: [chatMsg, ...state.chatMessages],
+          );
         }
       }
     });
-    
+
     ref.onDispose(() {
       _sub?.cancel();
     });
-    
+
     return const FamilyHubState(isLoading: true);
   }
 
@@ -118,9 +122,15 @@ class FamilyHubNotifier extends Notifier<FamilyHubState> {
       final audit = await _svc.getAuditLog();
       final messages = await _chat.getMessages();
       state = state.copyWith(
-        family: family, treasury: treasury, applications: apps,
-        wars: wars, rivalries: rivals, achievements: achievements,
-        auditLog: audit, chatMessages: messages, isLoading: false,
+        family: family,
+        treasury: treasury,
+        applications: apps,
+        wars: wars,
+        rivalries: rivals,
+        achievements: achievements,
+        auditLog: audit,
+        chatMessages: messages,
+        isLoading: false,
       );
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
@@ -131,14 +141,19 @@ class FamilyHubNotifier extends Notifier<FamilyHubState> {
 
   // ── Creation ──
   Future<void> createFamily({
-    required String name, required String tag,
-    String description = '', String slogan = '',
+    required String name,
+    required String tag,
+    String description = '',
+    String slogan = '',
     FamilyPrivacy privacy = FamilyPrivacy.approvalRequired,
   }) async {
     state = state.copyWith(isLoading: true);
     final family = await _svc.createFamily(
-      name: name, tag: tag, description: description,
-      slogan: slogan, privacy: privacy,
+      name: name,
+      tag: tag,
+      description: description,
+      slogan: slogan,
+      privacy: privacy,
     );
     state = state.copyWith(family: family, isLoading: false);
   }
@@ -155,12 +170,20 @@ class FamilyHubNotifier extends Notifier<FamilyHubState> {
 
   // ── Settings ──
   Future<void> updateSettings({
-    String? name, String? tag, String? description,
-    String? slogan, String? motd, FamilyPrivacy? privacy,
+    String? name,
+    String? tag,
+    String? description,
+    String? slogan,
+    String? motd,
+    FamilyPrivacy? privacy,
   }) async {
     await _svc.updateSettings(
-      name: name, tag: tag, description: description,
-      slogan: slogan, motd: motd, privacy: privacy,
+      name: name,
+      tag: tag,
+      description: description,
+      slogan: slogan,
+      motd: motd,
+      privacy: privacy,
     );
     final family = await _svc.getCurrentFamily();
     state = state.copyWith(family: family);
@@ -240,6 +263,17 @@ class FamilyHubNotifier extends Notifier<FamilyHubState> {
     final family = await _svc.getCurrentFamily();
     final audit = await _svc.getAuditLog();
     state = state.copyWith(family: family, auditLog: audit);
+  }
+
+  // ── Invites & Applications ──
+  Future<void> applyToFamily(String familyId) async {
+    // TODO: Implement apply API
+    await Future.delayed(const Duration(milliseconds: 500));
+  }
+
+  Future<void> inviteFriendToFamily(String userId) async {
+    // TODO: Implement invite API
+    await Future.delayed(const Duration(milliseconds: 500));
   }
 }
 
