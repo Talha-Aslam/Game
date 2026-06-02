@@ -10,6 +10,7 @@ import '../../../providers/game_provider.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../services/family_api_service.dart';
 import '../widgets/family_chat_bubble.dart';
+import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 
 /// Full-screen family chat
 class FamilyChatScreen extends ConsumerStatefulWidget {
@@ -22,6 +23,7 @@ class _FamilyChatScreenState extends ConsumerState<FamilyChatScreen> {
   final _msgController = TextEditingController();
   final _scrollController = ScrollController();
   bool _isVoiceActive = false;
+  bool _showEmojiPicker = false;
 
   @override
   void dispose() {
@@ -112,7 +114,14 @@ class _FamilyChatScreenState extends ConsumerState<FamilyChatScreen> {
               if (_isVoiceActive) const _VoiceLoungePanel(),
               // Messages
               Expanded(
-                child: ListView.builder(
+                child: GestureDetector(
+                  onTap: () {
+                    FocusScope.of(context).unfocus();
+                    if (_showEmojiPicker) {
+                      setState(() => _showEmojiPicker = false);
+                    }
+                  },
+                  child: ListView.builder(
                   controller: _scrollController,
                   reverse: true,
                   padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -129,16 +138,29 @@ class _FamilyChatScreenState extends ConsumerState<FamilyChatScreen> {
                     );
                   },
                 ),
+                ),
               ),
               // Input
               Container(
-                padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
+                padding: const EdgeInsets.fromLTRB(8, 8, 12, 8),
                 decoration: BoxDecoration(
                   color: AppColors.surface,
                   border: Border(top: BorderSide(color: AppColors.glassBorder)),
                 ),
                 child: Row(
                   children: [
+                    IconButton(
+                      icon: Icon(_showEmojiPicker ? Icons.keyboard : Icons.emoji_emotions_outlined, color: AppColors.white70),
+                      onPressed: () {
+                        // Close keyboard if open when showing emoji picker
+                        if (!_showEmojiPicker) {
+                          FocusScope.of(context).unfocus();
+                        }
+                        setState(() {
+                          _showEmojiPicker = !_showEmojiPicker;
+                        });
+                      },
+                    ),
                     Expanded(
                       child: TextField(
                         controller: _msgController,
@@ -153,6 +175,7 @@ class _FamilyChatScreenState extends ConsumerState<FamilyChatScreen> {
                         ),
                       ),
                     ),
+                    const SizedBox(width: 12),
                     GestureDetector(
                       onTap: () {
                         if (_msgController.text.trim().isEmpty) return;
@@ -177,6 +200,26 @@ class _FamilyChatScreenState extends ConsumerState<FamilyChatScreen> {
                   ],
                 ),
               ),
+              if (_showEmojiPicker)
+                SizedBox(
+                  height: 250,
+                  child: EmojiPicker(
+                    textEditingController: _msgController,
+                    config: Config(
+                      bottomActionBarConfig: const BottomActionBarConfig(showBackspaceButton: false, showSearchViewButton: false),
+                      categoryViewConfig: const CategoryViewConfig(
+                        backgroundColor: AppColors.background,
+                        indicatorColor: AppColors.purpleNeon,
+                        iconColorSelected: AppColors.purpleNeon,
+                      ),
+                      emojiViewConfig: EmojiViewConfig(
+                        backgroundColor: AppColors.surface,
+                        columns: 7,
+                        emojiSizeMax: 28,
+                      ),
+                    ),
+                  ),
+                ),
             ],
           ),
         ),
@@ -223,7 +266,7 @@ class _VoiceLoungePanelState extends ConsumerState<_VoiceLoungePanel>
         false;
 
     return Container(
-      height: 160,
+      height: 180,
       width: double.infinity,
       color: AppColors.purpleNeon.withValues(alpha: 0.1),
       child: Column(

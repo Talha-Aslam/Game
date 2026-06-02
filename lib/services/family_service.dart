@@ -272,8 +272,12 @@ class FamilyService {
     final donations = List<Map<String, dynamic>>.from(
       json['recent_donations'] ?? [],
     );
+    final boosts = List<Map<String, dynamic>>.from(
+      json['active_boosts'] ?? [],
+    );
     return FamilyTreasury(
       balance: json['balance'] ?? 0,
+      activeBoosts: boosts.map((b) => _boostFromJson(b)).toList(),
       recentDonations: donations
           .map(
             (d) => TreasuryDonation(
@@ -286,6 +290,20 @@ class FamilyService {
             ),
           )
           .toList(),
+    );
+  }
+
+  FamilyBoost _boostFromJson(Map<String, dynamic> json) {
+    return FamilyBoost(
+      id: json['id'] ?? '',
+      type: FamilyBoostType.values.firstWhere(
+        (e) => e.name == json['type'],
+        orElse: () => FamilyBoostType.influenceBonus,
+      ),
+      activatedAt:
+          DateTime.tryParse(json['activated_at'] ?? '') ?? DateTime.now(),
+      expiresAt: DateTime.tryParse(json['expires_at'] ?? '') ?? DateTime.now(),
+      activatedBy: json['activated_by'] ?? '',
     );
   }
 

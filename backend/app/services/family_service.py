@@ -342,6 +342,20 @@ async def donate_to_treasury(user_id: str, amount: int):
         "details": str(amount),
         "timestamp": datetime.utcnow().isoformat(),
     }}})
+
+    # Broadcast update
+    family = await db["families"].find_one({"_id": family_id})
+    if family:
+        from app.core.websocket_manager import manager
+        member_ids = [m["user_id"] for m in family.get("members", [])]
+        ws_msg = {
+            "event": "family_treasury_update",
+            "data": {
+                "treasury": family.get("treasury", {})
+            }
+        }
+        await manager.broadcast_to_users(ws_msg, member_ids)
+
     return {"message": f"Donated {amount} to treasury"}
 
 
@@ -535,23 +549,71 @@ async def activate_boost(user_id: str, boost_type: str):
     if not family:
         raise HTTPException(status_code=404, detail="Family not found")
         
-    # Cost to activate a boost is 1000 Influence from treasury
-    treasury_balance = family.get("treasury", {}).get("balance", 0)
-    if treasury_balance < 1000:
-        raise HTTPException(status_code=400, detail="Not enough treasury balance")
+    # Boost costs matching frontend
+    boost_costs = {
+        "influenceBonus": 500,
+        "battlePassXP": 750,
+        "matchmakingSpeed": 300,
+        "familyXPDouble": 1000
+    }
+    
+    cost = boost_costs.get(boost_type, 1000)
+    
+    treasury = family.get("treasury", {})
+    balance = treasury.get("balance", 0)
+    
+    if balance < cost:
+        raise HTTPException(status_code=400, detail=f"Not enough treasury balance. Need {cost}.")
         
+    # Check if boost is already active
+    active_boosts = treasury.get("active_boosts", [])
+    now = datetime.utcnow()
+    
+    # Filter out expired boosts first (optional but good for cleanup)
+    active_boosts = [b for b in active_boosts if datetime.fromisoformat(b["expires_at"]) > now]
+    
+    if any(b["type"] == boost_type for b in active_boosts):
+        raise HTTPException(status_code=400, detail="Boost is already active")
+        
+    # Create new boost
+    from datetime import timedelta
+    expires_at = (now + timedelta(hours=24)).isoformat()
+    
+    new_boost = {
+        "id": str(uuid.uuid4()),
+        "type": boost_type,
+        "activated_at": now.isoformat(),
+        "expires_at": expires_at,
+        "activated_by": user.get("username", "")
+    }
+    
     await db["families"].update_one(
         {"_id": family_id},
         {
-            "$inc": {"treasury.balance": -1000},
+            "$inc": {"treasury.balance": -cost},
+            "$set": {"treasury.active_boosts": active_boosts + [new_boost]},
             "$push": {"audit_log": {
                 "id": str(uuid.uuid4()), "action": "boostActivated",
                 "actor_id": user_id, "actor_name": user.get("username", ""),
                 "details": boost_type,
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": now.isoformat(),
             }}
         }
     )
+    
+    # Broadcast update
+    family = await db["families"].find_one({"_id": family_id})
+    if family:
+        from app.core.websocket_manager import manager
+        member_ids = [m["user_id"] for m in family.get("members", [])]
+        ws_msg = {
+            "event": "family_treasury_update",
+            "data": {
+                "treasury": family.get("treasury", {})
+            }
+        }
+        await manager.broadcast_to_users(ws_msg, member_ids)
+        
     return {"message": "Boost activated successfully"}
 
 

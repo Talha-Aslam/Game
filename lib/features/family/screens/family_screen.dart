@@ -9,6 +9,9 @@ import '../../../providers/family_provider.dart';
 import '../../../providers/social_provider.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../models/family_model.dart';
+import '../../profile/screens/public_profile_screen.dart';
+import 'family_chat_screen.dart';
+import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 import '../../../widgets/particle_field.dart';
 import '../widgets/family_crest_widget.dart';
 import '../widgets/family_level_progress_bar.dart';
@@ -675,6 +678,7 @@ class _ChatTab extends ConsumerStatefulWidget {
 
 class _ChatTabState extends ConsumerState<_ChatTab> {
   final _msgController = TextEditingController();
+  bool _showEmojiPicker = false;
 
   @override
   void dispose() {
@@ -724,7 +728,14 @@ class _ChatTabState extends ConsumerState<_ChatTab> {
           ),
         ),
         Expanded(
-          child: ListView.builder(
+          child: GestureDetector(
+            onTap: () {
+              FocusScope.of(context).unfocus();
+              if (_showEmojiPicker) {
+                setState(() => _showEmojiPicker = false);
+              }
+            },
+            child: ListView.builder(
             reverse: true,
             padding: const EdgeInsets.all(16),
             itemCount: messages.length,
@@ -801,16 +812,28 @@ class _ChatTabState extends ConsumerState<_ChatTab> {
               );
             },
           ),
+          ),
         ),
         // Input bar
         Container(
-          padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
+          padding: const EdgeInsets.fromLTRB(8, 8, 12, 8),
           decoration: BoxDecoration(
             color: AppColors.surface,
             border: Border(top: BorderSide(color: AppColors.glassBorder)),
           ),
           child: Row(
             children: [
+              IconButton(
+                icon: Icon(_showEmojiPicker ? Icons.keyboard : Icons.emoji_emotions_outlined, color: AppColors.white70),
+                onPressed: () {
+                  if (!_showEmojiPicker) {
+                    FocusScope.of(context).unfocus();
+                  }
+                  setState(() {
+                    _showEmojiPicker = !_showEmojiPicker;
+                  });
+                },
+              ),
               Expanded(
                 child: TextField(
                   controller: _msgController,
@@ -825,6 +848,7 @@ class _ChatTabState extends ConsumerState<_ChatTab> {
                   ),
                 ),
               ),
+              const SizedBox(width: 12),
               GestureDetector(
                 onTap: () {
                   if (_msgController.text.trim().isEmpty) return;
@@ -845,6 +869,27 @@ class _ChatTabState extends ConsumerState<_ChatTab> {
             ],
           ),
         ),
+        // No extra closing tags
+        if (_showEmojiPicker)
+          SizedBox(
+            height: 250,
+            child: EmojiPicker(
+              textEditingController: _msgController,
+              config: Config(
+                bottomActionBarConfig: const BottomActionBarConfig(showBackspaceButton: false, showSearchViewButton: false),
+                categoryViewConfig: const CategoryViewConfig(
+                  backgroundColor: AppColors.background,
+                  indicatorColor: AppColors.purpleNeon,
+                  iconColorSelected: AppColors.purpleNeon,
+                ),
+                emojiViewConfig: EmojiViewConfig(
+                  backgroundColor: AppColors.surface,
+                  columns: 7,
+                  emojiSizeMax: 28,
+                ),
+              ),
+            ),
+          ),
       ],
     );
   }
@@ -884,6 +929,8 @@ class _TreasuryTab extends StatelessWidget {
             (t) => TreasuryBoostCard(
               type: t,
               treasuryBalance: state.treasury.balance,
+              isActive: state.treasury.currentActiveBoosts
+                  .any((b) => b.type == t),
               onActivate: () async {
                 final ok = await ref
                     .read(familyProvider.notifier)
