@@ -685,6 +685,8 @@ class _ChatTabState extends ConsumerState<_ChatTab> {
   @override
   Widget build(BuildContext context) {
     final messages = ref.watch(familyProvider).chatMessages;
+    final user = ref.watch(authProvider).user;
+    
     return Column(
       children: [
         GestureDetector(
@@ -728,7 +730,7 @@ class _ChatTabState extends ConsumerState<_ChatTab> {
             itemCount: messages.length,
             itemBuilder: (_, i) {
               final msg = messages[messages.length - 1 - i];
-              final isMe = msg.senderId == 'local_user';
+              final isMe = user != null && msg.senderId == user.id;
               if (msg.isSystem) {
                 return Center(
                   child: Padding(
@@ -1046,70 +1048,94 @@ void _showInviteDialog(BuildContext context, WidgetRef ref, FamilyModel? family)
   
   showDialog(
     context: context,
-    builder: (ctx) => AlertDialog(
-      backgroundColor: AppColors.surface,
-      title: const Text('Invite Friends', style: TextStyle(color: Colors.white)),
-      content: SizedBox(
-        width: double.maxFinite,
-        height: 300,
-        child: Consumer(
-          builder: (context, ref, child) {
-            final friendsState = ref.watch(friendsProvider);
-            final friends = friendsState.allFriends;
+    builder: (ctx) {
+      final Set<String> invitedFriends = {};
+      return StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            backgroundColor: AppColors.surface,
+            title: const Text('Invite Friends', style: TextStyle(color: Colors.white)),
+            content: SizedBox(
+              width: double.maxFinite,
+              height: 300,
+              child: Consumer(
+                builder: (context, ref, child) {
+                  final friendsState = ref.watch(friendsProvider);
+                  final friends = friendsState.allFriends;
 
-            if (friendsState.isLoading && friends.isEmpty) {
-              return const Center(child: CircularProgressIndicator(color: AppColors.cyan));
-            }
+                  if (friendsState.isLoading && friends.isEmpty) {
+                    return const Center(child: CircularProgressIndicator(color: AppColors.cyan));
+                  }
 
-            if (friends.isEmpty) {
-              return const Center(
-                child: Text(
-                  'No friends to invite.',
-                  style: TextStyle(color: AppColors.white50),
-                ),
-              );
-            }
+                  if (friends.isEmpty) {
+                    return const Center(
+                      child: Text(
+                        'No friends to invite.',
+                        style: TextStyle(color: AppColors.white50),
+                      ),
+                    );
+                  }
 
-            return ListView.builder(
-              shrinkWrap: true,
-              itemCount: friends.length,
-              itemBuilder: (context, index) {
-                final friend = friends[index];
-                return ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: AppColors.purpleNeon.withValues(alpha: 0.2),
-                    child: const Icon(Icons.person, color: AppColors.purpleNeon),
-                  ),
-                  title: Text(friend.username, style: const TextStyle(color: Colors.white)),
-                  trailing: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.cyan,
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                    ),
-                    onPressed: () {
-                      ref.read(familyProvider.notifier).inviteFriendToFamily(friend.id);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Invited ${friend.username} to family!'),
-                          backgroundColor: AppColors.cyan,
+                  return ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: friends.length,
+                    itemBuilder: (context, index) {
+                      final friend = friends[index];
+                      final isAlreadyInFamily = family.members.any((m) => m.userId == friend.id);
+                      final isInvited = invitedFriends.contains(friend.id);
+
+                      return ListTile(
+                        leading: CircleAvatar(
+                          backgroundColor: AppColors.purpleNeon.withValues(alpha: 0.2),
+                          child: const Icon(Icons.person, color: AppColors.purpleNeon),
                         ),
+                        title: Text(friend.username, style: const TextStyle(color: Colors.white)),
+                        trailing: isAlreadyInFamily
+                            ? const Text('In Family', style: TextStyle(color: AppColors.white50, fontSize: 12))
+                            : ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: isInvited ? AppColors.white10 : AppColors.cyan,
+                                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                                ),
+                                onPressed: isInvited
+                                    ? () {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(
+                                            content: Text('Request already pending'),
+                                            backgroundColor: AppColors.crimsonRed,
+                                          ),
+                                        );
+                                      }
+                                    : () {
+                                        ref.read(familyProvider.notifier).inviteFriendToFamily(friend.id);
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: Text('Invited ${friend.username} to family!'),
+                                            backgroundColor: AppColors.cyan,
+                                          ),
+                                        );
+                                        setState(() {
+                                          invitedFriends.add(friend.id);
+                                        });
+                                      },
+                                child: Text(isInvited ? 'Pending' : 'Invite',
+                                    style: TextStyle(color: isInvited ? AppColors.white50 : Colors.black, fontSize: 12, fontWeight: FontWeight.bold)),
+                              ),
                       );
-                      Navigator.pop(ctx);
                     },
-                    child: const Text('Invite', style: TextStyle(color: Colors.black, fontSize: 12, fontWeight: FontWeight.bold)),
-                  ),
-                );
-              },
-            );
-          },
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(ctx),
-          child: const Text('Close', style: TextStyle(color: AppColors.white50)),
-        ),
-      ],
-    ),
+                  );
+                },
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Close', style: TextStyle(color: AppColors.white50)),
+              ),
+            ],
+          );
+        }
+      );
+    },
   );
 }

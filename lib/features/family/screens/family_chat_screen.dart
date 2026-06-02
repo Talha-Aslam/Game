@@ -78,7 +78,8 @@ class _FamilyChatScreenState extends ConsumerState<FamilyChatScreen> {
           itemCount: messages.length,
           itemBuilder: (_, i) {
             final msg = messages[messages.length - 1 - i];
-            return FamilyChatBubble(message: msg, isMe: msg.senderId == 'local_user');
+            final user = ref.watch(authProvider).user;
+            return FamilyChatBubble(message: msg, isMe: user != null && msg.senderId == user.id);
           },
         )),
         // Input
