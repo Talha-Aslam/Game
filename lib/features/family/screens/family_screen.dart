@@ -687,6 +687,40 @@ class _ChatTabState extends ConsumerState<_ChatTab> {
     final messages = ref.watch(familyProvider).chatMessages;
     return Column(
       children: [
+        GestureDetector(
+          onTap: () => context.push('/family/chat'),
+          child: Container(
+            margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+            decoration: BoxDecoration(
+              gradient: AppGradients.purpleNeonGradient,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.purpleNeon.withValues(alpha: 0.3),
+                  blurRadius: 8,
+                  spreadRadius: 1,
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: const [
+                Icon(Icons.headset_mic, color: Colors.white, size: 20),
+                SizedBox(width: 8),
+                Text(
+                  'JOIN VOICE LOUNGE',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.2,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
         Expanded(
           child: ListView.builder(
             reverse: true,
