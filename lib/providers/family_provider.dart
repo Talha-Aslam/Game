@@ -95,11 +95,25 @@ class FamilyHubNotifier extends Notifier<FamilyHubState> {
       if (msg.event == 'family_application') {
         refresh();
       } else if (msg.event == 'family_treasury_update') {
-        final treasuryData = Map<String, dynamic>.from(msg.data['treasury'] ?? {});
-        // We need to use the service's parser if possible, but it's not static.
-        // For simplicity, we can just call _svc.getTreasury() to be safe and consistent,
-        // or re-implement the parser here. Calling getTreasury() is safer.
         _loadTreasury();
+      } else if (msg.event == 'family_chat_cleared') {
+        state = state.copyWith(chatMessages: []);
+      } else if (msg.event == 'family_member_updated') {
+        _refreshFamily();
+      } else if (msg.event == 'family_member_status') {
+        final data = msg.data as Map<String, dynamic>;
+        final userId = data['user_id'] as String;
+        final status = data['status'] as String;
+        
+        if (state.family != null) {
+          final members = state.family!.members.map((m) {
+            if (m.userId == userId) {
+              return m.copyWith(activity: status == 'online' ? MemberActivity.online : MemberActivity.offline);
+            }
+            return m;
+          }).toList();
+          state = state.copyWith(family: state.family!.copyWith(members: members));
+        }
       }
     });
 
@@ -278,6 +292,15 @@ class FamilyHubNotifier extends Notifier<FamilyHubState> {
       final treasury = await _svc.getTreasury();
       final family = await _svc.getCurrentFamily();
       state = state.copyWith(treasury: treasury, family: family);
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+    }
+  }
+
+  Future<void> clearChatHistory() async {
+    try {
+      await _chat.clearHistory();
+      state = state.copyWith(chatMessages: []);
     } catch (e) {
       state = state.copyWith(error: e.toString());
     }
