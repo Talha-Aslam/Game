@@ -139,6 +139,14 @@ class WebSocketService {
     }));
   }
 
+  void sendMuteRequest(String targetId) {
+    if (!_isConnected || _channel == null) return;
+    _channel!.sink.add(jsonEncode({
+      'action': 'voice_mute_request',
+      'targetId': targetId,
+    }));
+  }
+
   void dispose() {
     disconnect();
     if (!_eventController.isClosed) {

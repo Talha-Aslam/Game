@@ -77,14 +77,14 @@ class TreasuryBoostCard extends StatelessWidget {
                 color: isActive
                     ? AppColors.gold.withValues(alpha: 0.2)
                     : (canAfford
-                        ? type.color.withValues(alpha: 0.15)
-                        : AppColors.white05),
+                          ? type.color.withValues(alpha: 0.15)
+                          : AppColors.white05),
                 border: Border.all(
                   color: isActive
                       ? AppColors.gold.withValues(alpha: 0.5)
                       : (canAfford
-                          ? type.color.withValues(alpha: 0.4)
-                          : AppColors.glassBorder),
+                            ? type.color.withValues(alpha: 0.4)
+                            : AppColors.glassBorder),
                 ),
               ),
               child: Text(

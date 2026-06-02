@@ -9,8 +9,6 @@ import '../../../providers/family_provider.dart';
 import '../../../providers/social_provider.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../models/family_model.dart';
-import '../../profile/screens/public_profile_screen.dart';
-import 'family_chat_screen.dart';
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 import '../../../widgets/particle_field.dart';
 import '../widgets/family_crest_widget.dart';
@@ -123,7 +121,10 @@ class _FamilyScreenState extends ConsumerState<FamilyScreen>
                           context: context,
                           builder: (ctx) => AlertDialog(
                             backgroundColor: AppColors.surface,
-                            title: const Text('Not Enough Coins', style: TextStyle(color: Colors.white)),
+                            title: const Text(
+                              'Not Enough Coins',
+                              style: TextStyle(color: Colors.white),
+                            ),
                             content: const Text(
                               'You need 500 Syndicate Coins to create a family.',
                               style: TextStyle(color: AppColors.white70),
@@ -131,15 +132,26 @@ class _FamilyScreenState extends ConsumerState<FamilyScreen>
                             actions: [
                               TextButton(
                                 onPressed: () => Navigator.pop(ctx),
-                                child: const Text('Cancel', style: TextStyle(color: AppColors.white50)),
+                                child: const Text(
+                                  'Cancel',
+                                  style: TextStyle(color: AppColors.white50),
+                                ),
                               ),
                               ElevatedButton(
                                 onPressed: () {
                                   Navigator.pop(ctx);
                                   context.push('/store');
                                 },
-                                style: ElevatedButton.styleFrom(backgroundColor: AppColors.gold),
-                                child: const Text('Buy with Syndicate Coins', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.gold,
+                                ),
+                                child: const Text(
+                                  'Buy with Syndicate Coins',
+                                  style: TextStyle(
+                                    color: Colors.black,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
                               ),
                             ],
                           ),
@@ -300,7 +312,10 @@ class _FamilyScreenState extends ConsumerState<FamilyScreen>
                   child: TabBarView(
                     controller: _tabController,
                     children: [
-                      _OverviewTab(state: state, onChatTap: () => _tabController.animateTo(3)),
+                      _OverviewTab(
+                        state: state,
+                        onChatTap: () => _tabController.animateTo(3),
+                      ),
                       _MembersTab(state: state, ref: ref),
                       _RequestsTab(state: state, ref: ref),
                       _ChatTab(),
@@ -500,12 +515,7 @@ class _OverviewTab extends ConsumerWidget {
                 _showInviteDialog(context, ref, state.family);
               }),
               const SizedBox(width: 8),
-              _QuickAction(
-                Icons.chat,
-                'Chat',
-                AppColors.purpleGlow,
-                onChatTap,
-              ),
+              _QuickAction(Icons.chat, 'Chat', AppColors.purpleGlow, onChatTap),
               const SizedBox(width: 8),
               _QuickAction(Icons.visibility, 'Spectate', AppColors.gold, () {
                 context.push('/family/spectate');
@@ -591,9 +601,11 @@ class _MembersTab extends StatelessWidget {
               member: m,
               onTap: () {
                 final currentUserId = ref.read(authProvider).user?.id;
-                final myMember = state.family?.members.where((m) => m.userId == currentUserId).firstOrNull;
+                final myMember = state.family?.members
+                    .where((m) => m.userId == currentUserId)
+                    .firstOrNull;
                 final myRole = myMember?.role ?? FamilyRole.associate;
-                
+
                 MemberActionSheet.show(
                   context,
                   member: m,
@@ -627,7 +639,7 @@ class _RequestsTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final apps = state.applications;
-    
+
     if (apps.isEmpty) {
       return const Center(
         child: Text(
@@ -636,7 +648,7 @@ class _RequestsTab extends StatelessWidget {
         ),
       );
     }
-    
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -667,7 +679,6 @@ class _RequestsTab extends StatelessWidget {
   }
 }
 
-
 // ═══════════════════════════════════════════════════════════
 //  CHAT TAB (simplified inline — full screen available)
 // ═══════════════════════════════════════════════════════════
@@ -678,10 +689,22 @@ class _ChatTab extends ConsumerStatefulWidget {
 
 class _ChatTabState extends ConsumerState<_ChatTab> {
   final _msgController = TextEditingController();
+  final _focusNode = FocusNode();
   bool _showEmojiPicker = false;
 
   @override
+  void initState() {
+    super.initState();
+    _focusNode.addListener(() {
+      if (_focusNode.hasFocus && _showEmojiPicker) {
+        setState(() => _showEmojiPicker = false);
+      }
+    });
+  }
+
+  @override
   void dispose() {
+    _focusNode.dispose();
     _msgController.dispose();
     super.dispose();
   }
@@ -690,7 +713,7 @@ class _ChatTabState extends ConsumerState<_ChatTab> {
   Widget build(BuildContext context) {
     final messages = ref.watch(familyProvider).chatMessages;
     final user = ref.watch(authProvider).user;
-    
+
     return Column(
       children: [
         GestureDetector(
@@ -736,82 +759,87 @@ class _ChatTabState extends ConsumerState<_ChatTab> {
               }
             },
             child: ListView.builder(
-            reverse: true,
-            padding: const EdgeInsets.all(16),
-            itemCount: messages.length,
-            itemBuilder: (_, i) {
-              final msg = messages[messages.length - 1 - i];
-              final isMe = user != null && (msg.senderId == user.id || msg.senderName == user.username);
-              if (msg.isSystem) {
-                return Center(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4),
-                    child: Text(
-                      msg.content,
-                      style: const TextStyle(
-                        color: AppColors.white30,
-                        fontSize: 10,
-                        fontStyle: FontStyle.italic,
+              reverse: true,
+              padding: const EdgeInsets.all(16),
+              itemCount: messages.length,
+              itemBuilder: (_, i) {
+                final msg = messages[messages.length - 1 - i];
+                final isMe =
+                    user != null &&
+                    (msg.senderId == user.id ||
+                        msg.senderName == user.username);
+                if (msg.isSystem) {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Text(
+                        msg.content,
+                        style: const TextStyle(
+                          color: AppColors.white30,
+                          fontSize: 10,
+                          fontStyle: FontStyle.italic,
+                        ),
                       ),
+                    ),
+                  );
+                }
+                return Align(
+                  alignment: isMe
+                      ? Alignment.centerRight
+                      : Alignment.centerLeft,
+                  child: Container(
+                    constraints: BoxConstraints(
+                      maxWidth: MediaQuery.of(context).size.width * 0.7,
+                    ),
+                    margin: const EdgeInsets.only(bottom: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(14),
+                      color: isMe
+                          ? AppColors.purpleNeon.withValues(alpha: 0.12)
+                          : AppColors.glassBackground,
+                      border: Border.all(
+                        color: isMe
+                            ? AppColors.purpleNeon.withValues(alpha: 0.3)
+                            : AppColors.glassBorder,
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (!isMe)
+                          Text(
+                            msg.senderName,
+                            style: const TextStyle(
+                              color: AppColors.cyan,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        Text(
+                          msg.content,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '${msg.timestamp.hour.toString().padLeft(2, '0')}:${msg.timestamp.minute.toString().padLeft(2, '0')}',
+                          style: const TextStyle(
+                            color: AppColors.white30,
+                            fontSize: 9,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 );
-              }
-              return Align(
-                alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-                child: Container(
-                  constraints: BoxConstraints(
-                    maxWidth: MediaQuery.of(context).size.width * 0.7,
-                  ),
-                  margin: const EdgeInsets.only(bottom: 6),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(14),
-                    color: isMe
-                        ? AppColors.purpleNeon.withValues(alpha: 0.12)
-                        : AppColors.glassBackground,
-                    border: Border.all(
-                      color: isMe
-                          ? AppColors.purpleNeon.withValues(alpha: 0.3)
-                          : AppColors.glassBorder,
-                    ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (!isMe)
-                        Text(
-                          msg.senderName,
-                          style: const TextStyle(
-                            color: AppColors.cyan,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      Text(
-                        msg.content,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 13,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        '${msg.timestamp.hour.toString().padLeft(2, '0')}:${msg.timestamp.minute.toString().padLeft(2, '0')}',
-                        style: const TextStyle(
-                          color: AppColors.white30,
-                          fontSize: 9,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
+              },
+            ),
           ),
         ),
         // Input bar
@@ -824,7 +852,12 @@ class _ChatTabState extends ConsumerState<_ChatTab> {
           child: Row(
             children: [
               IconButton(
-                icon: Icon(_showEmojiPicker ? Icons.keyboard : Icons.emoji_emotions_outlined, color: AppColors.white70),
+                icon: Icon(
+                  _showEmojiPicker
+                      ? Icons.keyboard
+                      : Icons.emoji_emotions_outlined,
+                  color: AppColors.white70,
+                ),
                 onPressed: () {
                   if (!_showEmojiPicker) {
                     FocusScope.of(context).unfocus();
@@ -837,6 +870,7 @@ class _ChatTabState extends ConsumerState<_ChatTab> {
               Expanded(
                 child: TextField(
                   controller: _msgController,
+                  focusNode: _focusNode,
                   style: const TextStyle(color: Colors.white, fontSize: 14),
                   decoration: InputDecoration(
                     hintText: 'Type a message...',
@@ -876,7 +910,10 @@ class _ChatTabState extends ConsumerState<_ChatTab> {
             child: EmojiPicker(
               textEditingController: _msgController,
               config: Config(
-                bottomActionBarConfig: const BottomActionBarConfig(showBackspaceButton: false, showSearchViewButton: false),
+                bottomActionBarConfig: const BottomActionBarConfig(
+                  showBackspaceButton: false,
+                  showSearchViewButton: false,
+                ),
                 categoryViewConfig: const CategoryViewConfig(
                   backgroundColor: AppColors.background,
                   indicatorColor: AppColors.purpleNeon,
@@ -929,8 +966,9 @@ class _TreasuryTab extends StatelessWidget {
             (t) => TreasuryBoostCard(
               type: t,
               treasuryBalance: state.treasury.balance,
-              isActive: state.treasury.currentActiveBoosts
-                  .any((b) => b.type == t),
+              isActive: state.treasury.currentActiveBoosts.any(
+                (b) => b.type == t,
+              ),
               onActivate: () async {
                 final ok = await ref
                     .read(familyProvider.notifier)
@@ -1088,11 +1126,15 @@ class _AchievementsTab extends StatelessWidget {
   }
 }
 
-void _showInviteDialog(BuildContext context, WidgetRef ref, FamilyModel? family) {
+void _showInviteDialog(
+  BuildContext context,
+  WidgetRef ref,
+  FamilyModel? family,
+) {
   if (family == null) return;
   // Trigger a load if it hasn't been loaded
   ref.read(friendsProvider.notifier).refresh();
-  
+
   showDialog(
     context: context,
     builder: (ctx) {
@@ -1101,7 +1143,10 @@ void _showInviteDialog(BuildContext context, WidgetRef ref, FamilyModel? family)
         builder: (context, setState) {
           return AlertDialog(
             backgroundColor: AppColors.surface,
-            title: const Text('Invite Friends', style: TextStyle(color: Colors.white)),
+            title: const Text(
+              'Invite Friends',
+              style: TextStyle(color: Colors.white),
+            ),
             content: SizedBox(
               width: double.maxFinite,
               height: 300,
@@ -1111,7 +1156,9 @@ void _showInviteDialog(BuildContext context, WidgetRef ref, FamilyModel? family)
                   final friends = friendsState.allFriends;
 
                   if (friendsState.isLoading && friends.isEmpty) {
-                    return const Center(child: CircularProgressIndicator(color: AppColors.cyan));
+                    return const Center(
+                      child: CircularProgressIndicator(color: AppColors.cyan),
+                    );
                   }
 
                   if (friends.isEmpty) {
@@ -1128,36 +1175,67 @@ void _showInviteDialog(BuildContext context, WidgetRef ref, FamilyModel? family)
                     itemCount: friends.length,
                     itemBuilder: (context, index) {
                       final friend = friends[index];
-                      final isAlreadyInFamily = family.members.any((m) => m.userId == friend.id);
+                      final isAlreadyInFamily = family.members.any(
+                        (m) => m.userId == friend.id,
+                      );
                       final isInvited = invitedFriends.contains(friend.id);
 
                       return ListTile(
                         leading: CircleAvatar(
-                          backgroundColor: AppColors.purpleNeon.withValues(alpha: 0.2),
-                          child: const Icon(Icons.person, color: AppColors.purpleNeon),
+                          backgroundColor: AppColors.purpleNeon.withValues(
+                            alpha: 0.2,
+                          ),
+                          child: const Icon(
+                            Icons.person,
+                            color: AppColors.purpleNeon,
+                          ),
                         ),
-                        title: Text(friend.username, style: const TextStyle(color: Colors.white)),
+                        title: Text(
+                          friend.username,
+                          style: const TextStyle(color: Colors.white),
+                        ),
                         trailing: isAlreadyInFamily
-                            ? const Text('In Family', style: TextStyle(color: AppColors.white50, fontSize: 12))
+                            ? const Text(
+                                'In Family',
+                                style: TextStyle(
+                                  color: AppColors.white50,
+                                  fontSize: 12,
+                                ),
+                              )
                             : ElevatedButton(
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: isInvited ? AppColors.white10 : AppColors.cyan,
-                                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                                  backgroundColor: isInvited
+                                      ? AppColors.white10
+                                      : AppColors.cyan,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                  ),
                                 ),
                                 onPressed: isInvited
                                     ? () {
-                                        ScaffoldMessenger.of(context).showSnackBar(
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
                                           const SnackBar(
-                                            content: Text('Request already pending'),
-                                            backgroundColor: AppColors.crimsonRed,
+                                            content: Text(
+                                              'Request already pending',
+                                            ),
+                                            backgroundColor:
+                                                AppColors.crimsonRed,
                                           ),
                                         );
                                       }
                                     : () {
-                                        ref.read(familyProvider.notifier).inviteFriendToFamily(friend.id);
-                                        ScaffoldMessenger.of(context).showSnackBar(
+                                        ref
+                                            .read(familyProvider.notifier)
+                                            .inviteFriendToFamily(friend.id);
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
                                           SnackBar(
-                                            content: Text('Invited ${friend.username} to family!'),
+                                            content: Text(
+                                              'Invited ${friend.username} to family!',
+                                            ),
                                             backgroundColor: AppColors.cyan,
                                           ),
                                         );
@@ -1165,8 +1243,16 @@ void _showInviteDialog(BuildContext context, WidgetRef ref, FamilyModel? family)
                                           invitedFriends.add(friend.id);
                                         });
                                       },
-                                child: Text(isInvited ? 'Pending' : 'Invite',
-                                    style: TextStyle(color: isInvited ? AppColors.white50 : Colors.black, fontSize: 12, fontWeight: FontWeight.bold)),
+                                child: Text(
+                                  isInvited ? 'Pending' : 'Invite',
+                                  style: TextStyle(
+                                    color: isInvited
+                                        ? AppColors.white50
+                                        : Colors.black,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
                               ),
                       );
                     },
@@ -1177,11 +1263,14 @@ void _showInviteDialog(BuildContext context, WidgetRef ref, FamilyModel? family)
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: const Text('Close', style: TextStyle(color: AppColors.white50)),
+                child: const Text(
+                  'Close',
+                  style: TextStyle(color: AppColors.white50),
+                ),
               ),
             ],
           );
-        }
+        },
       );
     },
   );
