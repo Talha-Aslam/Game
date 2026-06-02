@@ -20,11 +20,12 @@ class FamilyChatBubble extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Column(crossAxisAlignment: align, children: [
-        if (!isMe) Padding(padding: const EdgeInsets.only(bottom: 2),
+        Padding(padding: const EdgeInsets.only(bottom: 2),
           child: Row(
             mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
             children: [
-              if (role != null) ...[
+              if (role != null && !isMe) ...[
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                   margin: const EdgeInsets.only(right: 6),
@@ -44,8 +45,28 @@ class FamilyChatBubble extends StatelessWidget {
                   ),
                 ),
               ],
-              Text(message.senderName, style: const TextStyle(
-                color: AppColors.cyan, fontSize: 10, fontWeight: FontWeight.w600)),
+              Text(message.senderName, style: TextStyle(
+                color: isMe ? AppColors.white70 : AppColors.cyan, fontSize: 10, fontWeight: FontWeight.w600)),
+              if (role != null && isMe) ...[
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                  margin: const EdgeInsets.only(left: 6),
+                  decoration: BoxDecoration(
+                    color: _getRoleColor(role!).withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(color: _getRoleColor(role!).withValues(alpha: 0.5), width: 0.5),
+                  ),
+                  child: Text(
+                    role!.toUpperCase(),
+                    style: TextStyle(
+                      color: _getRoleColor(role!), 
+                      fontSize: 8, 
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         ),

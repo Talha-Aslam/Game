@@ -582,6 +582,9 @@ async def handle_application(user_id: str, app_id: str, accept: bool):
     app = next((a for a in family.get("applications", []) if a["id"] == app_id), None)
     if not app:
         raise HTTPException(status_code=404, detail="Application not found")
+        
+    if app.get("status") != "pending":
+        raise HTTPException(status_code=400, detail="Application already processed")
 
     new_status = "accepted" if accept else "rejected"
 
