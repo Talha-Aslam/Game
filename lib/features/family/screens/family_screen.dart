@@ -78,6 +78,28 @@ class _FamilyScreenState extends ConsumerState<FamilyScreen>
               }
             });
           }
+        } else if (msg.event == 'family_member_kicked' && mounted) {
+          final data = msg.data as Map<String, dynamic>;
+          final actorName = data['actor_name'] as String? ?? 'Boss';
+          
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (ctx) => AlertDialog(
+              backgroundColor: AppColors.surface,
+              title: const Text('Kicked from Family', style: TextStyle(color: AppColors.crimsonRed)),
+              content: Text('$actorName has removed you from the family.', style: const TextStyle(color: Colors.white70)),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    context.go('/home');
+                  },
+                  child: const Text('OK', style: TextStyle(color: AppColors.cyan)),
+                ),
+              ],
+            ),
+          );
         }
       });
     });
@@ -657,8 +679,29 @@ class _MembersTab extends StatelessWidget {
                       ref.read(familyProvider.notifier).promoteMember(m.userId),
                   onDemote: () =>
                       ref.read(familyProvider.notifier).demoteMember(m.userId),
-                  onKick: () =>
-                      ref.read(familyProvider.notifier).kickMember(m.userId),
+                  onKick: () async {
+                    final confirm = await showDialog<bool>(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        backgroundColor: AppColors.surface,
+                        title: const Text('Kick Member', style: TextStyle(color: Colors.white)),
+                        content: Text('Are you sure you want to kick ${m.username} from the family?', style: const TextStyle(color: Colors.white70)),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, false),
+                            child: const Text('Cancel', style: TextStyle(color: AppColors.cyan)),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, true),
+                            child: const Text('Kick', style: TextStyle(color: AppColors.crimsonRed)),
+                          ),
+                        ],
+                      ),
+                    );
+                    if (confirm == true) {
+                      ref.read(familyProvider.notifier).kickMember(m.userId);
+                    }
+                  },
                   onMute: () =>
                       ref.read(familyProvider.notifier).muteMember(m.userId),
                 );
