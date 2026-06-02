@@ -89,8 +89,8 @@ class FamilyApiService {
 
   // ── Applications ──
 
-  Future<void> applyToFamily(String familyId, {String message = ''}) async {
-    await _http.post('/family/apply/$familyId', body: {'message': message});
+  Future<void> applyToFamily(String familyId, {String message = '', bool isInvite = false}) async {
+    await _http.post('/family/apply/$familyId', body: {'message': message, 'is_invite': isInvite});
   }
 
   Future<void> acceptApplication(String appId) async {

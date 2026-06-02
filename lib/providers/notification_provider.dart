@@ -7,6 +7,8 @@ import 'game_provider.dart';
 import 'auth_provider.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_gradients.dart';
+import '../core/router/app_router.dart';
+import 'family_provider.dart';
 
 final globalsnackBarKey = GlobalKey<ScaffoldMessengerState>();
 
@@ -91,8 +93,48 @@ class NotificationNotifier extends Notifier<NotificationState> {
           '$senderName has invited you to a party!',
         );
         state = state.copyWith(unseenInvites: state.unseenInvites + 1);
+      } else if (msg.event == 'family_invite') {
+        final data = msg.data;
+        final senderName = data['senderName'] ?? 'A friend';
+        final familyName = data['familyName'] ?? 'their family';
+        final familyId = data['familyId'];
+        if (familyId != null) {
+          _showFamilyInviteDialog(senderName, familyName, familyId);
+        }
       }
     });
+  }
+
+  void _showFamilyInviteDialog(String senderName, String familyName, String familyId) {
+    final context = AppRouter.navigatorKey.currentContext;
+    if (context == null) return;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        title: const Text('Family Invitation', style: TextStyle(color: Colors.white)),
+        content: Text(
+          'The $senderName has invited you to the family $familyName',
+          style: const TextStyle(color: AppColors.white50),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Decline', style: TextStyle(color: AppColors.white50)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.cyan),
+            onPressed: () {
+              Navigator.pop(ctx);
+              ref.read(familyProvider.notifier).applyToFamily(familyId, message: 'Accepted invitation', isInvite: true);
+              _showTopSnackbar('Joined $familyName!');
+            },
+            child: const Text('Accept', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
   }
 
   void _handleNewMessage(String friendId) {

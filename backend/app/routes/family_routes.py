@@ -40,6 +40,7 @@ class ChatMessageRequest(BaseModel):
 
 class ApplyRequest(BaseModel):
     message: str = ""
+    is_invite: bool = False
 
 
 @router.post("/create")
@@ -116,7 +117,7 @@ async def send_chat(req: ChatMessageRequest, user: dict = Depends(get_current_us
 
 @router.post("/apply/{family_id}")
 async def apply(family_id: str, req: ApplyRequest, user: dict = Depends(get_current_user)):
-    return await apply_to_family(user["_id"], family_id, req.message)
+    return await apply_to_family(user["_id"], family_id, req.message, req.is_invite)
 
 
 @router.post("/applications/{app_id}/accept")

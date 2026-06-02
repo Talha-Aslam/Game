@@ -98,6 +98,8 @@ class FamilyHubNotifier extends Notifier<FamilyHubState> {
             chatMessages: [chatMsg, ...state.chatMessages],
           );
         }
+      } else if (msg.event == 'family_application') {
+        refresh();
       }
     });
 
@@ -266,14 +268,17 @@ class FamilyHubNotifier extends Notifier<FamilyHubState> {
   }
 
   // ── Invites & Applications ──
-  Future<void> applyToFamily(String familyId) async {
-    // TODO: Implement apply API
-    await Future.delayed(const Duration(milliseconds: 500));
+  Future<void> applyToFamily(String familyId, {String message = '', bool isInvite = false}) async {
+    await _svc.applyToFamily(familyId, message: message, isInvite: isInvite);
   }
 
-  Future<void> inviteFriendToFamily(String userId) async {
-    // TODO: Implement invite API
-    await Future.delayed(const Duration(milliseconds: 500));
+  void inviteFriendToFamily(String friendId) {
+    if (state.family == null) return;
+    ref.read(wsServiceProvider).sendFamilyInvite(
+      friendId, 
+      state.family!.id, 
+      state.family!.name
+    );
   }
 }
 
