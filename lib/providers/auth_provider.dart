@@ -188,6 +188,10 @@ class AuthNotifier extends Notifier<AuthState> {
       return e.toString().replaceFirst('Exception: ', '');
     }
   }
+
+  void updateUserLocal(UserModel user) {
+    state = state.copyWith(user: user);
+  }
 }
 
 final authProvider = NotifierProvider<AuthNotifier, AuthState>(

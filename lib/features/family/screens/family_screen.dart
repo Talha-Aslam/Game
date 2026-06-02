@@ -36,7 +36,7 @@ class _FamilyScreenState extends ConsumerState<FamilyScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 6, vsync: this);
+    _tabController = TabController(length: 7, vsync: this);
   }
 
   @override
@@ -221,7 +221,13 @@ class _FamilyScreenState extends ConsumerState<FamilyScreen>
                   child: Row(
                     children: [
                       GestureDetector(
-                        onTap: () => context.pop(),
+                        onTap: () {
+                          if (context.canPop()) {
+                            context.pop();
+                          } else {
+                            context.go('/home');
+                          }
+                        },
                         child: Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
@@ -290,8 +296,9 @@ class _FamilyScreenState extends ConsumerState<FamilyScreen>
                   child: TabBarView(
                     controller: _tabController,
                     children: [
-                      _OverviewTab(state: state),
+                      _OverviewTab(state: state, onChatTap: () => _tabController.animateTo(3)),
                       _MembersTab(state: state, ref: ref),
+                      _RequestsTab(state: state, ref: ref),
                       _ChatTab(),
                       _TreasuryTab(state: state, ref: ref),
                       _WarsTab(state: state),
@@ -311,6 +318,7 @@ class _FamilyScreenState extends ConsumerState<FamilyScreen>
     final tabs = [
       ('Overview', Icons.dashboard, null),
       ('Members', Icons.people, state.family?.memberCount),
+      ('Requests', Icons.person_add, state.applications.length),
       ('Chat', Icons.chat, null),
       ('Treasury', Icons.account_balance, null),
       (
@@ -395,7 +403,8 @@ class _FamilyScreenState extends ConsumerState<FamilyScreen>
 // ═══════════════════════════════════════════════════════════
 class _OverviewTab extends StatelessWidget {
   final FamilyHubState state;
-  const _OverviewTab({required this.state});
+  final VoidCallback onChatTap;
+  const _OverviewTab({required this.state, required this.onChatTap});
 
   @override
   Widget build(BuildContext context) {
@@ -483,16 +492,29 @@ class _OverviewTab extends StatelessWidget {
           // Quick actions
           Row(
             children: [
-              _QuickAction(Icons.person_add, 'Invite', AppColors.cyan, () {}),
+              _QuickAction(Icons.person_add, 'Invite', AppColors.cyan, () {
+                final tag = state.family?.tag ?? '';
+                if (tag.isNotEmpty) {
+                  // Copy to clipboard
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Family Tag [$tag] copied to clipboard! Share it with friends so they can search and apply!'),
+                      backgroundColor: AppColors.cyan,
+                    ),
+                  );
+                }
+              }),
               const SizedBox(width: 8),
               _QuickAction(
                 Icons.chat,
                 'Chat',
                 AppColors.purpleGlow,
-                () => DefaultTabController.of(context),
+                onChatTap,
               ),
               const SizedBox(width: 8),
-              _QuickAction(Icons.visibility, 'Spectate', AppColors.gold, () {}),
+              _QuickAction(Icons.visibility, 'Spectate', AppColors.gold, () {
+                context.push('/family/spectate');
+              }),
             ],
           ),
         ],
@@ -553,34 +575,12 @@ class _MembersTab extends StatelessWidget {
     members.sort(
       (a, b) => a.role.hierarchyLevel.compareTo(b.role.hierarchyLevel),
     );
-    final apps = state.applications;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (apps.isNotEmpty) ...[
-            Text(
-              'PENDING APPLICATIONS (${apps.length})',
-              style: const TextStyle(
-                color: AppColors.white30,
-                fontSize: 10,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 1.5,
-              ),
-            ),
-            const SizedBox(height: 8),
-            ...apps.map(
-              (a) => FamilyInviteCard(
-                application: a,
-                onAccept: () =>
-                    ref.read(familyProvider.notifier).acceptApplication(a.id),
-                onReject: () =>
-                    ref.read(familyProvider.notifier).rejectApplication(a.id),
-              ),
-            ),
-            const SizedBox(height: 16),
-          ],
           Text(
             'MEMBERS (${members.length})',
             style: const TextStyle(
@@ -616,6 +616,58 @@ class _MembersTab extends StatelessWidget {
     );
   }
 }
+
+// ═══════════════════════════════════════════════════════════
+//  REQUESTS TAB
+// ═══════════════════════════════════════════════════════════
+class _RequestsTab extends StatelessWidget {
+  final FamilyHubState state;
+  final WidgetRef ref;
+  const _RequestsTab({required this.state, required this.ref});
+
+  @override
+  Widget build(BuildContext context) {
+    final apps = state.applications;
+    
+    if (apps.isEmpty) {
+      return const Center(
+        child: Text(
+          'No pending applications',
+          style: TextStyle(color: AppColors.white30),
+        ),
+      );
+    }
+    
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'PENDING APPLICATIONS (${apps.length})',
+            style: const TextStyle(
+              color: AppColors.white30,
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1.5,
+            ),
+          ),
+          const SizedBox(height: 8),
+          ...apps.map(
+            (a) => FamilyInviteCard(
+              application: a,
+              onAccept: () =>
+                  ref.read(familyProvider.notifier).acceptApplication(a.id),
+              onReject: () =>
+                  ref.read(familyProvider.notifier).rejectApplication(a.id),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 
 // ═══════════════════════════════════════════════════════════
 //  CHAT TAB (simplified inline — full screen available)

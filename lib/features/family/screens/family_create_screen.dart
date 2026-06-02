@@ -190,7 +190,7 @@ class _FamilyCreateScreenState extends ConsumerState<FamilyCreateScreen> {
       );
       if (mounted) {
         setState(() => _creating = false);
-        context.go('/family');
+        context.pushReplacement('/family');
       }
     } catch (e) {
       if (mounted) {

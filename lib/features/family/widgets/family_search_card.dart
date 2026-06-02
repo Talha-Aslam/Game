@@ -28,16 +28,19 @@ class FamilySearchCard extends StatelessWidget {
             Text(family.tag, style: TextStyle(color: family.themeColor, fontSize: 10, fontWeight: FontWeight.w700)),
           ]),
           const SizedBox(height: 2),
-          Row(children: [
-            Icon(family.privacy.icon, color: AppColors.white30, size: 10),
-            const SizedBox(width: 3),
-            Text(family.privacy.displayName, style: AppTextStyles.labelSmall),
-            const SizedBox(width: 8),
-            Text('Lv.${family.level}', style: TextStyle(
-              color: AppColors.purpleGlow, fontSize: 10, fontWeight: FontWeight.w600)),
-            const SizedBox(width: 8),
-            Text('${family.memberCount} members', style: AppTextStyles.labelSmall),
-          ]),
+          Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              Icon(family.privacy.icon, color: AppColors.white30, size: 10),
+              const SizedBox(width: 3),
+              Text(family.privacy.displayName, style: AppTextStyles.labelSmall),
+              const SizedBox(width: 8),
+              Text('Lv.${family.level}', style: TextStyle(
+                color: AppColors.purpleGlow, fontSize: 10, fontWeight: FontWeight.w600)),
+              const SizedBox(width: 8),
+              Text('${family.memberCount} members', style: AppTextStyles.labelSmall),
+            ],
+          ),
         ])),
         GestureDetector(onTap: onJoin, child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),

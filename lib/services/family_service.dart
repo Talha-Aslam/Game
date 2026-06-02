@@ -85,7 +85,7 @@ class FamilyService {
   }
 
   Future<void> muteMember(String userId) async {
-    // Muting is a local action for now
+    await _api.muteMember(userId);
   }
 
   Future<void> transferOwnership(String userId) async {
@@ -167,8 +167,20 @@ class FamilyService {
   // ── Achievements ──
 
   Future<List<FamilyAchievement>> getAchievements() async {
-    // Still local for now
-    return FamilyAchievement.allAchievements;
+    try {
+      final data = await _api.getAchievements();
+      if (data.isEmpty) return FamilyAchievement.allAchievements; // Fallback
+      return data.map((a) => FamilyAchievement(
+        id: a['id'] ?? '',
+        title: a['title'] ?? '',
+        description: a['description'] ?? '',
+        target: a['required_value'] ?? a['target'] ?? 1,
+        currentProgress: a['current_value'] ?? a['current_progress'] ?? 0,
+        isUnlocked: a['is_unlocked'] ?? false,
+      )).toList();
+    } catch (_) {
+      return FamilyAchievement.allAchievements;
+    }
   }
 
   // ── Audit Log ──

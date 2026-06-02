@@ -58,6 +58,10 @@ class FamilyApiService {
     await _http.post('/family/demote/$targetUserId');
   }
 
+  Future<void> muteMember(String targetUserId) async {
+    await _http.post('/family/mute/$targetUserId');
+  }
+
   // ── Treasury ──
 
   Future<void> donate(int amount) async {
@@ -113,4 +117,15 @@ class FamilyApiService {
   Future<void> pinMessage(String msgId) async {
     await _http.post('/family/chat/$msgId/pin');
   }
+
+  Future<String> getVoiceToken(String channelName) async {
+    final data = await _http.post('/voice/token', body: {'channel_name': channelName, 'role': 1});
+    return data['token'] as String;
+  }
+
+  Future<List<Map<String, dynamic>>> getAchievements() async {
+    final data = await _http.get('/family/achievements');
+    return List<Map<String, dynamic>>.from(data ?? []);
+  }
 }
+

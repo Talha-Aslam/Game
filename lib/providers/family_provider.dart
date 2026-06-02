@@ -8,6 +8,9 @@ import '../models/family/family_audit_log_model.dart';
 import '../models/family/family_chat_model.dart';
 import '../services/family_service.dart';
 import '../services/family_chat_service.dart';
+import '../services/bounty_api_service.dart';
+import 'game_provider.dart';
+import 'dart:async';
 
 // ── Service Providers ──
 final familyServiceProvider = Provider<FamilyService>((ref) => FamilyService());
@@ -77,9 +80,27 @@ class FamilyHubState {
 
 // ── Notifier ──
 class FamilyHubNotifier extends Notifier<FamilyHubState> {
+  StreamSubscription? _sub;
+
   @override
   FamilyHubState build() {
     _loadAll();
+    
+    final ws = ref.watch(wsServiceProvider);
+    _sub?.cancel();
+    _sub = ws.eventStream.listen((msg) {
+      if (msg.event == 'family_chat') {
+        final chatMsg = _chat.parseMessage(msg.data['message']);
+        if (!state.chatMessages.any((m) => m.id == chatMsg.id)) {
+          state = state.copyWith(chatMessages: [chatMsg, ...state.chatMessages]);
+        }
+      }
+    });
+    
+    ref.onDispose(() {
+      _sub?.cancel();
+    });
+    
     return const FamilyHubState(isLoading: true);
   }
 

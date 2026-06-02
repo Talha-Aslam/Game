@@ -274,6 +274,35 @@ async def demote_member(user_id: str, target_user_id: str):
     }}})
     return {"message": f"Member demoted to {new_role}"}
 
+async def mute_member(user_id: str, target_user_id: str):
+    db = get_database()
+    user = await db["users"].find_one({"_id": user_id})
+    family_id = user.get("family_id") if user else None
+    if not family_id:
+        raise HTTPException(status_code=400, detail="Not in a family")
+
+    family = await db["families"].find_one({"_id": family_id})
+    target_member = next((m for m in family.get("members", []) if m["user_id"] == target_user_id), None)
+    if not target_member:
+        raise HTTPException(status_code=404, detail="Member not found")
+
+    is_muted = target_member.get("is_muted", False)
+    
+    await db["families"].update_one(
+        {"_id": family_id, "members.user_id": target_user_id},
+        {"$set": {"members.$.is_muted": not is_muted}}
+    )
+    
+    action = "memberMuted" if not is_muted else "memberUnmuted"
+    await db["families"].update_one({"_id": family_id}, {"$push": {"audit_log": {
+        "id": str(uuid.uuid4()), "action": action,
+        "actor_id": user_id, "actor_name": user.get("username", ""),
+        "target_name": target_member.get("username", ""),
+        "timestamp": datetime.utcnow().isoformat(),
+    }}})
+    return {"message": f"Member {'muted' if not is_muted else 'unmuted'}"}
+
+
 
 async def donate_to_treasury(user_id: str, amount: int):
     db = get_database()
@@ -331,6 +360,17 @@ async def send_chat_message(user_id: str, content: str):
         {"_id": family_id},
         {"$push": {"chat_messages": msg}}
     )
+
+    family = await db["families"].find_one({"_id": family_id})
+    if family:
+        from app.core.websocket_manager import manager
+        member_ids = [m["user_id"] for m in family.get("members", [])]
+        ws_msg = {
+            "type": "family_chat",
+            "message": msg
+        }
+        await manager.broadcast_to_users(ws_msg, member_ids)
+
     return msg
 
 
@@ -568,3 +608,16 @@ async def pin_message(user_id: str, msg_id: str) -> dict:
         {"$set": {"is_pinned": True}}
     )
     return {"status": "success", "message": "Message pinned"}
+
+async def get_achievements(user_id: str):
+    db = get_database()
+    user = await db["users"].find_one({"_id": user_id})
+    family_id = user.get("family_id") if user else None
+    if not family_id:
+        return []
+        
+    family = await db["families"].find_one({"_id": family_id})
+    if not family:
+        return []
+        
+    return family.get("achievements", [])
