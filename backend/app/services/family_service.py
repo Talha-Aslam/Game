@@ -372,8 +372,10 @@ async def send_chat_message(user_id: str, content: str):
         from app.core.websocket_manager import manager
         member_ids = [m["user_id"] for m in family.get("members", [])]
         ws_msg = {
-            "type": "family_chat",
-            "message": msg
+            "event": "family_chat",
+            "data": {
+                "message": msg
+            }
         }
         await manager.broadcast_to_users(ws_msg, member_ids)
 

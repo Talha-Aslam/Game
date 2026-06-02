@@ -33,15 +33,20 @@ class FamilyChatService {
     await _api.pinMessage(messageId);
   }
 
-  /// Poll for new messages every 5 seconds
+  /// Poll for new messages every 3 seconds
   void startSimulation() {
     _pollTimer?.cancel();
     int lastCount = 0;
-    _pollTimer = Timer.periodic(const Duration(seconds: 5), (_) async {
+    _pollTimer = Timer.periodic(const Duration(seconds: 3), (_) async {
       try {
         final messages = await getMessages();
         if (messages.length > lastCount) {
-          for (final msg in messages.skip(lastCount)) {
+          // Send all messages as a single event to fully sync
+          // Actually, we can just push the new messages. 
+          // Since getMessages returns them in reverse chronological order (newest first).
+          // We can just iterate the difference.
+          final newMsgs = messages.skip(lastCount).toList();
+          for (final msg in newMsgs) {
             if (!_controller.isClosed) _controller.add(msg);
           }
           lastCount = messages.length;

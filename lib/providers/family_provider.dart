@@ -82,29 +82,35 @@ class FamilyHubState {
 
 // ── Notifier ──
 class FamilyHubNotifier extends Notifier<FamilyHubState> {
-  StreamSubscription? _sub;
+  StreamSubscription? _wsSub;
+  StreamSubscription? _chatSub;
 
   @override
   FamilyHubState build() {
     _loadAll();
 
     final ws = ref.watch(wsServiceProvider);
-    _sub?.cancel();
-    _sub = ws.eventStream.listen((msg) {
-      if (msg.event == 'family_chat') {
-        final chatMsg = _chat.parseMessage(msg.data['message']);
-        if (!state.chatMessages.any((m) => m.id == chatMsg.id)) {
-          state = state.copyWith(
-            chatMessages: [chatMsg, ...state.chatMessages],
-          );
-        }
-      } else if (msg.event == 'family_application') {
+    _wsSub?.cancel();
+    _wsSub = ws.eventStream.listen((msg) {
+      if (msg.event == 'family_application') {
         refresh();
       }
     });
 
+    _chatSub?.cancel();
+    _chatSub = _chat.messageStream.listen((chatMsg) {
+      if (!state.chatMessages.any((m) => m.id == chatMsg.id)) {
+        state = state.copyWith(
+          chatMessages: [...state.chatMessages, chatMsg],
+        );
+      }
+    });
+
+    _chat.startSimulation();
+
     ref.onDispose(() {
-      _sub?.cancel();
+      _wsSub?.cancel();
+      _chatSub?.cancel();
     });
 
     return const FamilyHubState(isLoading: true);
