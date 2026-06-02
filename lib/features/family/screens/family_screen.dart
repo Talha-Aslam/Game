@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -8,6 +9,7 @@ import '../../../core/theme/app_gradients.dart';
 import '../../../providers/family_provider.dart';
 import '../../../providers/social_provider.dart';
 import '../../../providers/auth_provider.dart';
+import '../../../providers/game_provider.dart';
 import '../../../models/family_model.dart';
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 import '../../../widgets/particle_field.dart';
@@ -34,15 +36,56 @@ class FamilyScreen extends ConsumerStatefulWidget {
 class _FamilyScreenState extends ConsumerState<FamilyScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  StreamSubscription? _wsSub;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 7, vsync: this);
+    
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final ws = ref.read(wsServiceProvider);
+      final currentUser = ref.read(authProvider).user;
+      
+      _wsSub = ws.eventStream.listen((msg) {
+        if (msg.event == 'family_member_updated' && mounted) {
+          final data = msg.data as Map<String, dynamic>;
+          final targetUserId = data['target_user_id'] as String;
+          final newRole = data['new_role'] as String;
+          final action = data['action'] as String;
+          
+          if (currentUser?.id == targetUserId && action == 'promoted') {
+            ScaffoldMessenger.of(context).showMaterialBanner(
+              MaterialBanner(
+                content: Text(
+                  '🎉 Congratulations! You have been promoted to ${newRole.toUpperCase()}!',
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                ),
+                backgroundColor: AppColors.purpleNeon.withValues(alpha: 0.9),
+                actions: [
+                  TextButton(
+                    onPressed: () => ScaffoldMessenger.of(context).hideCurrentMaterialBanner(),
+                    child: const Text('DISMISS', style: TextStyle(color: AppColors.cyan)),
+                  ),
+                ],
+              ),
+            );
+            
+            // Auto hide after 5 seconds
+            Future.delayed(const Duration(seconds: 5), () {
+              if (mounted) {
+                ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
+              }
+            });
+          }
+        }
+      });
+    });
   }
 
   @override
   void dispose() {
+    _wsSub?.cancel();
     _tabController.dispose();
     super.dispose();
   }

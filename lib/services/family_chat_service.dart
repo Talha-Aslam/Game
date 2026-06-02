@@ -33,6 +33,10 @@ class FamilyChatService {
     await _api.pinMessage(messageId);
   }
 
+  Future<void> clearHistory() async {
+    await _api.clearChatHistory();
+  }
+
   /// Poll for new messages every 3 seconds
   void startSimulation() {
     _pollTimer?.cancel();
@@ -49,6 +53,9 @@ class FamilyChatService {
           for (final msg in newMsgs) {
             if (!_controller.isClosed) _controller.add(msg);
           }
+          lastCount = messages.length;
+        } else if (messages.length < lastCount) {
+          // Chat was likely cleared
           lastCount = messages.length;
         }
       } catch (_) {}

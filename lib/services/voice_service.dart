@@ -14,6 +14,10 @@ class VoiceService {
   Stream<List<int>> get channelUsers => _channelUsersController.stream;
   List<int> _currentUsers = [];
 
+  final _mutedUsersController = StreamController<Map<int, bool>>.broadcast();
+  Stream<Map<int, bool>> get mutedUsers => _mutedUsersController.stream;
+  final Map<int, bool> _mutedUsers = {};
+
   Future<void> initAgora() async {
     if (_isInitialized) return;
 
@@ -41,7 +45,13 @@ class VoiceService {
             ) {
               _currentUsers.remove(remoteUid);
               _channelUsersController.add(_currentUsers);
+              _mutedUsers.remove(remoteUid);
+              _mutedUsersController.add(_mutedUsers);
             },
+        onUserMuteAudio: (RtcConnection connection, int remoteUid, bool muted) {
+          _mutedUsers[remoteUid] = muted;
+          _mutedUsersController.add(_mutedUsers);
+        },
         onAudioVolumeIndication:
             (
               RtcConnection connection,
@@ -97,6 +107,8 @@ class VoiceService {
       await _engine.leaveChannel();
       _currentUsers.clear();
       _channelUsersController.add(_currentUsers);
+      _mutedUsers.clear();
+      _mutedUsersController.add(_mutedUsers);
     }
   }
 
@@ -112,6 +124,8 @@ class VoiceService {
   Future<void> muteMicrophone(bool mute) async {
     if (_isInitialized) {
       await _engine.muteLocalAudioStream(mute);
+      // Optional: Since onUserMuteAudio doesn't trigger for the local user, we can manually add it
+      // if we want to track local user mute state in the same stream.
     }
   }
 
@@ -129,6 +143,7 @@ class VoiceService {
   void dispose() {
     _activeSpeakersController.close();
     _channelUsersController.close();
+    _mutedUsersController.close();
     if (_isInitialized) {
       _engine.release();
     }

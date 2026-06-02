@@ -115,6 +115,12 @@ async def send_chat(req: ChatMessageRequest, user: dict = Depends(get_current_us
     return await send_chat_message(user["_id"], req.content)
 
 
+@router.delete("/chat")
+async def clear_chat(user: dict = Depends(get_current_user)):
+    from app.services.family_service import clear_chat_history
+    return await clear_chat_history(user["_id"])
+
+
 @router.post("/apply/{family_id}")
 async def apply(family_id: str, req: ApplyRequest, user: dict = Depends(get_current_user)):
     return await apply_to_family(user["_id"], family_id, req.message, req.is_invite)

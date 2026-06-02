@@ -6,7 +6,8 @@ import '../../../models/family/family_chat_model.dart';
 class FamilyChatBubble extends StatelessWidget {
   final FamilyChatMessage message;
   final bool isMe;
-  const FamilyChatBubble({super.key, required this.message, this.isMe = false});
+  final String? role;
+  const FamilyChatBubble({super.key, required this.message, this.isMe = false, this.role});
 
   @override
   Widget build(BuildContext context) {
@@ -20,8 +21,34 @@ class FamilyChatBubble extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 8),
       child: Column(crossAxisAlignment: align, children: [
         if (!isMe) Padding(padding: const EdgeInsets.only(bottom: 2),
-          child: Text(message.senderName, style: TextStyle(
-            color: AppColors.cyan, fontSize: 10, fontWeight: FontWeight.w600))),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (role != null) ...[
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                  margin: const EdgeInsets.only(right: 6),
+                  decoration: BoxDecoration(
+                    color: _getRoleColor(role!).withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(color: _getRoleColor(role!).withValues(alpha: 0.5), width: 0.5),
+                  ),
+                  child: Text(
+                    role!.toUpperCase(),
+                    style: TextStyle(
+                      color: _getRoleColor(role!), 
+                      fontSize: 8, 
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+              ],
+              Text(message.senderName, style: const TextStyle(
+                color: AppColors.cyan, fontSize: 10, fontWeight: FontWeight.w600)),
+            ],
+          ),
+        ),
         Container(
           constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.7),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -61,5 +88,19 @@ class FamilyChatBubble extends StatelessWidget {
 
   String _formatTime(DateTime t) {
     return '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
+  }
+
+  Color _getRoleColor(String roleStr) {
+    switch (roleStr.toLowerCase()) {
+      case 'boss':
+        return const Color(0xFFFFD700); // Gold
+      case 'underboss':
+        return const Color(0xFF9B59FF); // Purple
+      case 'capo':
+        return const Color(0xFF00E5FF); // Cyan
+      case 'associate':
+      default:
+        return const Color(0x80FFFFFF); // White50
+    }
   }
 }

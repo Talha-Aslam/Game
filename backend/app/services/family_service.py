@@ -250,6 +250,20 @@ async def promote_member(user_id: str, target_user_id: str):
         "target_name": target_member.get("username", ""),
         "timestamp": datetime.utcnow().isoformat(),
     }}})
+    
+    from app.core.websocket_manager import manager
+    member_ids = [m["user_id"] for m in family.get("members", [])]
+    ws_msg = {
+        "event": "family_member_updated",
+        "data": {
+            "target_user_id": target_user_id,
+            "target_name": target_member.get("username", ""),
+            "new_role": new_role,
+            "action": "promoted"
+        }
+    }
+    await manager.broadcast_to_users(ws_msg, member_ids)
+
     return {"message": f"Member promoted to {new_role}"}
 
 
@@ -278,6 +292,20 @@ async def demote_member(user_id: str, target_user_id: str):
         "target_name": target_member.get("username", ""),
         "timestamp": datetime.utcnow().isoformat(),
     }}})
+    
+    from app.core.websocket_manager import manager
+    member_ids = [m["user_id"] for m in family.get("members", [])]
+    ws_msg = {
+        "event": "family_member_updated",
+        "data": {
+            "target_user_id": target_user_id,
+            "target_name": target_member.get("username", ""),
+            "new_role": new_role,
+            "action": "demoted"
+        }
+    }
+    await manager.broadcast_to_users(ws_msg, member_ids)
+    
     return {"message": f"Member demoted to {new_role}"}
 
 async def mute_member(user_id: str, target_user_id: str):
@@ -404,6 +432,39 @@ async def get_chat_messages(user_id: str):
         return []
     family = await db["families"].find_one({"_id": family_id})
     return family.get("chat_messages", []) if family else []
+
+async def clear_chat_history(user_id: str):
+    db = get_database()
+    user = await db["users"].find_one({"_id": user_id})
+    family_id = user.get("family_id") if user else None
+    if not family_id:
+        raise HTTPException(status_code=400, detail="Not in a family")
+
+    family = await db["families"].find_one({"_id": family_id})
+    if not family:
+        raise HTTPException(status_code=404, detail="Family not found")
+        
+    # verify user is boss
+    boss = next((m for m in family.get("members", []) if m["user_id"] == user_id and m.get("role", "").lower() == "boss"), None)
+    if not boss:
+        raise HTTPException(status_code=403, detail="Only the Boss can clear chat history")
+        
+    # Clear chat messages
+    await db["families"].update_one(
+        {"_id": family_id},
+        {"$set": {"chat_messages": []}}
+    )
+    
+    # Broadcast clear event to clients
+    from app.core.websocket_manager import manager
+    member_ids = [m["user_id"] for m in family.get("members", [])]
+    ws_msg = {
+        "event": "family_chat_cleared",
+        "data": {}
+    }
+    await manager.broadcast_to_users(ws_msg, member_ids)
+
+    return {"message": "Chat history cleared successfully"}
 
 
 async def apply_to_family(user_id: str, family_id: str, message: str = "", is_invite: bool = False):

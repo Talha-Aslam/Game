@@ -80,6 +80,10 @@ class FamilyApiService {
     return Map<String, dynamic>.from(data);
   }
 
+  Future<void> clearChatHistory() async {
+    await _http.delete('/family/chat');
+  }
+
   // ── Search ──
 
   Future<List<Map<String, dynamic>>> searchFamilies(String query) async {
