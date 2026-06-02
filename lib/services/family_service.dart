@@ -116,8 +116,8 @@ class FamilyService {
     await _api.rejectApplication(appId);
   }
 
-  Future<void> applyToFamily(String familyId, {String message = ''}) async {
-    await _api.applyToFamily(familyId, message: message);
+  Future<void> applyToFamily(String familyId, {String message = '', bool isInvite = false}) async {
+    await _api.applyToFamily(familyId, message: message, isInvite: isInvite);
   }
 
   // ── Treasury ──

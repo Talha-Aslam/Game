@@ -390,7 +390,7 @@ async def get_chat_messages(user_id: str):
     return family.get("chat_messages", []) if family else []
 
 
-async def apply_to_family(user_id: str, family_id: str, message: str = ""):
+async def apply_to_family(user_id: str, family_id: str, message: str = "", is_invite: bool = False):
     db = get_database()
     user = await db["users"].find_one({"_id": user_id})
     if not user:
@@ -406,7 +406,14 @@ async def apply_to_family(user_id: str, family_id: str, message: str = ""):
     existing_apps = family.get("applications", [])
     for app in existing_apps:
         if app["applicant_id"] == user_id and app["status"] == "pending":
-            raise HTTPException(status_code=400, detail="Application already pending")
+            if is_invite:
+                # remove the application because they are now auto joining
+                await db["families"].update_one(
+                    {"_id": family_id},
+                    {"$pull": {"applications": {"applicant_id": user_id, "status": "pending"}}}
+                )
+            else:
+                raise HTTPException(status_code=400, detail="Application already pending")
 
     app = {
         "id": str(uuid.uuid4()),
@@ -424,8 +431,8 @@ async def apply_to_family(user_id: str, family_id: str, message: str = ""):
         "submitted_at": datetime.utcnow().isoformat(),
     }
 
-    # If family is public, auto-join
-    if family.get("privacy") == "public":
+    # If family is public, or it's an invite, auto-join
+    if family.get("privacy") == "public" or is_invite:
         member = {
             "user_id": user_id,
             "username": user.get("username", ""),
@@ -450,6 +457,14 @@ async def apply_to_family(user_id: str, family_id: str, message: str = ""):
         {"_id": family_id},
         {"$push": {"applications": app}}
     )
+    
+    from app.core.websocket_manager import manager
+    for m in family.get("members", []):
+        await manager.send_personal_message(m["user_id"], {
+            "event": "family_application",
+            "app": app
+        })
+
     return {"message": "Application submitted"}
 
 
