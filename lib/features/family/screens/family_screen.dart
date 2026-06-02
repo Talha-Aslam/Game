@@ -55,7 +55,7 @@ class _FamilyScreenState extends ConsumerState<FamilyScreen>
 
       _wsSub = ws.eventStream.listen((msg) {
         if (msg.event == 'family_member_updated' && mounted) {
-          final data = msg.data as Map<String, dynamic>;
+          final data = msg.data;
           final targetUserId = data['target_user_id'] as String;
           final newRole = data['new_role'] as String?;
           final action = data['action'] as String;
@@ -93,7 +93,7 @@ class _FamilyScreenState extends ConsumerState<FamilyScreen>
             });
           }
         } else if (msg.event == 'family_member_kicked' && mounted) {
-          final data = msg.data as Map<String, dynamic>;
+          final data = msg.data;
           final actorName = data['actor_name'] as String? ?? 'Boss';
 
           showDialog(

@@ -12,7 +12,7 @@ class VoiceService {
 
   final _channelUsersController = StreamController<List<int>>.broadcast();
   Stream<List<int>> get channelUsers => _channelUsersController.stream;
-  List<int> _currentUsers = [];
+  final List<int> _currentUsers = [];
   
   final Map<int, String> _uidToAccount = {};
   Map<int, String> get uidMap => _uidToAccount;

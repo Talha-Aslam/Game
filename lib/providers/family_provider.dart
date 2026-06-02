@@ -105,7 +105,7 @@ class FamilyHubNotifier extends Notifier<FamilyHubState> {
       } else if (msg.event == 'family_member_updated') {
         _refreshFamily();
       } else if (msg.event == 'family_member_status') {
-        final data = msg.data as Map<String, dynamic>;
+        final data = msg.data;
         final userId = data['user_id'] as String;
         final status = data['status'] as String;
         

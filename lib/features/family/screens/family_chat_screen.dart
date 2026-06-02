@@ -325,7 +325,7 @@ class _FamilyChatScreenState extends ConsumerState<FamilyChatScreen> {
 
 class _VoiceLoungePanel extends ConsumerStatefulWidget {
   final VoidCallback onEndCall;
-  const _VoiceLoungePanel({required this.onEndCall, super.key});
+  const _VoiceLoungePanel({required this.onEndCall});
   @override
   ConsumerState<_VoiceLoungePanel> createState() => _VoiceLoungePanelState();
 }
@@ -555,7 +555,7 @@ class _VoiceLoungePanelState extends ConsumerState<_VoiceLoungePanel>
                                                             .abs() ==
                                                         uid,
                                                     orElse: () =>
-                                                        family!.members.first,
+                                                        family.members.first,
                                                   );
                                               ref
                                                   .read(wsServiceProvider)
@@ -599,10 +599,6 @@ class _VoiceLoungePanelState extends ConsumerState<_VoiceLoungePanel>
                                   ),
                                   const SizedBox(height: 8),
                                   Text(
-                                    isLocal
-                                        ? 'You'
-                                        : (family?.members
-                                                  .where(
                                     displayName,
                                     style: AppTextStyles.bodySmall.copyWith(
                                       color: isSpeaking && !isUserMuted

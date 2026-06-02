@@ -104,7 +104,7 @@ class FriendCardWidget extends StatelessWidget {
                 ? Image.network(
                     '${AppConstants.apiBaseUrl}${friend.avatarUrl}',
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => _buildFallbackAvatar(),
+                    errorBuilder: (context, error, stackTrace) => _buildFallbackAvatar(),
                   )
                 : _buildFallbackAvatar(),
           ),
