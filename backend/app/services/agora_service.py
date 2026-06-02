@@ -32,18 +32,5 @@ def generate_rtc_token(channel_name: str, uid: int = 0, role: int = 1, expire_ti
     )
 
 def generate_rtc_token_with_account(channel_name: str, account: str, role: int = 1, expire_time_in_seconds: int = 3600) -> str:
-    if not AGORA_APP_ID or not AGORA_APP_CERTIFICATE:
-        # Fallback for testing environments where the Agora App has "No Certificate" enabled
-        return ""
-
-    current_timestamp = int(time.time())
-    privilege_expired_ts = current_timestamp + expire_time_in_seconds
-
-    return RtcTokenBuilder.buildTokenWithAccount(
-        AGORA_APP_ID, 
-        AGORA_APP_CERTIFICATE, 
-        channel_name, 
-        account, 
-        role, 
-        privilege_expired_ts
-    )
+    # Use UID 0 so the client can join with their hashcode UID successfully
+    return generate_rtc_token(channel_name, 0, role, expire_time_in_seconds)
