@@ -13,7 +13,7 @@ class FamilyChatService {
   Future<List<FamilyChatMessage>> getMessages() async {
     try {
       final data = await _api.getChatMessages();
-      return data.map((json) => _messageFromJson(json)).toList();
+      return data.map((json) => parseMessage(json)).toList();
     } catch (_) {
       return [];
     }
@@ -22,7 +22,7 @@ class FamilyChatService {
   Future<void> sendMessage(String content) async {
     try {
       final data = await _api.sendChatMessage(content);
-      final msg = _messageFromJson(data);
+      final msg = parseMessage(data);
       if (!_controller.isClosed) _controller.add(msg);
     } catch (e) {
       rethrow;
@@ -50,7 +50,7 @@ class FamilyChatService {
     });
   }
 
-  FamilyChatMessage _messageFromJson(Map<String, dynamic> json) {
+  FamilyChatMessage parseMessage(Map<String, dynamic> json) {
     return FamilyChatMessage(
       id: json['id'] ?? '',
       senderId: json['sender_id'] ?? '',

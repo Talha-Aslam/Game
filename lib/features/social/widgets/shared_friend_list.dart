@@ -183,6 +183,16 @@ class SharedFriendHelper {
           await ref
               .read(userApiServiceProvider)
               .giftPopularity(friend.id, amount);
+              
+          final currentUser = ref.read(authProvider).user;
+          if (currentUser != null) {
+            ref.read(authProvider.notifier).updateUserLocal(
+              currentUser.copyWith(
+                influencePoints: currentUser.influencePoints - amount,
+              ),
+            );
+          }
+
           messenger.hideCurrentSnackBar();
           messenger.showSnackBar(
             SnackBar(

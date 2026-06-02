@@ -50,6 +50,10 @@ class ConnectionManager:
         for user_id in dead_connections:
             self.disconnect(user_id)
 
+    async def broadcast_to_users(self, message: dict, user_ids: list):
+        for uid in user_ids:
+            await self.send_personal_message(message, uid)
+
     async def broadcast_to_group(self, message: dict, user_ids: list[str]):
         for user_id in user_ids:
             await self.send_personal_message(message, user_id)

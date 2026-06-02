@@ -93,6 +93,12 @@ async def demote(target_user_id: str, user: dict = Depends(get_current_user)):
     return await demote_member(user["_id"], target_user_id)
 
 
+@router.post("/mute/{target_user_id}")
+async def mute(target_user_id: str, user: dict = Depends(get_current_user)):
+    from app.services.family_service import mute_member
+    return await mute_member(user["_id"], target_user_id)
+
+
 @router.post("/treasury/donate")
 async def donate(req: DonateRequest, user: dict = Depends(get_current_user)):
     return await donate_to_treasury(user["_id"], req.amount)
@@ -143,3 +149,8 @@ async def transfer_ownership(target_user_id: str, user: dict = Depends(get_curre
 async def pin_chat_message(msg_id: str, user: dict = Depends(get_current_user)):
     from app.services.family_service import pin_message
     return await pin_message(user["_id"], msg_id)
+
+@router.get("/achievements")
+async def get_achievements_route(user: dict = Depends(get_current_user)):
+    from app.services.family_service import get_achievements
+    return await get_achievements(user["_id"])
