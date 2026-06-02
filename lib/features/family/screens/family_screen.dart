@@ -43,34 +43,48 @@ class _FamilyScreenState extends ConsumerState<FamilyScreen>
     super.initState();
     _tabController = TabController(length: 7, vsync: this);
     
+    _tabController.addListener(() {
+      if (_tabController.index == 3) { // 3 is the Chat tab
+        ref.read(familyProvider.notifier).markChatRead();
+      }
+    });
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final ws = ref.read(wsServiceProvider);
       final currentUser = ref.read(authProvider).user;
-      
+
       _wsSub = ws.eventStream.listen((msg) {
         if (msg.event == 'family_member_updated' && mounted) {
-          final data = msg.data as Map<String, dynamic>;
+          final data = msg.data;
           final targetUserId = data['target_user_id'] as String;
-          final newRole = data['new_role'] as String;
+          final newRole = data['new_role'] as String?;
           final action = data['action'] as String;
-          
+
           if (currentUser?.id == targetUserId && action == 'promoted') {
             ScaffoldMessenger.of(context).showMaterialBanner(
               MaterialBanner(
                 content: Text(
-                  '🎉 Congratulations! You have been promoted to ${newRole.toUpperCase()}!',
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                  '🎉 Congratulations! You have been promoted to ${newRole?.toUpperCase()}!',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 backgroundColor: AppColors.purpleNeon.withValues(alpha: 0.9),
                 actions: [
                   TextButton(
-                    onPressed: () => ScaffoldMessenger.of(context).hideCurrentMaterialBanner(),
-                    child: const Text('DISMISS', style: TextStyle(color: AppColors.cyan)),
+                    onPressed: () => ScaffoldMessenger.of(
+                      context,
+                    ).hideCurrentMaterialBanner(),
+                    child: const Text(
+                      'DISMISS',
+                      style: TextStyle(color: AppColors.cyan),
+                    ),
                   ),
                 ],
               ),
             );
-            
+
             // Auto hide after 5 seconds
             Future.delayed(const Duration(seconds: 5), () {
               if (mounted) {
@@ -79,23 +93,32 @@ class _FamilyScreenState extends ConsumerState<FamilyScreen>
             });
           }
         } else if (msg.event == 'family_member_kicked' && mounted) {
-          final data = msg.data as Map<String, dynamic>;
+          final data = msg.data;
           final actorName = data['actor_name'] as String? ?? 'Boss';
-          
+
           showDialog(
             context: context,
             barrierDismissible: false,
             builder: (ctx) => AlertDialog(
               backgroundColor: AppColors.surface,
-              title: const Text('Kicked from Family', style: TextStyle(color: AppColors.crimsonRed)),
-              content: Text('$actorName has removed you from the family.', style: const TextStyle(color: Colors.white70)),
+              title: const Text(
+                'Kicked from Family',
+                style: TextStyle(color: AppColors.crimsonRed),
+              ),
+              content: Text(
+                '$actorName has removed you from the family.',
+                style: const TextStyle(color: Colors.white70),
+              ),
               actions: [
                 TextButton(
                   onPressed: () {
                     Navigator.pop(ctx);
                     context.go('/home');
                   },
-                  child: const Text('OK', style: TextStyle(color: AppColors.cyan)),
+                  child: const Text(
+                    'OK',
+                    style: TextStyle(color: AppColors.cyan),
+                  ),
                 ),
               ],
             ),
@@ -580,7 +603,13 @@ class _OverviewTab extends ConsumerWidget {
                 _showInviteDialog(context, ref, state.family);
               }),
               const SizedBox(width: 8),
-              _QuickAction(Icons.chat, 'Chat', AppColors.purpleGlow, onChatTap),
+              _QuickAction(
+                Icons.chat, 
+                'Chat', 
+                AppColors.purpleGlow, 
+                onChatTap,
+                hasAlert: state.hasUnreadChat,
+              ),
               const SizedBox(width: 8),
               _QuickAction(Icons.visibility, 'Spectate', AppColors.gold, () {
                 context.push('/family/spectate');
@@ -598,7 +627,8 @@ class _QuickAction extends StatelessWidget {
   final String label;
   final Color color;
   final VoidCallback onTap;
-  const _QuickAction(this.icon, this.label, this.color, this.onTap);
+  final bool hasAlert;
+  const _QuickAction(this.icon, this.label, this.color, this.onTap, {this.hasAlert = false});
   @override
   Widget build(BuildContext context) {
     return Expanded(
@@ -613,7 +643,25 @@ class _QuickAction extends StatelessWidget {
           ),
           child: Column(
             children: [
-              Icon(icon, color: color, size: 20),
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Icon(icon, color: color, size: 20),
+                  if (hasAlert)
+                    Positioned(
+                      top: -2,
+                      right: -2,
+                      child: Container(
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(
+                          color: AppColors.crimsonRed,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
               const SizedBox(height: 4),
               Text(
                 label,
@@ -684,16 +732,28 @@ class _MembersTab extends StatelessWidget {
                       context: context,
                       builder: (context) => AlertDialog(
                         backgroundColor: AppColors.surface,
-                        title: const Text('Kick Member', style: TextStyle(color: Colors.white)),
-                        content: Text('Are you sure you want to kick ${m.username} from the family?', style: const TextStyle(color: Colors.white70)),
+                        title: const Text(
+                          'Kick Member',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                        content: Text(
+                          'Are you sure you want to kick ${m.username} from the family?',
+                          style: const TextStyle(color: Colors.white70),
+                        ),
                         actions: [
                           TextButton(
                             onPressed: () => Navigator.pop(context, false),
-                            child: const Text('Cancel', style: TextStyle(color: AppColors.cyan)),
+                            child: const Text(
+                              'Cancel',
+                              style: TextStyle(color: AppColors.cyan),
+                            ),
                           ),
                           TextButton(
                             onPressed: () => Navigator.pop(context, true),
-                            child: const Text('Kick', style: TextStyle(color: AppColors.crimsonRed)),
+                            child: const Text(
+                              'Kick',
+                              style: TextStyle(color: AppColors.crimsonRed),
+                            ),
                           ),
                         ],
                       ),

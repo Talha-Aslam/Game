@@ -28,6 +28,7 @@ class FamilyHubState {
   final List<FamilyAuditEntry> auditLog;
   final List<FamilyChatMessage> chatMessages;
   final List<FamilyModel> searchResults;
+  final bool hasUnreadChat;
   final bool isLoading;
   final String? error;
 
@@ -41,6 +42,7 @@ class FamilyHubState {
     this.auditLog = const [],
     this.chatMessages = const [],
     this.searchResults = const [],
+    this.hasUnreadChat = false,
     this.isLoading = false,
     this.error,
   });
@@ -60,6 +62,7 @@ class FamilyHubState {
     List<FamilyAuditEntry>? auditLog,
     List<FamilyChatMessage>? chatMessages,
     List<FamilyModel>? searchResults,
+    bool? hasUnreadChat,
     bool? isLoading,
     String? error,
     bool clearFamily = false,
@@ -74,8 +77,9 @@ class FamilyHubState {
       auditLog: auditLog ?? this.auditLog,
       chatMessages: chatMessages ?? this.chatMessages,
       searchResults: searchResults ?? this.searchResults,
+      hasUnreadChat: hasUnreadChat ?? this.hasUnreadChat,
       isLoading: isLoading ?? this.isLoading,
-      error: error,
+      error: error ?? this.error,
     );
   }
 }
@@ -101,7 +105,7 @@ class FamilyHubNotifier extends Notifier<FamilyHubState> {
       } else if (msg.event == 'family_member_updated') {
         _refreshFamily();
       } else if (msg.event == 'family_member_status') {
-        final data = msg.data as Map<String, dynamic>;
+        final data = msg.data;
         final userId = data['user_id'] as String;
         final status = data['status'] as String;
         
@@ -122,6 +126,7 @@ class FamilyHubNotifier extends Notifier<FamilyHubState> {
       if (!state.chatMessages.any((m) => m.id == chatMsg.id)) {
         state = state.copyWith(
           chatMessages: [...state.chatMessages, chatMsg],
+          hasUnreadChat: true, // Mark as unread when a new message arrives
         );
       }
     });
@@ -138,6 +143,12 @@ class FamilyHubNotifier extends Notifier<FamilyHubState> {
 
   FamilyService get _svc => ref.read(familyServiceProvider);
   FamilyChatService get _chat => ref.read(familyChatServiceProvider);
+
+  void markChatRead() {
+    if (state.hasUnreadChat) {
+      state = state.copyWith(hasUnreadChat: false);
+    }
+  }
 
   Future<void> _loadAll() async {
     try {

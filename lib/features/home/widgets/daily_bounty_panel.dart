@@ -123,7 +123,7 @@ class _DailyBountyPanelState extends ConsumerState<DailyBountyPanel>
         );
       },
       loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (error, stack) => const SizedBox.shrink(),
     );
   }
 

@@ -12,7 +12,10 @@ class VoiceService {
 
   final _channelUsersController = StreamController<List<int>>.broadcast();
   Stream<List<int>> get channelUsers => _channelUsersController.stream;
-  List<int> _currentUsers = [];
+  final List<int> _currentUsers = [];
+  
+  final Map<int, String> _uidToAccount = {};
+  Map<int, String> get uidMap => _uidToAccount;
 
   final _mutedUsersController = StreamController<Map<int, bool>>.broadcast();
   Stream<Map<int, bool>> get mutedUsers => _mutedUsersController.stream;
@@ -31,10 +34,16 @@ class VoiceService {
         onJoinChannelSuccess: (RtcConnection connection, int elapsed) {
           // print("Joined channel: ${connection.channelId}");
         },
-        onUserJoined: (RtcConnection connection, int remoteUid, int elapsed) {
+        onUserJoined: (RtcConnection connection, int remoteUid, int elapsed) async {
           if (!_currentUsers.contains(remoteUid)) {
             _currentUsers.add(remoteUid);
-            _channelUsersController.add(_currentUsers);
+            try {
+              final userInfo = await _engine.getUserInfoByUid(remoteUid);
+              if (userInfo.userAccount != null) {
+                _uidToAccount[remoteUid] = userInfo.userAccount!;
+              }
+            } catch (_) {}
+            _channelUsersController.add(List.from(_currentUsers));
           }
         },
         onUserOffline:
@@ -44,13 +53,14 @@ class VoiceService {
               UserOfflineReasonType reason,
             ) {
               _currentUsers.remove(remoteUid);
-              _channelUsersController.add(_currentUsers);
+              _uidToAccount.remove(remoteUid);
+              _channelUsersController.add(List.from(_currentUsers));
               _mutedUsers.remove(remoteUid);
-              _mutedUsersController.add(_mutedUsers);
+              _mutedUsersController.add(Map.from(_mutedUsers));
             },
         onUserMuteAudio: (RtcConnection connection, int remoteUid, bool muted) {
           _mutedUsers[remoteUid] = muted;
-          _mutedUsersController.add(_mutedUsers);
+          _mutedUsersController.add(Map.from(_mutedUsers));
         },
         onAudioVolumeIndication:
             (
@@ -87,13 +97,10 @@ class VoiceService {
   ) async {
     if (!_isInitialized) await initAgora();
 
-    int uid = userId.hashCode
-        .abs(); // Agora uses int uid, we hash the string ID
-
-    await _engine.joinChannel(
+    await _engine.joinChannelWithUserAccount(
       token: token,
       channelId: channelName,
-      uid: uid,
+      userAccount: userId,
       options: const ChannelMediaOptions(
         clientRoleType: ClientRoleType.clientRoleBroadcaster,
         autoSubscribeAudio: true,

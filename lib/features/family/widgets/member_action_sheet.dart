@@ -99,7 +99,10 @@ class _ActionBtn extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () { onTap?.call(); Navigator.of(context).pop(); },
+      onTap: () { 
+        Navigator.of(context).pop();
+        onTap?.call(); 
+      },
       child: Column(children: [
         Container(
           width: 44, height: 44,
