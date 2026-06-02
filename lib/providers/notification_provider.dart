@@ -101,6 +101,19 @@ class NotificationNotifier extends Notifier<NotificationState> {
         if (familyId != null) {
           _showFamilyInviteDialog(senderName, familyName, familyId);
         }
+      } else if (msg.event == 'family_application_accepted') {
+        final data = msg.data;
+        final familyName = data['family_name'] ?? 'the family';
+        
+        _showAmazingSnackbar(
+          'Application Approved!',
+          'You are now a member of $familyName',
+        );
+        
+        // Refresh auth to get new family_id
+        ref.read(authProvider.notifier).checkAuth();
+        // Refresh family provider
+        ref.read(familyProvider.notifier).refresh();
       }
     });
   }

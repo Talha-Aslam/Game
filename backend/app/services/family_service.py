@@ -222,6 +222,29 @@ async def kick_member(user_id: str, target_user_id: str):
         }
     )
     await db["users"].update_one({"_id": target_user_id}, {"$set": {"family_id": None}})
+    
+    from app.core.websocket_manager import manager
+    # Notify target directly
+    await manager.send_personal_message({
+        "event": "family_member_kicked",
+        "data": {
+            "actor_name": user.get("username", "Boss")
+        }
+    }, target_user_id)
+    
+    # Notify remaining family members to update list
+    family = await db["families"].find_one({"_id": family_id})
+    if family:
+        member_ids = [m["user_id"] for m in family.get("members", [])]
+        ws_msg = {
+            "event": "family_member_updated",
+            "data": {
+                "target_user_id": target_user_id,
+                "action": "kicked"
+            }
+        }
+        await manager.broadcast_to_users(ws_msg, member_ids)
+
     return {"message": "Member kicked"}
 
 
@@ -537,10 +560,10 @@ async def apply_to_family(user_id: str, family_id: str, message: str = "", is_in
     
     from app.core.websocket_manager import manager
     for m in family.get("members", []):
-        await manager.send_personal_message(m["user_id"], {
+        await manager.send_personal_message({
             "event": "family_application",
             "app": app
-        })
+        }, m["user_id"])
 
     return {"message": "Application submitted"}
 
@@ -595,6 +618,27 @@ async def handle_application(user_id: str, app_id: str, accept: bool):
             {"_id": app["applicant_id"]},
             {"$set": {"family_id": family_id}}
         )
+        
+        from app.core.websocket_manager import manager
+        await manager.send_personal_message({
+            "event": "family_application_accepted",
+            "data": {
+                "family_id": family_id,
+                "family_name": family.get("name", "the family")
+            }
+        }, app["applicant_id"])
+        
+        # also notify existing members that a new member joined
+        member_ids = [m["user_id"] for m in family.get("members", [])]
+        await manager.broadcast_to_users({
+            "event": "family_member_updated",
+            "data": {
+                "target_user_id": app["applicant_id"],
+                "target_name": app["applicant_name"],
+                "new_role": "associate",
+                "action": "joined"
+            }
+        }, member_ids)
 
     return {"message": f"Application {new_status}"}
 
