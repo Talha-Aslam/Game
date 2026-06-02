@@ -94,6 +94,12 @@ class FamilyHubNotifier extends Notifier<FamilyHubState> {
     _wsSub = ws.eventStream.listen((msg) {
       if (msg.event == 'family_application') {
         refresh();
+      } else if (msg.event == 'family_treasury_update') {
+        final treasuryData = Map<String, dynamic>.from(msg.data['treasury'] ?? {});
+        // We need to use the service's parser if possible, but it's not static.
+        // For simplicity, we can just call _svc.getTreasury() to be safe and consistent,
+        // or re-implement the parser here. Calling getTreasury() is safer.
+        _loadTreasury();
       }
     });
 
@@ -265,6 +271,16 @@ class FamilyHubNotifier extends Notifier<FamilyHubState> {
   Future<void> searchFamilies(String query) async {
     final results = await _svc.searchFamilies(query);
     state = state.copyWith(searchResults: results);
+  }
+
+  Future<void> _loadTreasury() async {
+    try {
+      final treasury = await _svc.getTreasury();
+      final family = await _svc.getCurrentFamily();
+      state = state.copyWith(treasury: treasury, family: family);
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+    }
   }
 
   Future<void> _refreshFamily() async {
