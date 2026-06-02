@@ -125,9 +125,11 @@ class NotificationNotifier extends Notifier<NotificationState> {
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.cyan),
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(ctx);
-              ref.read(familyProvider.notifier).applyToFamily(familyId, message: 'Accepted invitation', isInvite: true);
+              await ref.read(familyProvider.notifier).applyToFamily(familyId, message: 'Accepted invitation', isInvite: true);
+              await ref.read(familyProvider.notifier).refresh();
+              AppRouter.router.go('/family');
               _showTopSnackbar('Joined $familyName!');
             },
             child: const Text('Accept', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
