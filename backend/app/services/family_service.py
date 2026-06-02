@@ -71,6 +71,12 @@ async def get_family(user_id: str):
     family = await db["families"].find_one({"_id": user["family_id"]})
     if family:
         family["id"] = family.pop("_id", family.get("id"))
+        from app.core.websocket_manager import manager
+        for member in family.get("members", []):
+            if member["user_id"] in manager.active_connections:
+                member["activity"] = "online"
+            else:
+                member["activity"] = "offline"
     return family
 
 

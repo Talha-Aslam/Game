@@ -65,10 +65,25 @@ class _FamilySearchScreenState extends ConsumerState<FamilySearchScreen> {
           : ListView.builder(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               itemCount: results.length,
-              itemBuilder: (_, i) => FamilySearchCard(family: results[i], onJoin: () {
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                  content: Text('Applied to ${results[i].name}'),
-                  behavior: SnackBarBehavior.floating));
+              itemBuilder: (_, i) => FamilySearchCard(family: results[i], onJoin: () async {
+                try {
+                  await ref.read(familyProvider.notifier).applyToFamily(results[i].id);
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                      content: Text('Applied to ${results[i].name}'),
+                      behavior: SnackBarBehavior.floating,
+                      backgroundColor: AppColors.cyan,
+                    ));
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                      content: Text('Failed to apply: $e'),
+                      behavior: SnackBarBehavior.floating,
+                      backgroundColor: Colors.red,
+                    ));
+                  }
+                }
               }),
             )),
       ])),
