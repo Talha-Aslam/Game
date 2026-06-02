@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -9,6 +10,8 @@ import '../../../providers/family_provider.dart';
 import '../../../providers/game_provider.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../services/family_api_service.dart';
+import '../../../services/websocket_service.dart';
+import '../../../widgets/waveform_indicator.dart';
 import '../widgets/family_chat_bubble.dart';
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 
@@ -238,6 +241,7 @@ class _VoiceLoungePanelState extends ConsumerState<_VoiceLoungePanel>
     with SingleTickerProviderStateMixin {
   bool _isMuted = false;
   late AnimationController _pulseController;
+  StreamSubscription? _wsSub;
 
   @override
   void initState() {
@@ -246,11 +250,30 @@ class _VoiceLoungePanelState extends ConsumerState<_VoiceLoungePanel>
       vsync: this,
       duration: const Duration(seconds: 1),
     )..repeat(reverse: true);
+
+    // Listen for boss mute commands
+    _wsSub = ref.read(wsServiceProvider).eventStream.listen((msg) {
+      if (msg.event == 'voice_muted') {
+        if (mounted) {
+          setState(() => _isMuted = true);
+          ref.read(voiceServiceProvider).muteMicrophone(true);
+          
+          final mutedBy = msg.data['mutedBy'] ?? 'The Boss';
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('You have been muted by $mutedBy'),
+              backgroundColor: AppColors.crimsonRed,
+            ),
+          );
+        }
+      }
+    });
   }
 
   @override
   void dispose() {
     _pulseController.dispose();
+    _wsSub?.cancel();
     super.dispose();
   }
 
@@ -266,9 +289,12 @@ class _VoiceLoungePanelState extends ConsumerState<_VoiceLoungePanel>
         false;
 
     return Container(
-      height: 180,
+      height: 200,
       width: double.infinity,
-      color: AppColors.purpleNeon.withValues(alpha: 0.1),
+      decoration: BoxDecoration(
+        color: AppColors.purpleNeon.withValues(alpha: 0.08),
+        border: Border(bottom: BorderSide(color: AppColors.purpleNeon.withValues(alpha: 0.2))),
+      ),
       child: Column(
         children: [
           Expanded(
@@ -283,7 +309,7 @@ class _VoiceLoungePanelState extends ConsumerState<_VoiceLoungePanel>
 
                 return ListView.builder(
                   scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
                   itemCount: allUsers.length,
                   itemBuilder: (context, index) {
                     final uid = allUsers[index];
@@ -297,61 +323,99 @@ class _VoiceLoungePanelState extends ConsumerState<_VoiceLoungePanel>
                         final isSpeaking = speakers.contains(uid);
 
                         return Container(
-                          margin: const EdgeInsets.only(right: 16),
+                          width: 80,
+                          margin: const EdgeInsets.only(right: 12),
                           child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              AnimatedBuilder(
-                                animation: _pulseController,
-                                builder: (context, child) {
-                                  return Container(
-                                    padding: EdgeInsets.all(
-                                      isSpeaking
-                                          ? 4.0 + (_pulseController.value * 4.0)
-                                          : 4.0,
+                              Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  AnimatedBuilder(
+                                    animation: _pulseController,
+                                    builder: (context, child) {
+                                      return Container(
+                                        width: 64,
+                                        height: 64,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                            color: isSpeaking
+                                                ? AppColors.mintGreen.withValues(alpha: 0.5 * _pulseController.value)
+                                                : Colors.transparent,
+                                            width: 2,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                  CircleAvatar(
+                                    radius: 28,
+                                    backgroundColor: AppColors.surface,
+                                    child: Icon(
+                                      Icons.person,
+                                      color: isLocal
+                                          ? AppColors.purpleNeon
+                                          : AppColors.cyan,
+                                      size: 30,
                                     ),
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      color: isSpeaking
-                                          ? AppColors.mintGreen.withValues(
-                                              alpha: 0.3,
-                                            )
-                                          : Colors.transparent,
-                                    ),
-                                    child: CircleAvatar(
-                                      radius: 24,
-                                      backgroundColor: AppColors.surface,
-                                      child: Icon(
-                                        Icons.person,
-                                        color: isLocal
-                                            ? AppColors.purpleNeon
-                                            : AppColors.cyan,
+                                  ),
+                                  if (isSpeaking)
+                                    Positioned(
+                                      bottom: 0,
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.background,
+                                          borderRadius: BorderRadius.circular(10),
+                                          border: Border.all(color: AppColors.mintGreen.withValues(alpha: 0.5)),
+                                        ),
+                                        child: WaveformIndicator(
+                                          isActive: true,
+                                          color: AppColors.mintGreen,
+                                          width: 24,
+                                          height: 10,
+                                        ),
                                       ),
                                     ),
-                                  );
-                                },
+                                ],
                               ),
-                              const SizedBox(height: 8),
+                              const SizedBox(height: 10),
                               Text(
                                 isLocal ? 'You' : 'User',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 10,
+                                style: TextStyle(
+                                  color: isSpeaking ? AppColors.mintGreen : Colors.white70,
+                                  fontSize: 11,
+                                  fontWeight: isSpeaking ? FontWeight.bold : FontWeight.normal,
                                 ),
+                                overflow: TextOverflow.ellipsis,
                               ),
+                              const SizedBox(height: 4),
                               if (isBoss && !isLocal)
                                 GestureDetector(
                                   onTap: () {
-                                    // Simulated boss mute (in real app, call API to mute remote user globally)
+                                    // Boss control: send mute command via websocket
+                                    final targetUser = family!.members.firstWhere((m) => m.userId.hashCode.abs() == uid, orElse: () => family!.members.first);
+                                    ref.read(wsServiceProvider).sendMuteRequest(targetUser.userId);
+                                    
                                     ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text('Muted user'),
+                                      SnackBar(
+                                        content: Text('Sent mute command to ${targetUser.username}'),
+                                        duration: const Duration(seconds: 1),
                                       ),
                                     );
                                   },
-                                  child: const Icon(
-                                    Icons.mic_off,
-                                    color: AppColors.crimsonRed,
-                                    size: 14,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: AppColors.crimsonRed.withValues(alpha: 0.1),
+                                    ),
+                                    child: const Icon(
+                                      Icons.mic_off,
+                                      color: AppColors.crimsonRed,
+                                      size: 14,
+                                    ),
                                   ),
                                 ),
                             ],
@@ -366,26 +430,59 @@ class _VoiceLoungePanelState extends ConsumerState<_VoiceLoungePanel>
           ),
           // Local Controls
           Container(
-            padding: const EdgeInsets.symmetric(vertical: 8),
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                IconButton(
-                  icon: Icon(
-                    _isMuted ? Icons.mic_off : Icons.mic,
-                    color: _isMuted
-                        ? AppColors.crimsonRed
-                        : AppColors.mintGreen,
-                  ),
-                  onPressed: () {
+                _VoiceControlBtn(
+                  icon: _isMuted ? Icons.mic_off : Icons.mic,
+                  color: _isMuted ? AppColors.crimsonRed : AppColors.mintGreen,
+                  onTap: () {
                     setState(() => _isMuted = !_isMuted);
                     voiceService.muteMicrophone(_isMuted);
+                  },
+                ),
+                const SizedBox(width: 20),
+                _VoiceControlBtn(
+                  icon: Icons.call_end,
+                  color: AppColors.crimsonRed,
+                  onTap: () async {
+                    await ref.read(voiceServiceProvider).leaveChannel();
+                    // This is handled by parent, but we can trigger state change if needed
                   },
                 ),
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _VoiceControlBtn extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _VoiceControlBtn({
+    required this.icon,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: color.withValues(alpha: 0.1),
+          border: Border.all(color: color.withValues(alpha: 0.3)),
+        ),
+        child: Icon(icon, color: color, size: 24),
       ),
     );
   }
