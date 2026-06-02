@@ -10,6 +10,10 @@ class VoiceService {
   final _activeSpeakersController = StreamController<List<int>>.broadcast();
   Stream<List<int>> get activeSpeakers => _activeSpeakersController.stream;
 
+  final _channelUsersController = StreamController<List<int>>.broadcast();
+  Stream<List<int>> get channelUsers => _channelUsersController.stream;
+  List<int> _currentUsers = [];
+
   Future<void> initAgora() async {
     if (_isInitialized) return;
 
@@ -24,7 +28,10 @@ class VoiceService {
           // print("Joined channel: ${connection.channelId}");
         },
         onUserJoined: (RtcConnection connection, int remoteUid, int elapsed) {
-          // print("User joined: $remoteUid");
+          if (!_currentUsers.contains(remoteUid)) {
+            _currentUsers.add(remoteUid);
+            _channelUsersController.add(_currentUsers);
+          }
         },
         onUserOffline:
             (
@@ -32,7 +39,8 @@ class VoiceService {
               int remoteUid,
               UserOfflineReasonType reason,
             ) {
-              // print("User offline: $remoteUid");
+              _currentUsers.remove(remoteUid);
+              _channelUsersController.add(_currentUsers);
             },
         onAudioVolumeIndication:
             (
@@ -87,6 +95,8 @@ class VoiceService {
   Future<void> leaveChannel() async {
     if (_isInitialized) {
       await _engine.leaveChannel();
+      _currentUsers.clear();
+      _channelUsersController.add(_currentUsers);
     }
   }
 
@@ -118,6 +128,7 @@ class VoiceService {
 
   void dispose() {
     _activeSpeakersController.close();
+    _channelUsersController.close();
     if (_isInitialized) {
       _engine.release();
     }

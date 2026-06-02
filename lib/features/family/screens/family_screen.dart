@@ -730,7 +730,7 @@ class _ChatTabState extends ConsumerState<_ChatTab> {
             itemCount: messages.length,
             itemBuilder: (_, i) {
               final msg = messages[messages.length - 1 - i];
-              final isMe = user != null && msg.senderId == user.id;
+              final isMe = user != null && (msg.senderId == user.id || msg.senderName == user.username);
               if (msg.isSystem) {
                 return Center(
                   child: Padding(
