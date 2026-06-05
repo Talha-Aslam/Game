@@ -8,11 +8,10 @@ import '../../../core/theme/app_gradients.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../widgets/particle_field.dart';
 import '../widgets/bottom_nav_bar_glass.dart';
-import '../widgets/player_identity_card.dart';
 import '../widgets/battle_pass_mini_widget.dart';
 import '../widgets/matchmaking_button.dart';
 import '../widgets/daily_bounty_panel.dart';
-import '../widgets/character_showcase_widget.dart';
+import '../widgets/avatar_showcase_widget.dart';
 import '../widgets/event_carousel_widget.dart';
 
 import '../../../providers/game_provider.dart';
@@ -82,7 +81,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ),
       body: Stack(
         children: [
-          // ── Background ──
+          // ── Background gradient ──
           Container(
             decoration: const BoxDecoration(
               gradient: AppGradients.backgroundGradient,
@@ -92,7 +91,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           // ── Ambient particles ──
           const ParticleField(particleCount: 30),
 
-          // ── City environment overlay (neon haze) ──
+          // ── City neon haze overlay ──
           Positioned.fill(
             child: IgnorePointer(
               child: Container(
@@ -111,90 +110,99 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
           ),
 
-          // ── Main content ──
+          // ── Main content column ──
           SafeArea(
             child: Column(
               children: [
-                // ═══ TOP BAR ═══
+                // ══════════════════════════════════════════
+                //  TOP BAR — currencies left, gear far right
+                // ══════════════════════════════════════════
                 Padding(
                   padding: const EdgeInsets.fromLTRB(14, 10, 14, 0),
                   child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      // Player identity (top-left)
-                      const PlayerIdentityCard(),
+                      // ── Currency pills (left-aligned) ──
+                      _CurrencyPill(
+                        icon: Icons.toll,
+                        value: '${user?.influencePoints ?? 0}',
+                        color: AppColors.cyan,
+                      ),
+                      const SizedBox(width: 6),
+                      _CurrencyPill(
+                        icon: Icons.diamond,
+                        value: '${user?.syndicateCoins ?? 0}',
+                        color: AppColors.gold,
+                      ),
+
                       const Spacer(),
-                      // Currency pills + Settings
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Row(
-                            children: [
-                              _CurrencyPill(
-                                icon: Icons.toll,
-                                value: '${user?.influencePoints ?? 0}',
-                                color: AppColors.cyan,
-                              ),
-                              const SizedBox(width: 6),
-                              _CurrencyPill(
-                                icon: Icons.diamond,
-                                value: '${user?.syndicateCoins ?? 0}',
-                                color: AppColors.gold,
-                              ),
-                              const SizedBox(width: 6),
-                              GestureDetector(
-                                onTap: () => context.push('/settings'),
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(10),
-                                  child: BackdropFilter(
-                                    filter: ImageFilter.blur(
-                                      sigmaX: 8,
-                                      sigmaY: 8,
-                                    ),
-                                    child: Container(
-                                      width: 32,
-                                      height: 32,
-                                      decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(10),
-                                        color: AppColors.white05,
-                                        border: Border.all(
-                                          color: AppColors.glassBorder,
-                                          width: 0.5,
-                                        ),
-                                      ),
-                                      child: const Icon(
-                                        Icons.settings,
-                                        color: AppColors.white50,
-                                        size: 16,
-                                      ),
-                                    ),
-                                  ),
+
+                      // ── Battle Pass mini (center-right) ──
+                      const BattlePassMiniWidget(),
+
+                      const SizedBox(width: 8),
+
+                      // ── Settings gear (far right) ──
+                      GestureDetector(
+                        onTap: () => context.push('/settings'),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: BackdropFilter(
+                            filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                            child: Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(10),
+                                color: AppColors.white05,
+                                border: Border.all(
+                                  color: AppColors.glassBorder,
+                                  width: 0.5,
                                 ),
                               ),
-                            ],
+                              child: const Icon(
+                                Icons.settings,
+                                color: AppColors.white50,
+                                size: 16,
+                              ),
+                            ),
                           ),
-                          const SizedBox(height: 6),
-                          // Battle Pass widget (top-right)
-                          const BattlePassMiniWidget(),
-                        ],
+                        ),
                       ),
                     ],
                   ),
                 ),
 
-                // ═══ CENTER — CHARACTER SHOWCASE ═══
-                const Expanded(
+                // ══════════════════════════════════════════
+                //  CENTER — Profile Showcase Deck
+                // ══════════════════════════════════════════
+                Expanded(
                   child: Stack(
+                    alignment: Alignment.center,
                     children: [
-                      // Character
-                      Center(child: CharacterShowcaseWidget()),
-                      // Daily bounty (floating left)
-                      Positioned(left: 10, top: 50, child: DailyBountyPanel()),
+                      // Avatar card — centered with top padding to leave
+                      // room for the avatar ring overflow above the card.
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 20),
+                        child: GestureDetector(
+                          onTap: () => context.push('/profile'),
+                          child: const AvatarShowcaseWidget(),
+                        ),
+                      ),
+
+                      // Daily bounty panel — floating on the left
+                      const Positioned(
+                        left: 10,
+                        top: 16,
+                        child: DailyBountyPanel(),
+                      ),
                     ],
                   ),
                 ),
 
-                // ═══ EVENT CAROUSEL ═══
+                // ══════════════════════════════════════════
+                //  EVENT CAROUSEL
+                // ══════════════════════════════════════════
                 const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 8),
                   child: EventCarouselWidget(),
@@ -202,7 +210,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
                 const SizedBox(height: 10),
 
-                // ═══ MATCHMAKING BUTTON + MODE TOGGLE ═══
+                // ══════════════════════════════════════════
+                //  MATCHMAKING BUTTON + MODE TOGGLE
+                // ══════════════════════════════════════════
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: MatchmakingButton(
@@ -220,11 +230,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 }
 
-// ── Compact currency pill ──
+// ── Compact glassmorphic currency pill ────────────────────────────────────────
 class _CurrencyPill extends StatelessWidget {
   final IconData icon;
   final String value;
   final Color color;
+
   const _CurrencyPill({
     required this.icon,
     required this.value,
@@ -238,23 +249,32 @@ class _CurrencyPill extends StatelessWidget {
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(10),
-            color: color.withValues(alpha: 0.06),
-            border: Border.all(color: color.withValues(alpha: 0.2), width: 0.5),
+            color: color.withValues(alpha: 0.07),
+            border: Border.all(
+              color: color.withValues(alpha: 0.22),
+              width: 0.5,
+            ),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, color: color, size: 12),
-              const SizedBox(width: 3),
-              Text(
-                value,
-                style: TextStyle(
-                  color: color,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
+              Icon(icon, color: color, size: 13),
+              const SizedBox(width: 4),
+              // Overflow-safe value display
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 60),
+                child: Text(
+                  value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
             ],

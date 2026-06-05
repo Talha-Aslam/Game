@@ -13,6 +13,8 @@ class MatchmakingState {
   final int playersFound;
   final int playersNeeded;
   final String? lobbyId;
+  final int acceptedPlayers;
+  final int totalPlayersToAccept;
 
   const MatchmakingState({
     this.status = MatchmakingStatus.idle,
@@ -21,6 +23,8 @@ class MatchmakingState {
     this.playersFound = 0,
     this.playersNeeded = 15,
     this.lobbyId,
+    this.acceptedPlayers = 0,
+    this.totalPlayersToAccept = 0,
   });
 
   MatchmakingState copyWith({
@@ -30,6 +34,8 @@ class MatchmakingState {
     int? playersFound,
     int? playersNeeded,
     String? lobbyId,
+    int? acceptedPlayers,
+    int? totalPlayersToAccept,
   }) {
     return MatchmakingState(
       status: status ?? this.status,
@@ -38,6 +44,8 @@ class MatchmakingState {
       playersFound: playersFound ?? this.playersFound,
       playersNeeded: playersNeeded ?? this.playersNeeded,
       lobbyId: lobbyId ?? this.lobbyId,
+      acceptedPlayers: acceptedPlayers ?? this.acceptedPlayers,
+      totalPlayersToAccept: totalPlayersToAccept ?? this.totalPlayersToAccept,
     );
   }
 }
@@ -89,7 +97,13 @@ class MatchmakingService {
           } else if (event == "match_found") {
             _state = _state.copyWith(
               status: MatchmakingStatus.found,
-              lobbyId: data['lobby_id'],
+              lobbyId: data['match_id'] ?? data['lobby_id'],
+            );
+            _stateController.add(_state);
+          } else if (event == "match_status") {
+            _state = _state.copyWith(
+              acceptedPlayers: data['accepted'] ?? 0,
+              totalPlayersToAccept: data['total'] ?? 0,
             );
             _stateController.add(_state);
           } else if (event == "room_joined") {
@@ -98,10 +112,12 @@ class MatchmakingService {
               lobbyId: data['room_id'],
             );
             _stateController.add(_state);
+          } else if (event == "match_declined") {
+            cancelSearching();
           }
         },
         onDone: () {
-          if (_state.status == MatchmakingStatus.searching) {
+          if (_state.status == MatchmakingStatus.searching || _state.status == MatchmakingStatus.found || _state.status == MatchmakingStatus.accepted) {
             _state = const MatchmakingState(status: MatchmakingStatus.failed);
             _stateController.add(_state);
           }
@@ -117,8 +133,10 @@ class MatchmakingService {
     _state = _state.copyWith(status: MatchmakingStatus.accepted);
     _stateController.add(_state);
 
-    // In MVP, backend auto-accepts after 3s, but we could send an action here
-    _channel?.sink.add(jsonEncode({"action": "accept_match"}));
+    _channel?.sink.add(jsonEncode({
+      "action": "accept_match", 
+      "match_id": _state.lobbyId
+    }));
   }
 
   void cancelSearching() {

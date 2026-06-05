@@ -224,10 +224,15 @@ class _MatchmakingScreenState extends ConsumerState<MatchmakingScreen>
                               glowRadius: 20,
                             ),
                             const SizedBox(height: 16),
+                            Text(
+                              'Accepted: ${state.acceptedPlayers} / ${state.totalPlayersToAccept > 0 ? state.totalPlayersToAccept : 8}',
+                              style: AppTextStyles.bodyMedium.copyWith(color: AppColors.white70),
+                            ),
+                            const SizedBox(height: 16),
                             GlassButton(
                               label: state.status == MatchmakingStatus.accepted
-                                  ? 'ACCEPTED'
-                                  : 'ACCEPT',
+                                  ? 'WAITING FOR OTHERS...'
+                                  : 'ACCEPT MATCH',
                               glowColor:
                                   state.status == MatchmakingStatus.accepted
                                   ? AppColors.purpleNeon

@@ -60,6 +60,10 @@ async def websocket_lobby(websocket: WebSocket, token: str = Query(...)):
                     matchmaker.leave_queue(user_id)
                     await manager.send_personal_message({"event": "dequeued"}, user_id)
                     
+                elif action == "accept_match":
+                    match_id = payload.get("match_id")
+                    await matchmaker.accept_match(user_id, match_id)
+                    
                 elif action == "private_message":
                     target_id = payload.get("targetId")
                     content = payload.get("content")
@@ -139,7 +143,7 @@ async def websocket_lobby(websocket: WebSocket, token: str = Query(...)):
                 logger.warning("Invalid JSON received")
                 
     except WebSocketDisconnect:
-        manager.disconnect(user_id)
+        manager.disconnect(user_id, websocket)
         matchmaker.leave_queue(user_id)
         
         try:

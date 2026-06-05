@@ -407,7 +407,7 @@ class _FamilyScreenState extends ConsumerState<FamilyScreen>
                       _MembersTab(state: state, ref: ref),
                       _RequestsTab(state: state, ref: ref),
                       _ChatTab(),
-                      _TreasuryTab(state: state, ref: ref),
+                      _TreasuryTab(),
                       _WarsTab(state: state),
                       _AchievementsTab(state: state),
                     ],
@@ -1081,26 +1081,31 @@ class _ChatTabState extends ConsumerState<_ChatTab> {
 // ═══════════════════════════════════════════════════════════
 //  TREASURY TAB
 // ═══════════════════════════════════════════════════════════
-class _TreasuryTab extends StatelessWidget {
-  final FamilyHubState state;
-  final WidgetRef ref;
-  const _TreasuryTab({required this.state, required this.ref});
+
+/// ConsumerWidget so it watches familyProvider and rebuilds in real-time
+/// whenever treasury state changes (boost activated, donation, WS event).
+class _TreasuryTab extends ConsumerWidget {
+  const _TreasuryTab();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Watch directly — this widget always has the latest treasury state
+    final state = ref.watch(familyProvider);
+    final treasury = state.treasury;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           TreasuryWidget(
-            treasury: state.treasury,
-            onDonate: () => _showDonateDialog(context),
+            treasury: treasury,
+            onDonate: () => _showDonateDialog(context, ref),
           ),
           const SizedBox(height: 20),
           Text(
             'AVAILABLE BOOSTS',
-            style: TextStyle(
+            style: const TextStyle(
               color: AppColors.white30,
               fontSize: 10,
               fontWeight: FontWeight.w700,
@@ -1109,35 +1114,43 @@ class _TreasuryTab extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           ...FamilyBoostType.values.map(
-            (t) => TreasuryBoostCard(
-              type: t,
-              treasuryBalance: state.treasury.balance,
-              isActive: state.treasury.currentActiveBoosts.any(
-                (b) => b.type == t,
-              ),
-              onActivate: () async {
-                final ok = await ref
-                    .read(familyProvider.notifier)
-                    .activateBoost(t);
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        ok ? '${t.displayName} activated!' : 'Not enough funds',
-                      ),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-                }
-              },
-            ),
+            (t) {
+              final isActive = treasury.currentActiveBoosts.any((b) => b.type == t);
+              return TreasuryBoostCard(
+                type: t,
+                treasuryBalance: treasury.balance,
+                isActive: isActive,
+                onActivate: isActive
+                    ? null
+                    : () async {
+                        final ok = await ref
+                            .read(familyProvider.notifier)
+                            .activateBoost(t);
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                ok
+                                    ? '${t.displayName} activated for all members!'
+                                    : 'Not enough treasury funds',
+                              ),
+                              behavior: SnackBarBehavior.floating,
+                              backgroundColor: ok
+                                  ? AppColors.gold.withValues(alpha: 0.9)
+                                  : AppColors.crimsonRed.withValues(alpha: 0.9),
+                            ),
+                          );
+                        }
+                      },
+              );
+            },
           ),
         ],
       ),
     );
   }
 
-  void _showDonateDialog(BuildContext context) {
+  void _showDonateDialog(BuildContext context, WidgetRef ref) {
     final ctrl = TextEditingController(text: '100');
     showDialog(
       context: context,

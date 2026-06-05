@@ -112,8 +112,8 @@ class PlayerModel {
 
   factory PlayerModel.fromJson(Map<String, dynamic> json) {
     return PlayerModel(
-      id: json['id'] as String,
-      name: json['name'] as String,
+      id: json['id'] as String? ?? 'unknown',
+      name: json['name'] as String? ?? 'Unknown',
       avatarUrl: json['avatarUrl'] as String? ?? '',
       role: json['role'] != null
           ? GameRole.values.byName(json['role'] as String)
