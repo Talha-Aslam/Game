@@ -268,13 +268,36 @@ class FamilyService {
     );
   }
 
-  FamilyTreasury _treasuryFromJson(Map<String, dynamic> json) {
+  FamilyTreasury _treasuryFromJson(Map<String, dynamic> json) =>
+      parseTreasury(json);
+
+  /// Public method to parse a treasury map — usable by providers handling WS events.
+  FamilyTreasury parseTreasury(Map<String, dynamic> json) {
     final donations = List<Map<String, dynamic>>.from(
       json['recent_donations'] ?? [],
     );
     final boosts = List<Map<String, dynamic>>.from(
       json['active_boosts'] ?? [],
     );
+
+    // Aggregate top contributors from donation history
+    final contributorTotals = <String, int>{};
+    final contributorNames = <String, String>{};
+    for (final d in donations) {
+      final uid = d['user_id'] as String? ?? '';
+      final name = d['username'] as String? ?? uid;
+      final amt = (d['amount'] as num?)?.toInt() ?? 0;
+      contributorTotals[uid] = (contributorTotals[uid] ?? 0) + amt;
+      contributorNames[uid] = name;
+    }
+    final topContributors = contributorTotals.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    final contributors = topContributors.take(5).map((e) => TreasuryContributor(
+      userId: e.key,
+      username: contributorNames[e.key] ?? e.key,
+      totalDonated: e.value,
+    )).toList();
+
     return FamilyTreasury(
       balance: json['balance'] ?? 0,
       activeBoosts: boosts.map((b) => _boostFromJson(b)).toList(),
@@ -290,6 +313,7 @@ class FamilyService {
             ),
           )
           .toList(),
+      topContributors: contributors,
     );
   }
 

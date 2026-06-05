@@ -124,9 +124,22 @@ class GameNotifier extends Notifier<GameStateModel> {
       final players = (data['players'] as List)
           .map((p) => PlayerModel.fromJson(p as Map<String, dynamic>))
           .toList();
+          
+      GamePhase? newPhase;
+      if (data.containsKey('phase')) {
+         try {
+           final phaseStr = data['phase'] as String;
+           // Map backend states to frontend GamePhase if needed, simple match here
+           newPhase = GamePhase.values.firstWhere(
+             (e) => e.name == phaseStr,
+             orElse: () => GamePhase.lobby,
+           );
+         } catch (_) {}
+      }
+      
       state = state.copyWith(
         players: players,
-        phase: GamePhase.lobby,
+        phase: newPhase ?? state.phase, // keep current phase if not provided
       );
     }
     if (data.containsKey('localPlayerId')) {
@@ -134,7 +147,6 @@ class GameNotifier extends Notifier<GameStateModel> {
         localPlayerId: data['localPlayerId'] as String?,
       );
     }
-
   }
 
   void _handleLobbyCountdown(Map<String, dynamic> data) {

@@ -5,10 +5,19 @@ import time
 from typing import List, Dict, Any
 
 from app.core.websocket_manager import manager as ws_manager
-# We will import GameEngine later when we build it
-# from app.core.game_engine import game_engine
 
 logger = logging.getLogger(__name__)
+
+class PendingMatch:
+    def __init__(self, match_id: str, mode: str, real_players: List[str], bots_needed: int):
+        self.match_id = match_id
+        self.mode = mode
+        self.real_players = real_players
+        self.bots_needed = bots_needed
+        self.accepted_players = set()
+        self.created_at = time.time()
+        self.timeout = 10
+        self.status = "waiting" # waiting, creating, completed
 
 class MatchmakingManager:
     def __init__(self):
@@ -17,6 +26,7 @@ class MatchmakingManager:
             "casual": [],
             "ranked": []
         }
+        self.pending_matches: Dict[str, PendingMatch] = {}
         self.is_running = False
         self._loop_task = None
         self.PLAYERS_PER_ROOM = 8
@@ -48,15 +58,42 @@ class MatchmakingManager:
             "mode": mode
         })
         logger.info(f"User {user_id} joined {mode} queue. Queue size: {len(self.queues[mode])}")
+        
+        # Broadcast initial queue update to everyone so they instantly see the new count
+        self._broadcast_queue_update(mode)
 
     def leave_queue(self, user_id: str):
         for mode in self.queues:
+            original_size = len(self.queues[mode])
             self.queues[mode] = [p for p in self.queues[mode] if p["user_id"] != user_id]
+            if len(self.queues[mode]) < original_size:
+                self._broadcast_queue_update(mode)
+
+    def _broadcast_queue_update(self, mode: str):
+        queue = self.queues[mode]
+        if not queue:
+            return
+            
+        current_time = time.time()
+        # Ensure all players see the SAME elapsed time and SAME players_in_queue count
+        longest_waiting = max((current_time - p["join_time"]) for p in queue)
+        elapsed_for_all = int(longest_waiting)
+        queue_size = len(queue)
+        
+        update_event = {
+            "event": "queue_update",
+            "elapsed": elapsed_for_all,
+            "estimated_wait": self.MAX_WAIT_TIME_SECONDS,
+            "players_in_queue": queue_size
+        }
+        user_ids = [p["user_id"] for p in queue]
+        asyncio.create_task(ws_manager.broadcast_to_group(update_event, user_ids))
 
     async def _matchmaking_loop(self):
         while self.is_running:
             try:
                 await self._process_queues()
+                await self._process_pending_matches()
             except Exception as e:
                 logger.error(f"Error in matchmaking loop: {e}")
             await asyncio.sleep(2) # Run every 2 seconds
@@ -67,67 +104,141 @@ class MatchmakingManager:
                 continue
                 
             current_time = time.time()
-            
-            # Find players waiting too long
             longest_waiting = max((current_time - p["join_time"]) for p in queue)
             
-            # Send queue updates to all players in this queue
-            for p in queue:
-                elapsed = int(current_time - p["join_time"])
-                update_event = {
-                    "event": "queue_update",
-                    "elapsed": elapsed,
-                    "estimated_wait": 15,
-                    "players_in_queue": len(queue)
-                }
-                # Create a task to send the message to avoid blocking the matchmaking loop
-                asyncio.create_task(ws_manager.send_personal_message(update_event, p["user_id"]))
+            # Broadcast queue sync
+            self._broadcast_queue_update(mode)
             
-            # If we have PLAYERS_PER_ROOM players, OR someone has waited too long and we have at least 1 player
+            # If we have enough players, OR someone has waited too long and we have at least 1 player
             if len(queue) >= self.PLAYERS_PER_ROOM or longest_waiting > self.MAX_WAIT_TIME_SECONDS:
-                await self._create_match(mode)
+                self._create_pending_match(mode)
 
-    async def _create_match(self, mode: str):
+    def _create_pending_match(self, mode: str):
         queue = self.queues[mode]
-        PLAYERS = 8
-        players_to_match = queue[:PLAYERS]
+        players_to_match = queue[:self.PLAYERS_PER_ROOM]
         
         # Remove from queue
-        self.queues[mode] = queue[PLAYERS:]
+        self.queues[mode] = queue[self.PLAYERS_PER_ROOM:]
         
         matched_users = [p["user_id"] for p in players_to_match]
+        bots_needed = self.PLAYERS_PER_ROOM - len(matched_users)
         
-        # Fill with bots if needed
-        bots_needed = PLAYERS - len(matched_users)
-        bot_ids = [f"bot_{uuid.uuid4().hex[:6]}" for _ in range(bots_needed)]
+        match_id = f"match_{uuid.uuid4().hex[:8]}"
+        match = PendingMatch(match_id, mode, matched_users, bots_needed)
+        self.pending_matches[match_id] = match
         
-        all_players = matched_users + bot_ids
-        lobby_id = f"lobby_{uuid.uuid4().hex[:8]}"
+        logger.info(f"Created pending {mode} match {match_id} with players: {matched_users}")
         
-        logger.info(f"Created {mode} match {lobby_id} with players: {matched_users} and {bots_needed} bots")
+        # We start the match creation sequence in a background task so it doesn't block the matchmaking loop
+        asyncio.create_task(self._match_creation_sequence(match))
+
+    async def _match_creation_sequence(self, match: PendingMatch):
+        try:
+            # Psychological immersion delays
+            await ws_manager.broadcast_to_group({"event": "queue_status", "message": "Connecting to server..."}, match.real_players)
+            await asyncio.sleep(1.5)
+            await ws_manager.broadcast_to_group({"event": "queue_status", "message": "Balancing teams..."}, match.real_players)
+            await asyncio.sleep(1.5)
+            
+            # Broadcast match found to real players - requires Acceptance
+            match_event = {
+                "event": "match_found",
+                "match_id": match.match_id,
+                "lobby_id": match.match_id, # Frontend expects lobby_id
+                "mode": match.mode,
+                "timeout": match.timeout
+            }
+            await ws_manager.broadcast_to_group(match_event, match.real_players)
+            
+            # Also send initial match_status
+            status_event = {
+                "event": "match_status",
+                "match_id": match.match_id,
+                "accepted": 0,
+                "total": len(match.real_players)
+            }
+            await ws_manager.broadcast_to_group(status_event, match.real_players)
+            
+        except Exception as e:
+            logger.error(f"Error in match creation sequence for {match.match_id}: {e}")
+            
+    async def accept_match(self, user_id: str, match_id: str):
+        # Allow fallback to checking pending matches if match_id is not passed
+        if not match_id:
+            for m_id, m in self.pending_matches.items():
+                if user_id in m.real_players:
+                    match_id = m_id
+                    break
+                    
+        if match_id in self.pending_matches:
+            match = self.pending_matches[match_id]
+            if user_id in match.real_players:
+                match.accepted_players.add(user_id)
+                logger.info(f"User {user_id} accepted match {match_id}")
+                
+                # Broadcast updated status
+                status_event = {
+                    "event": "match_status",
+                    "match_id": match.match_id,
+                    "accepted": len(match.accepted_players),
+                    "total": len(match.real_players),
+                    "accepted_players": list(match.accepted_players)
+                }
+                await ws_manager.broadcast_to_group(status_event, match.real_players)
+
+    async def _process_pending_matches(self):
+        current_time = time.time()
+        completed_matches = []
+        failed_matches = []
         
-        # Psychological immersion delays
-        await ws_manager.broadcast_to_group({"event": "queue_status", "message": "Connecting to server..."}, matched_users)
-        await asyncio.sleep(1.5)
-        await ws_manager.broadcast_to_group({"event": "queue_status", "message": "Balancing teams..."}, matched_users)
-        await asyncio.sleep(1.5)
-        
-        # Broadcast match found to real players - requires Acceptance
-        match_event = {
-            "event": "match_found",
-            "lobby_id": lobby_id,
-            "mode": mode,
-            "timeout": 10
-        }
-        await ws_manager.broadcast_to_group(match_event, matched_users)
-        
-        # Here we would track who accepted/declined. For MVP, we will assume they accept and move them to room after 3s.
-        await asyncio.sleep(3)
-        
-        from app.core.game_engine import game_engine
-        await game_engine.create_room(lobby_id, all_players)
-        
-        # Tell clients to enter the room
-        await ws_manager.broadcast_to_group({"event": "room_joined", "room_id": lobby_id}, matched_users)
+        for match_id, match in self.pending_matches.items():
+            if match.status != "waiting":
+                continue
+                
+            all_accepted = len(match.accepted_players) == len(match.real_players)
+            timed_out = (current_time - match.created_at) > match.timeout + 3 # 3 sec buffer for intro delays
+            
+            if all_accepted:
+                match.status = "creating"
+                completed_matches.append(match)
+            elif timed_out:
+                match.status = "failed"
+                failed_matches.append(match)
+                
+        for match in completed_matches:
+            asyncio.create_task(self._start_match(match))
+            
+        for match in failed_matches:
+            self._handle_failed_match(match)
+
+    async def _start_match(self, match: PendingMatch):
+        try:
+            bot_ids = [f"bot_{uuid.uuid4().hex[:6]}" for _ in range(match.bots_needed)]
+            all_players = match.real_players + bot_ids
+            lobby_id = match.match_id
+            
+            from app.core.game_engine import game_engine
+            await game_engine.create_room(lobby_id, all_players)
+            
+            # Tell clients to enter the room
+            await ws_manager.broadcast_to_group({"event": "room_joined", "room_id": lobby_id}, match.real_players)
+        except Exception as e:
+            logger.error(f"Error starting match {match.match_id}: {e}")
+        finally:
+            if match.match_id in self.pending_matches:
+                del self.pending_matches[match.match_id]
+
+    def _handle_failed_match(self, match: PendingMatch):
+        # Re-queue players who accepted
+        for user_id in match.accepted_players:
+            self.join_queue(user_id, match.mode)
+            
+        # Inform players who didn't accept
+        declined_players = [u for u in match.real_players if u not in match.accepted_players]
+        if declined_players:
+            asyncio.create_task(ws_manager.broadcast_to_group({"event": "match_declined"}, declined_players))
+            
+        if match.match_id in self.pending_matches:
+            del self.pending_matches[match.match_id]
 
 matchmaker = MatchmakingManager()

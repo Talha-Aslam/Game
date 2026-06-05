@@ -99,7 +99,15 @@ class FamilyHubNotifier extends Notifier<FamilyHubState> {
       if (msg.event == 'family_application') {
         refresh();
       } else if (msg.event == 'family_treasury_update') {
-        _loadTreasury();
+        // Parse treasury directly from WS payload for instant real-time sync
+        final treasuryData = msg.data['treasury'] as Map<String, dynamic>?;
+        if (treasuryData != null) {
+          final treasury = _svc.parseTreasury(treasuryData);
+          state = state.copyWith(treasury: treasury);
+        } else {
+          // Fallback to HTTP if payload is incomplete
+          _loadTreasury();
+        }
       } else if (msg.event == 'family_chat_cleared') {
         state = state.copyWith(chatMessages: []);
       } else if (msg.event == 'family_member_updated') {
@@ -277,8 +285,29 @@ class FamilyHubNotifier extends Notifier<FamilyHubState> {
   }
 
   Future<bool> activateBoost(FamilyBoostType type) async {
+    // Optimistic update: mark boost as activated immediately in UI
+    final now = DateTime.now();
+    final optimisticBoost = FamilyBoost(
+      id: 'optimistic_${type.name}',
+      type: type,
+      activatedAt: now,
+      expiresAt: now.add(type.duration),
+      activatedBy: 'You',
+    );
+    final optimisticTreasury = state.treasury.copyWith(
+      balance: state.treasury.balance - type.cost,
+      activeBoosts: [...state.treasury.activeBoosts, optimisticBoost],
+    );
+    state = state.copyWith(treasury: optimisticTreasury);
+
     final success = await _svc.activateBoost(type);
     if (success) {
+      // Server will broadcast family_treasury_update via WS to all members;
+      // also refresh locally to get the authoritative server state
+      final treasury = await _svc.getTreasury();
+      state = state.copyWith(treasury: treasury);
+    } else {
+      // Revert optimistic update on failure
       final treasury = await _svc.getTreasury();
       state = state.copyWith(treasury: treasury);
     }
