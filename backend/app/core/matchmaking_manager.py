@@ -241,4 +241,35 @@ class MatchmakingManager:
         if match.match_id in self.pending_matches:
             del self.pending_matches[match.match_id]
 
+    def get_user_state(self, user_id: str) -> Dict[str, Any]:
+        # Check if in a pending match
+        for match_id, match in self.pending_matches.items():
+            if user_id in match.real_players:
+                return {
+                    "event": "match_found",
+                    "match_id": match.match_id,
+                    "lobby_id": match.match_id,
+                    "mode": match.mode,
+                    "status": match.status,
+                    "accepted": len(match.accepted_players),
+                    "total": len(match.real_players),
+                    "is_accepted": user_id in match.accepted_players
+                }
+        
+        # Check if in queue
+        for mode, queue in self.queues.items():
+            for p in queue:
+                if p["user_id"] == user_id:
+                    current_time = time.time()
+                    elapsed = int(current_time - p["join_time"])
+                    return {
+                        "event": "queue_update",
+                        "mode": mode,
+                        "elapsed": elapsed,
+                        "estimated_wait": self.MAX_WAIT_TIME_SECONDS,
+                        "players_in_queue": len(queue)
+                    }
+                    
+        return {"event": "idle"}
+
 matchmaker = MatchmakingManager()

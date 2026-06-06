@@ -14,7 +14,7 @@ import '../widgets/daily_bounty_panel.dart';
 import '../widgets/avatar_showcase_widget.dart';
 import '../widgets/event_carousel_widget.dart';
 
-import '../../../providers/game_provider.dart';
+import 'package:mafia_wars/providers/matchmaking_provider.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -28,7 +28,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final ws = ref.read(wsServiceProvider);
+      final ws = ref.read(webSocketServiceProvider);
       if (!ws.isConnected) {
         ws.connectLobby();
       }

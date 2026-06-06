@@ -5,6 +5,7 @@ import '../models/player_model.dart';
 import '../services/websocket_service.dart';
 import '../services/audio/audio_service.dart';
 import '../services/voice_service.dart';
+import 'matchmaking_provider.dart';
 
 /// Voice service provider
 final voiceServiceProvider = Provider<VoiceService>((ref) {
@@ -13,25 +14,22 @@ final voiceServiceProvider = Provider<VoiceService>((ref) {
   return service;
 });
 
-/// WebSocket service provider
-final wsServiceProvider = Provider<WebSocketService>((ref) {
-  final service = WebSocketService();
-  ref.onDispose(() => service.dispose());
-  return service;
-});
-
 /// Game state notifier using Riverpod 3.x Notifier
 class GameNotifier extends Notifier<GameStateModel> {
   StreamSubscription? _sub;
+  StreamSubscription? _statusSub;
 
   /// Quick accessor to the singleton AudioService
   AudioService get _audio => AudioService.instance;
 
   @override
   GameStateModel build() {
-    final ws = ref.watch(wsServiceProvider);
+    final ws = ref.watch(webSocketServiceProvider);
     _listen(ws);
-    ref.onDispose(() => _sub?.cancel());
+    ref.onDispose(() {
+      _sub?.cancel();
+      _statusSub?.cancel();
+    });
     return const GameStateModel(gameId: '');
   }
 
@@ -89,6 +87,14 @@ class GameNotifier extends Notifier<GameStateModel> {
         case 'join_graveyard_voice':
           _handleVoiceSwitch(msg);
           break;
+      }
+    });
+
+    _statusSub?.cancel();
+    _statusSub = ws.connectionStatusStream.listen((connected) {
+      if (connected && state.gameId.isNotEmpty) {
+        // Re-request state if we reconnect during a game
+        ws.send('sync_state');
       }
     });
   }
@@ -418,14 +424,14 @@ class GameNotifier extends Notifier<GameStateModel> {
     final ready = Set<String>.from(state.readyPlayers);
     ready.contains(pid) ? ready.remove(pid) : ready.add(pid);
     state = state.copyWith(readyPlayers: ready);
-    ref.read(wsServiceProvider).send('toggle_ready', {'playerId': pid});
+    ref.read(webSocketServiceProvider).send('toggle_ready', {'playerId': pid});
   }
 
   /// Leave lobby
   void leaveLobby() {
     _audio.stopAll();
-    ref.read(wsServiceProvider).send('leave_lobby');
-    ref.read(wsServiceProvider).disconnect();
+    ref.read(webSocketServiceProvider).send('leave_lobby');
+    ref.read(webSocketServiceProvider).disconnect();
     ref.read(voiceServiceProvider).leaveChannel();
     resetGame();
   }
@@ -435,7 +441,7 @@ class GameNotifier extends Notifier<GameStateModel> {
     state = state.copyWith(
       votes: {...state.votes, state.localPlayerId ?? '': targetId},
     );
-    ref.read(wsServiceProvider).send('submit_vote', {'targetId': targetId});
+    ref.read(webSocketServiceProvider).send('submit_vote', {'targetId': targetId});
   }
 
   /// Clear vote (change mind before timer)
@@ -443,13 +449,13 @@ class GameNotifier extends Notifier<GameStateModel> {
     final votes = Map<String, String>.from(state.votes);
     votes.remove(state.localPlayerId ?? '');
     state = state.copyWith(votes: votes);
-    ref.read(wsServiceProvider).send('clear_vote');
+    ref.read(webSocketServiceProvider).send('clear_vote');
   }
 
   /// Mafia action — select target
   void submitMafiaAction(String targetId) {
     state = state.copyWith(mafiaTargetId: targetId);
-    ref.read(wsServiceProvider).send('mafia_action', {'targetId': targetId});
+    ref.read(webSocketServiceProvider).send('mafia_action', {'targetId': targetId});
 
     // ── AUDIO: "Prey locked."
     _audio.playMafiaLocked();
@@ -458,7 +464,7 @@ class GameNotifier extends Notifier<GameStateModel> {
   /// Doctor action — select target
   void submitDoctorAction(String targetId) {
     state = state.copyWith(doctorTargetId: targetId);
-    ref.read(wsServiceProvider).send('doctor_action', {'targetId': targetId});
+    ref.read(webSocketServiceProvider).send('doctor_action', {'targetId': targetId});
 
     // ── AUDIO: "A life locked."
     _audio.playDoctorLocked();
@@ -467,7 +473,7 @@ class GameNotifier extends Notifier<GameStateModel> {
   /// Detective action — select target
   void submitDetectiveAction(String targetId) {
     state = state.copyWith(detectiveTargetId: targetId);
-    ref.read(wsServiceProvider).send('detective_action', {'targetId': targetId});
+    ref.read(webSocketServiceProvider).send('detective_action', {'targetId': targetId});
     // Note: audio for detective confirm is played in _handleInvestigationResult
   }
 
@@ -486,7 +492,7 @@ class GameNotifier extends Notifier<GameStateModel> {
 
   /// Connect to the actual game websocket
   void connectToGame(String roomId) {
-    final ws = ref.read(wsServiceProvider);
+    final ws = ref.read(webSocketServiceProvider);
     ws.connectGame(roomId).then((_) {
       state = state.copyWith(phase: GamePhase.lobby, gameId: roomId);
     });
@@ -506,14 +512,14 @@ class GameNotifier extends Notifier<GameStateModel> {
 
   /// Send emoji (broadcast to other players)
   void sendEmoji(String emoji) {
-    ref.read(wsServiceProvider).send('send_emoji', {
+    ref.read(webSocketServiceProvider).send('send_emoji', {
       'playerId': state.localPlayerId, 'emoji': emoji,
     });
   }
 
   /// Send commendation to a player
   void sendCommendation(String targetPlayerId) {
-    ref.read(wsServiceProvider).send('send_commendation', {
+    ref.read(webSocketServiceProvider).send('send_commendation', {
       'targetPlayerId': targetPlayerId,
     });
     // Optimistic: increment target's commendations locally
@@ -528,7 +534,7 @@ class GameNotifier extends Notifier<GameStateModel> {
 
   /// Add friend request
   void addFriend(String targetPlayerId) {
-    ref.read(wsServiceProvider).send('add_friend', {
+    ref.read(webSocketServiceProvider).send('add_friend', {
       'targetPlayerId': targetPlayerId,
     });
   }
@@ -546,7 +552,7 @@ class GameNotifier extends Notifier<GameStateModel> {
   /// Reset game
   void resetGame() {
     _audio.stopAll();
-    ref.read(wsServiceProvider).disconnect();
+    ref.read(webSocketServiceProvider).disconnect();
     ref.read(voiceServiceProvider).leaveChannel();
     state = const GameStateModel(gameId: '');
   }

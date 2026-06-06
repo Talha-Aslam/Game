@@ -8,8 +8,8 @@ import '../models/family/family_audit_log_model.dart';
 import '../models/family/family_chat_model.dart';
 import '../services/family_service.dart';
 import '../services/family_chat_service.dart';
-import 'game_provider.dart';
 import 'dart:async';
+import 'package:mafia_wars/providers/matchmaking_provider.dart';
 
 // ── Service Providers ──
 final familyServiceProvider = Provider<FamilyService>((ref) => FamilyService());
@@ -93,7 +93,7 @@ class FamilyHubNotifier extends Notifier<FamilyHubState> {
   FamilyHubState build() {
     _loadAll();
 
-    final ws = ref.watch(wsServiceProvider);
+    final ws = ref.watch(webSocketServiceProvider);
     _wsSub?.cancel();
     _wsSub = ws.eventStream.listen((msg) {
       if (msg.event == 'family_application') {
@@ -359,7 +359,7 @@ class FamilyHubNotifier extends Notifier<FamilyHubState> {
 
   void inviteFriendToFamily(String friendId) {
     if (state.family == null) return;
-    ref.read(wsServiceProvider).sendFamilyInvite(
+    ref.read(webSocketServiceProvider).sendFamilyInvite(
       friendId, 
       state.family!.id, 
       state.family!.name

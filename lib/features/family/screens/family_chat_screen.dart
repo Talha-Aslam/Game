@@ -13,6 +13,7 @@ import '../../../services/family_api_service.dart';
 import '../../../widgets/waveform_indicator.dart';
 import '../widgets/family_chat_bubble.dart';
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
+import 'package:mafia_wars/providers/matchmaking_provider.dart';
 
 /// Full-screen family chat
 class FamilyChatScreen extends ConsumerStatefulWidget {
@@ -345,7 +346,7 @@ class _VoiceLoungePanelState extends ConsumerState<_VoiceLoungePanel>
     )..repeat(reverse: true);
 
     // Listen for boss mute commands
-    _wsSub = ref.read(wsServiceProvider).eventStream.listen((msg) {
+    _wsSub = ref.read(webSocketServiceProvider).eventStream.listen((msg) {
       if (msg.event == 'voice_muted') {
         if (mounted) {
           setState(() => _isMuted = true);
@@ -558,7 +559,7 @@ class _VoiceLoungePanelState extends ConsumerState<_VoiceLoungePanel>
                                                         family.members.first,
                                                   );
                                               ref
-                                                  .read(wsServiceProvider)
+                                                  .read(webSocketServiceProvider)
                                                   .sendMuteRequest(
                                                     targetUser.userId,
                                                   );

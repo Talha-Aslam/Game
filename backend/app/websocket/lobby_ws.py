@@ -51,7 +51,14 @@ async def websocket_lobby(websocket: WebSocket, token: str = Query(...)):
                 payload = json.loads(data)
                 action = payload.get("action")
                 
-                if action == "join_queue":
+                if action == "ping":
+                    await websocket.send_json({"event": "pong"})
+                    
+                elif action == "sync_state":
+                    state = matchmaker.get_user_state(user_id)
+                    await manager.send_personal_message(state, user_id)
+
+                elif action == "join_queue":
                     mode = payload.get("mode", "casual")
                     matchmaker.join_queue(user_id, mode)
                     await manager.send_personal_message({"event": "queued", "mode": mode}, user_id)
@@ -143,25 +150,24 @@ async def websocket_lobby(websocket: WebSocket, token: str = Query(...)):
                 logger.warning("Invalid JSON received")
                 
     except WebSocketDisconnect:
-        manager.disconnect(user_id, websocket)
-        matchmaker.leave_queue(user_id)
-        
-        try:
-            from app.config.database import get_database
-            db = get_database()
-            user = await db["users"].find_one({"_id": user_id})
-            if user and user.get("family_id"):
-                family = await db["families"].find_one({"_id": user.get("family_id")})
-                if family:
-                    member_ids = [m["user_id"] for m in family.get("members", []) if m["user_id"] != user_id]
-                    if member_ids:
-                        # We use manager.broadcast_to_users directly. Wait, if manager is used outside it's fine.
-                        await manager.broadcast_to_users({
-                            "event": "family_member_status",
-                            "data": {
-                                "user_id": user_id,
-                                "status": "offline"
-                            }
-                        }, member_ids)
-        except Exception:
-            pass
+        if manager.disconnect(user_id, websocket):
+            matchmaker.leave_queue(user_id)
+            
+            try:
+                from app.config.database import get_database
+                db = get_database()
+                user = await db["users"].find_one({"_id": user_id})
+                if user and user.get("family_id"):
+                    family = await db["families"].find_one({"_id": user.get("family_id")})
+                    if family:
+                        member_ids = [m["user_id"] for m in family.get("members", []) if m["user_id"] != user_id]
+                        if member_ids:
+                            await manager.broadcast_to_users({
+                                "event": "family_member_status",
+                                "data": {
+                                    "user_id": user_id,
+                                    "status": "offline"
+                                }
+                            }, member_ids)
+            except Exception:
+                pass

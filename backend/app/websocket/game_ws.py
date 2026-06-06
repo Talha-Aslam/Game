@@ -46,6 +46,10 @@ async def websocket_game(websocket: WebSocket, room_id: str, token: str = Query(
             try:
                 payload = json.loads(data)
                 
+                if payload.get("action") == "ping":
+                    await websocket.send_json({"event": "pong"})
+                    continue
+
                 # Pass the action to the game engine
                 game_engine.handle_action(room_id, user_id, payload)
                     

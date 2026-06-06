@@ -55,8 +55,16 @@ class WebSocketService {
   WebSocketChannel? _channel;
   bool _isConnected = false;
   final _storage = const FlutterSecureStorage();
+  
+  Timer? _heartbeatTimer;
+  Timer? _reconnectTimer;
+  int _reconnectAttempts = 0;
+  Uri? _lastUri;
 
   bool get isConnected => _isConnected;
+
+  final _connectionStatusController = StreamController<bool>.broadcast();
+  Stream<bool> get connectionStatusStream => _connectionStatusController.stream;
 
   /// Connect to the matchmaking lobby
   Future<void> connectLobby() async {
@@ -65,6 +73,7 @@ class WebSocketService {
     
     // Replace 'ws://...' based on AppConstants
     final wsUri = Uri.parse('${AppConstants.wsUrl}/lobby?token=$token');
+    _lastUri = wsUri;
     _connect(wsUri);
   }
   
@@ -74,20 +83,30 @@ class WebSocketService {
     if (token == null) return;
     
     final wsUri = Uri.parse('${AppConstants.wsUrl}/game/$roomId?token=$token');
+    _lastUri = wsUri;
     _connect(wsUri);
   }
 
   void _connect(Uri uri) {
-    disconnect(); // Close existing if any
+    _stopHeartbeat();
+    _channel?.sink.close();
     
     try {
       _channel = WebSocketChannel.connect(uri);
-      _isConnected = true;
       
       _channel!.stream.listen(
         (data) {
+          if (!_isConnected) {
+            _isConnected = true;
+            _reconnectAttempts = 0;
+            _connectionStatusController.add(true);
+            _startHeartbeat();
+          }
+          
           try {
             final msg = WsMessage.fromJson(data);
+            if (msg.event == 'pong') return; // Swallow heartbeats
+            
             if (!_eventController.isClosed) {
               _eventController.add(msg);
             }
@@ -96,61 +115,94 @@ class WebSocketService {
           }
         },
         onDone: () {
-          _isConnected = false;
+          _handleDisconnect();
         },
         onError: (error) {
-          _isConnected = false;
+          _handleDisconnect();
         },
       );
     } catch (e) {
-      _isConnected = false;
+      _handleDisconnect();
     }
   }
 
-  void disconnect() {
+  void _handleDisconnect() {
     _isConnected = false;
+    _connectionStatusController.add(false);
+    _stopHeartbeat();
+    _channel = null;
+    
+    // Auto-reconnect logic
+    if (_lastUri != null) {
+      _reconnectAttempts++;
+      final delay = _reconnectAttempts < 5 ? 2 : 5;
+      _reconnectTimer?.cancel();
+      _reconnectTimer = Timer(Duration(seconds: delay), () {
+        if (_lastUri != null && !_isConnected) {
+          _connect(_lastUri!);
+        }
+      });
+    }
+  }
+
+  void _startHeartbeat() {
+    _heartbeatTimer?.cancel();
+    _heartbeatTimer = Timer.periodic(const Duration(seconds: 20), (timer) {
+      send('ping');
+    });
+  }
+
+  void _stopHeartbeat() {
+    _heartbeatTimer?.cancel();
+    _heartbeatTimer = null;
+  }
+
+  void disconnect() {
+    _lastUri = null;
+    _reconnectTimer?.cancel();
+    _reconnectTimer = null;
+    _isConnected = false;
+    _connectionStatusController.add(false);
+    _stopHeartbeat();
     _channel?.sink.close();
     _channel = null;
   }
 
   /// Send action to server
   void send(String action, [Map<String, dynamic>? data]) {
-    if (_isConnected && _channel != null) {
+    if (_channel != null) {
       final payload = {'action': action, ...?data};
-      _channel!.sink.add(jsonEncode(payload));
+      try {
+        _channel!.sink.add(jsonEncode(payload));
+      } catch (e) {
+        // Sink might be closed
+      }
     }
   }
 
   void sendPartyInvite(String targetId) {
-    if (!_isConnected || _channel == null) return;
-    _channel!.sink.add(jsonEncode({
-      'action': 'party_invite',
-      'targetId': targetId,
-    }));
+    send('party_invite', {'targetId': targetId});
   }
 
   void sendFamilyInvite(String targetId, String familyId, String familyName) {
-    if (!_isConnected || _channel == null) return;
-    _channel!.sink.add(jsonEncode({
-      'action': 'family_invite',
+    send('family_invite', {
       'targetId': targetId,
       'familyId': familyId,
       'familyName': familyName,
-    }));
+    });
   }
 
   void sendMuteRequest(String targetId) {
-    if (!_isConnected || _channel == null) return;
-    _channel!.sink.add(jsonEncode({
-      'action': 'voice_mute_request',
-      'targetId': targetId,
-    }));
+    send('voice_mute_request', {'targetId': targetId});
   }
 
   void dispose() {
     disconnect();
     if (!_eventController.isClosed) {
       _eventController.close();
+    }
+    if (!_connectionStatusController.isClosed) {
+      _connectionStatusController.close();
     }
   }
 }

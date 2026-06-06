@@ -3,12 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import '../services/websocket_service.dart';
-import 'game_provider.dart';
 import 'auth_provider.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_gradients.dart';
 import '../core/router/app_router.dart';
 import 'family_provider.dart';
+import 'package:mafia_wars/providers/matchmaking_provider.dart';
 
 final globalsnackBarKey = GlobalKey<ScaffoldMessengerState>();
 
@@ -45,7 +45,7 @@ class NotificationNotifier extends Notifier<NotificationState> {
 
   @override
   NotificationState build() {
-    final ws = ref.watch(wsServiceProvider);
+    final ws = ref.watch(webSocketServiceProvider);
     _listen(ws);
 
     ref.onDispose(() {
