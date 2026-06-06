@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mafia_wars/providers/game_provider.dart';
 import '../models/social/friend_model.dart';
 import '../models/social/friend_request_model.dart';
 import '../services/social_service.dart';
+import 'package:mafia_wars/providers/matchmaking_provider.dart';
 
 // ── Service Provider ──
 final socialServiceProvider = Provider<SocialService>((ref) => SocialService());
@@ -81,7 +81,7 @@ class FriendsNotifier extends Notifier<FriendsState> {
   }
 
   Future<void> _pollOnlineFriends() async {
-    final ws = ref.read(wsServiceProvider);
+    final ws = ref.read(webSocketServiceProvider);
     if (!ws.isConnected) {
       ws.connectLobby();
     }

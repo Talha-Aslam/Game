@@ -9,7 +9,6 @@ import '../../../core/theme/app_gradients.dart';
 import '../../../providers/family_provider.dart';
 import '../../../providers/social_provider.dart';
 import '../../../providers/auth_provider.dart';
-import '../../../providers/game_provider.dart';
 import '../../../models/family_model.dart';
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 import '../../../widgets/particle_field.dart';
@@ -26,6 +25,7 @@ import '../widgets/war_lobby_card.dart';
 import '../widgets/rivalry_history_card.dart';
 import '../widgets/family_achievement_card.dart';
 import '../../../models/family/family_treasury_model.dart';
+import 'package:mafia_wars/providers/matchmaking_provider.dart';
 
 class FamilyScreen extends ConsumerStatefulWidget {
   const FamilyScreen({super.key});
@@ -50,7 +50,7 @@ class _FamilyScreenState extends ConsumerState<FamilyScreen>
     });
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final ws = ref.read(wsServiceProvider);
+      final ws = ref.read(webSocketServiceProvider);
       final currentUser = ref.read(authProvider).user;
 
       _wsSub = ws.eventStream.listen((msg) {

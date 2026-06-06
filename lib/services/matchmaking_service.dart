@@ -1,8 +1,5 @@
 import 'dart:async';
-import 'dart:convert';
-import 'package:web_socket_channel/web_socket_channel.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart' as flutter_secure_storage;
-import '../core/constants/app_constants.dart';
+import 'websocket_service.dart';
 
 enum MatchmakingStatus { idle, searching, found, accepted, roomJoined, failed }
 
@@ -57,100 +54,88 @@ class MatchmakingService {
   MatchmakingState _state = const MatchmakingState();
   MatchmakingState get currentState => _state;
 
-  WebSocketChannel? _channel;
   StreamSubscription? _wsSubscription;
+  StreamSubscription? _statusSubscription;
+  final WebSocketService _wsService;
+
+  MatchmakingService(this._wsService) {
+    _statusSubscription = _wsService.connectionStatusStream.listen((connected) {
+      if (connected && _state.status != MatchmakingStatus.idle) {
+        // Recover state after reconnection
+        _wsService.send('sync_state');
+      }
+    });
+  }
 
   void startSearching({bool ranked = false}) async {
     _state = const MatchmakingState(status: MatchmakingStatus.searching);
     _stateController.add(_state);
     
-    final token = await const flutter_secure_storage.FlutterSecureStorage().read(key: 'jwt_token');
-    if (token != null) {
-      _connectWs(token, ranked ? "ranked" : "casual");
-    } else {
-      _state = const MatchmakingState(status: MatchmakingStatus.failed);
-      _stateController.add(_state);
-    }
-  }
+    _wsSubscription?.cancel();
+    _wsSubscription = _wsService.eventStream.listen((msg) {
+      final event = msg.event;
+      final data = msg.data;
 
-  void _connectWs(String token, String mode) {
-    try {
-      final wsUrl = AppConstants.wsUrl.replaceAll('http', 'ws');
-      _channel = WebSocketChannel.connect(
-        Uri.parse('$wsUrl/lobby?token=$token'),
-      );
+      if (event == "queue_update") {
+        _state = _state.copyWith(
+          status: MatchmakingStatus.searching,
+          elapsedSeconds: data['elapsed'] ?? 0,
+          estimatedWaitSeconds: data['estimated_wait'] ?? 15,
+          playersFound: data['players_in_queue'] ?? 0,
+        );
+        _stateController.add(_state);
+      } else if (event == "match_found") {
+        _state = _state.copyWith(
+          status: MatchmakingStatus.found,
+          lobbyId: data['match_id'] ?? data['lobby_id'],
+        );
+        _stateController.add(_state);
+      } else if (event == "match_status") {
+        _state = _state.copyWith(
+          acceptedPlayers: data['accepted'] ?? 0,
+          totalPlayersToAccept: data['total'] ?? 0,
+        );
+        _stateController.add(_state);
+      } else if (event == "room_joined") {
+        _state = _state.copyWith(
+          status: MatchmakingStatus.roomJoined,
+          lobbyId: data['room_id'],
+        );
+        _stateController.add(_state);
+      } else if (event == "match_declined") {
+        cancelSearching();
+      } else if (event == "idle") {
+        if (_state.status != MatchmakingStatus.idle) {
+          _state = const MatchmakingState(status: MatchmakingStatus.idle);
+          _stateController.add(_state);
+        }
+      }
+    });
 
-      _channel!.sink.add(jsonEncode({"action": "join_queue", "mode": mode}));
-
-      _wsSubscription = _channel!.stream.listen(
-        (message) {
-          final data = jsonDecode(message);
-          final event = data['event'];
-
-          if (event == "queue_update") {
-            _state = _state.copyWith(
-              elapsedSeconds: data['elapsed'] ?? 0,
-              estimatedWaitSeconds: data['estimated_wait'] ?? 15,
-              playersFound: data['players_in_queue'] ?? 0,
-            );
-            _stateController.add(_state);
-          } else if (event == "match_found") {
-            _state = _state.copyWith(
-              status: MatchmakingStatus.found,
-              lobbyId: data['match_id'] ?? data['lobby_id'],
-            );
-            _stateController.add(_state);
-          } else if (event == "match_status") {
-            _state = _state.copyWith(
-              acceptedPlayers: data['accepted'] ?? 0,
-              totalPlayersToAccept: data['total'] ?? 0,
-            );
-            _stateController.add(_state);
-          } else if (event == "room_joined") {
-            _state = _state.copyWith(
-              status: MatchmakingStatus.roomJoined,
-              lobbyId: data['room_id'],
-            );
-            _stateController.add(_state);
-          } else if (event == "match_declined") {
-            cancelSearching();
-          }
-        },
-        onDone: () {
-          if (_state.status == MatchmakingStatus.searching || _state.status == MatchmakingStatus.found || _state.status == MatchmakingStatus.accepted) {
-            _state = const MatchmakingState(status: MatchmakingStatus.failed);
-            _stateController.add(_state);
-          }
-        },
-      );
-    } catch (e) {
-      _state = const MatchmakingState(status: MatchmakingStatus.failed);
-      _stateController.add(_state);
-    }
+    _wsService.connectLobby().then((_) {
+       _wsService.send("join_queue", {"mode": ranked ? "ranked" : "casual"});
+    });
   }
 
   void acceptMatch() {
     _state = _state.copyWith(status: MatchmakingStatus.accepted);
     _stateController.add(_state);
 
-    _channel?.sink.add(jsonEncode({
-      "action": "accept_match", 
-      "match_id": _state.lobbyId
-    }));
+    _wsService.send("accept_match", {"match_id": _state.lobbyId});
   }
 
   void cancelSearching() {
-    _channel?.sink.add(jsonEncode({"action": "leave_queue"}));
+    _wsService.send("leave_queue");
     _wsSubscription?.cancel();
-    _channel?.sink.close();
-    _channel = null;
+    _wsSubscription = null;
 
     _state = const MatchmakingState(status: MatchmakingStatus.idle);
     _stateController.add(_state);
   }
 
   void dispose() {
-    cancelSearching();
+    _statusSubscription?.cancel();
+    _wsSubscription?.cancel();
     _stateController.close();
   }
 }

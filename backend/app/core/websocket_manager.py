@@ -25,12 +25,14 @@ class ConnectionManager:
         
         # Broadcast presence change to friends could go here
 
-    def disconnect(self, user_id: str, websocket: WebSocket = None):
+    def disconnect(self, user_id: str, websocket: WebSocket = None) -> bool:
         if user_id in self.active_connections:
             # Only remove if the disconnecting websocket is the current one
             if websocket is None or self.active_connections[user_id] == websocket:
                 del self.active_connections[user_id]
                 logger.info(f"User {user_id} disconnected. Total: {len(self.active_connections)}")
+                return True
+        return False
 
     async def send_personal_message(self, message: dict, user_id: str):
         if user_id in self.active_connections:

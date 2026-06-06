@@ -9,9 +9,9 @@ import '../../../models/social/friend_model.dart';
 import '../../../models/social/private_chat_message.dart';
 import '../../../providers/social_provider.dart';
 import '../../../providers/notification_provider.dart';
-import '../../../providers/game_provider.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../providers/auth_provider.dart';
+import 'package:mafia_wars/providers/matchmaking_provider.dart';
 
 class PrivateChatScreen extends ConsumerStatefulWidget {
   final FriendModel friend;
@@ -54,7 +54,7 @@ class _PrivateChatScreenState extends ConsumerState<PrivateChatScreen> {
   }
 
   void _initWebSocket() {
-    final ws = ref.read(wsServiceProvider);
+    final ws = ref.read(webSocketServiceProvider);
     _wsSubscription = ws.eventStream.listen((msg) {
       if (msg.event == 'private_message') {
         final data = msg.data;
@@ -92,7 +92,7 @@ class _PrivateChatScreenState extends ConsumerState<PrivateChatScreen> {
     final content = _msgController.text.trim();
     if (content.isEmpty) return;
 
-    final ws = ref.read(wsServiceProvider);
+    final ws = ref.read(webSocketServiceProvider);
     ws.send('private_message', {
       'targetId': widget.friend.id,
       'content': content,

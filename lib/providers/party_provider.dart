@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mafia_wars/providers/game_provider.dart';
 import '../models/social/party_model.dart';
 import '../models/social/friend_model.dart';
 import '../services/party_service.dart';
+import 'package:mafia_wars/providers/matchmaking_provider.dart';
 
 final partyServiceProvider = Provider<PartyService>((ref) => PartyService());
 
@@ -56,7 +56,7 @@ class PartyNotifier extends Notifier<PartyState> {
   }
 
   Future<void> inviteFriend(FriendModel friend) async {
-    ref.read(wsServiceProvider).send('party_invite', {'targetId': friend.id});
+    ref.read(webSocketServiceProvider).send('party_invite', {'targetId': friend.id});
     await _service.inviteFriendToParty(friend);
     final party = await _service.getCurrentParty();
     state = state.copyWith(currentParty: party);
