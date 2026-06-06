@@ -103,7 +103,11 @@ class MatchmakingService {
         );
         _stateController.add(_state);
       } else if (event == "match_declined") {
-        cancelSearching();
+        _state = const MatchmakingState(status: MatchmakingStatus.failed);
+        _stateController.add(_state);
+        
+        _wsSubscription?.cancel();
+        _wsSubscription = null;
       } else if (event == "idle") {
         if (_state.status != MatchmakingStatus.idle) {
           _state = const MatchmakingState(status: MatchmakingStatus.idle);
@@ -125,7 +129,12 @@ class MatchmakingService {
   }
 
   void cancelSearching() {
-    _wsService.send("leave_queue");
+    if (_state.status == MatchmakingStatus.found || _state.status == MatchmakingStatus.accepted) {
+      _wsService.send("decline_match", {"match_id": _state.lobbyId});
+    } else {
+      _wsService.send("leave_queue");
+    }
+    
     _wsSubscription?.cancel();
     _wsSubscription = null;
 

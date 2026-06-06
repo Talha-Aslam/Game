@@ -52,6 +52,14 @@ class _MatchmakingScreenState extends ConsumerState<MatchmakingScreen>
           // Connect to the actual game websocket using the lobbyId
           ref.read(gameProvider.notifier).connectToGame(state.lobbyId!);
           context.go('/game');
+        } else if (state.status == MatchmakingStatus.failed) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Match cancelled by a player or timed out.'),
+              backgroundColor: AppColors.crimsonRed,
+            ),
+          );
+          context.go('/home');
         }
       });
     });

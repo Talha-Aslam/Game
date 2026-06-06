@@ -30,7 +30,7 @@ class MatchmakingManager:
         self.is_running = False
         self._loop_task = None
         self.PLAYERS_PER_ROOM = 8
-        self.MAX_WAIT_TIME_SECONDS = 15
+        self.MAX_WAIT_TIME_SECONDS = 45
 
     def start(self):
         if not self.is_running:
@@ -52,6 +52,11 @@ class MatchmakingManager:
         if any(p["user_id"] == user_id for p in self.queues[mode]):
             return
             
+        # Check if user is already in a pending match. If so, don't re-queue.
+        for match in self.pending_matches.values():
+            if user_id in match.real_players:
+                return
+
         self.queues[mode].append({
             "user_id": user_id,
             "join_time": time.time(),
@@ -63,11 +68,30 @@ class MatchmakingManager:
         self._broadcast_queue_update(mode)
 
     def leave_queue(self, user_id: str):
+        # First check if user is in a pending match. If they leave now, the match is declined.
+        for match_id in list(self.pending_matches.keys()):
+            match = self.pending_matches[match_id]
+            if user_id in match.real_players:
+                asyncio.create_task(self.decline_match(user_id, match_id))
+                return
+
         for mode in self.queues:
             original_size = len(self.queues[mode])
             self.queues[mode] = [p for p in self.queues[mode] if p["user_id"] != user_id]
             if len(self.queues[mode]) < original_size:
                 self._broadcast_queue_update(mode)
+
+    async def decline_match(self, user_id: str, match_id: str = None):
+        if not match_id:
+            for m_id, m in self.pending_matches.items():
+                if user_id in m.real_players:
+                    match_id = m_id
+                    break
+        
+        if match_id in self.pending_matches:
+            match = self.pending_matches[match_id]
+            logger.info(f"Match {match_id} declined by user {user_id}. Cancelling match for everyone.")
+            self._handle_failed_match(match)
 
     def _broadcast_queue_update(self, mode: str):
         queue = self.queues[mode]
