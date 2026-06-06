@@ -38,9 +38,19 @@ class WsMessage {
 
   factory WsMessage.fromJson(String jsonStr) {
     final map = jsonDecode(jsonStr) as Map<String, dynamic>;
+    final event = map['event'] as String;
+    
+    Map<String, dynamic> data = {};
+    if (map.containsKey('data') && map['data'] is Map<String, dynamic>) {
+      data = map['data'] as Map<String, dynamic>;
+    } else {
+      // For flat events like queue_update and match_found
+      data = Map<String, dynamic>.from(map)..remove('event');
+    }
+    
     return WsMessage(
-      event: map['event'] as String,
-      data: map['data'] as Map<String, dynamic>? ?? {},
+      event: event,
+      data: data,
     );
   }
 

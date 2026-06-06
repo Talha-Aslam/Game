@@ -67,6 +67,10 @@ async def websocket_lobby(websocket: WebSocket, token: str = Query(...)):
                     matchmaker.leave_queue(user_id)
                     await manager.send_personal_message({"event": "dequeued"}, user_id)
                     
+                elif action == "decline_match":
+                    match_id = payload.get("match_id")
+                    await matchmaker.decline_match(user_id, match_id)
+
                 elif action == "accept_match":
                     match_id = payload.get("match_id")
                     await matchmaker.accept_match(user_id, match_id)

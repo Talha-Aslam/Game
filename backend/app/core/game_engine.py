@@ -217,6 +217,10 @@ class GameEngine:
             room.state = "lobby"
             await self._broadcast_state(room, "lobby_update", {"status": "connected"})
             
+            # Initial voice channel join
+            living_players = [p for p in room.players.values() if p.is_alive]
+            await self._send_voice_channel(room, living_players, f"{room.room_id}_main")
+
             # 10s countdown
             for remaining in range(10, 0, -1):
                 await room.broadcast({
@@ -277,6 +281,11 @@ class GameEngine:
                         "activeRole": "mafia"
                     }
                 })
+                
+                # Move Mafia to private channel
+                mafia_players = [p for p in room.players.values() if p.is_alive and p.role == "mafia"]
+                await self._send_voice_channel(room, mafia_players, f"{room.room_id}_mafia", "join_mafia_voice")
+                
                 await room.broadcast({"event": "mafia_channel", "data": {"open": True}})
                 
                 for remaining in range(20, 0, -1):
@@ -285,6 +294,9 @@ class GameEngine:
                 
                 await room.broadcast({"event": "mafia_channel", "data": {"open": False}})
                 
+                # Move Mafia back to main
+                await self._send_voice_channel(room, mafia_players, f"{room.room_id}_main", "join_main_voice")
+
                 # Bot fallback
                 if not room.night_actions["mafia_target"]:
                     self._process_bot_night_action(room, "mafia")
@@ -361,6 +373,11 @@ class GameEngine:
                     room.players[killed_player].is_alive = False
                     room.players[killed_player].voice_state = "muted"
                     
+                    # Move killed player to graveyard
+                    dead_p = room.players[killed_player]
+                    if not dead_p.is_bot:
+                        await self._send_voice_channel(room, [dead_p], f"{room.room_id}_graveyard", "join_graveyard_voice")
+
                     await room.broadcast({
                         "event": "player_eliminated",
                         "data": {
@@ -376,6 +393,11 @@ class GameEngine:
                     
                 # 4. DAY DISCUSSION
                 room.state = "day"
+                
+                # Sync everyone back to main (living)
+                living_players = [p for p in room.players.values() if p.is_alive]
+                await self._send_voice_channel(room, living_players, f"{room.room_id}_main", "join_main_voice")
+                
                 await room.broadcast({
                     "event": "phase_change", 
                     "data": {
@@ -437,6 +459,11 @@ class GameEngine:
                     room.players[exiled_player].is_alive = False
                     room.players[exiled_player].voice_state = "muted"
                     
+                    # Move exiled player to graveyard
+                    dead_p = room.players[exiled_player]
+                    if not dead_p.is_bot:
+                        await self._send_voice_channel(room, [dead_p], f"{room.room_id}_graveyard", "join_graveyard_voice")
+
                     p_name = room.players[exiled_player].name
                     p_role = room.players[exiled_player].role
                     await room.broadcast({
