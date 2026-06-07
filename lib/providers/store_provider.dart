@@ -24,19 +24,37 @@ class StoreNotifier extends Notifier<bool> {
     return false; // isLoading state
   }
 
-  Future<bool> purchase(StoreItemModel item) async {
-    state = true;
+  Future<String?> purchase(StoreItemModel item) async {
+    final user = ref.read(authProvider).user;
+    if (user == null) return 'Session expired. Please log in.';
+
     final currency = item.priceSyndicate > 0 ? 'syndicate' : 'influence';
     final price = item.priceSyndicate > 0 ? item.priceSyndicate : item.priceInfluence;
-    
-    final success = await _api.purchaseItem(item.id, currency, price, item.category.name);
-    if (success) {
-      // Refresh user profile to show updated currency/inventory
-      await ref.read(authServiceProvider).fetchProfile();
-      ref.invalidate(authProvider); 
+
+    // Optimistic client-side validation
+    if (currency == 'syndicate' && user.syndicateCoins < price) return 'Not enough Syndicate Coins';
+    if (currency == 'influence' && user.influencePoints < price) return 'Not enough Influence Points';
+
+    state = true;
+    try {
+      final response = await _api.purchaseItem(item.id, currency, price, item.category.name);
+      
+      if (response != null && response['new_balance'] != null) {
+        // Fix the logout bug: Update user locally instead of ref.invalidate(authProvider)
+        final updatedUser = currency == 'syndicate' 
+            ? user.copyWith(syndicateCoins: (response['new_balance'] as num).toInt())
+            : user.copyWith(influencePoints: (response['new_balance'] as num).toInt());
+        
+        ref.read(authProvider.notifier).updateUserLocal(updatedUser);
+        state = false;
+        return null; // Success
+      }
+      state = false;
+      return 'Unexpected server response';
+    } catch (e) {
+      state = false;
+      return e.toString().replaceFirst('Exception: ', '');
     }
-    state = false;
-    return success;
   }
 }
 

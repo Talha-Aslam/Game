@@ -66,102 +66,150 @@ class _BattlePassMiniWidgetState extends ConsumerState<BattlePassMiniWidget>
                   borderRadius: BorderRadius.circular(14),
                   color: isClose
                       ? AppColors.gold.withValues(alpha: 0.04 + s * 0.03)
-                      : AppColors.white05,
+                      : Colors.white.withValues(alpha: 0.02),
                   border: Border.all(
                     color: isClose
                         ? AppColors.gold.withValues(alpha: 0.3 + s * 0.15)
-                        : AppColors.glassBorder,
-                    width: 0.5,
+                        : Colors.white.withValues(alpha: 0.15),
+                    width: 0.8,
                   ),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                child: Stack(
                   children: [
-                    // Tier + Premium badge
-                    Row(
+                    // Texture Layer
+                    Positioned.fill(
+                      child: Opacity(
+                        opacity: 0.03,
+                        child: CustomPaint(painter: _MeshPainter()),
+                      ),
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 5,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(5),
-                            gradient: const LinearGradient(
-                              colors: [AppColors.gold, Color(0xFFFF8F00)],
+                        // Tier + Premium badge
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(6),
+                                gradient: const LinearGradient(
+                                  colors: [AppColors.purpleDeep, AppColors.purpleNeon],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppColors.purpleNeon.withValues(alpha: 0.3),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 1),
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    'T${bp.currentTier}',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: -0.5,
+                                    ),
+                                  ),
+                                  if (bp.isPremium) ...[
+                                    const SizedBox(width: 2),
+                                    const Icon(
+                                      Icons.auto_awesome,
+                                      color: Colors.white,
+                                      size: 8,
+                                    ),
+                                  ],
+                                ],
+                              ),
                             ),
-                          ),
-                          child: Text(
-                            'T${bp.currentTier}',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 9,
-                              fontWeight: FontWeight.w900,
+                            const Spacer(),
+                            // Countdown with Icon
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.timer_sharp,
+                                  size: 10,
+                                  color: _remaining.inDays < 3
+                                      ? AppColors.crimsonRed
+                                      : AppColors.white30,
+                                ),
+                                const SizedBox(width: 2),
+                                Text(
+                                  '${_remaining.inDays}d',
+                                  style: TextStyle(
+                                    color: _remaining.inDays < 3
+                                        ? AppColors.crimsonRed
+                                        : AppColors.white30,
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        // XP Progress bar
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: Container(
+                            height: 5,
+                            width: double.infinity,
+                            decoration: const BoxDecoration(
+                              color: Colors.black38,
+                            ),
+                            child: Stack(
+                              children: [
+                                FractionallySizedBox(
+                                  alignment: Alignment.centerLeft,
+                                  widthFactor: bp.progress.clamp(0.0, 1.0),
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        colors: isClose
+                                            ? [AppColors.gold, const Color(0xFFFF8F00)]
+                                            : [
+                                                AppColors.purpleNeon,
+                                                AppColors.purpleDeep,
+                                              ],
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: (isClose ? AppColors.gold : AppColors.purpleNeon)
+                                              .withValues(alpha: 0.5),
+                                          blurRadius: 4,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ),
-                        const SizedBox(width: 4),
-                        if (bp.isPremium)
-                          const Text('⭐', style: TextStyle(fontSize: 10)),
-                        const Spacer(),
-                        // Countdown
+                        const SizedBox(height: 4),
+                        // FOMO text
                         Text(
-                          '${_remaining.inDays}d',
+                          isClose ? '⚡ $xpToNext XP TO REWARD' : 'BATTLE PASS',
                           style: TextStyle(
-                            color: _remaining.inDays < 3
-                                ? AppColors.crimsonRed
-                                : AppColors.white30,
+                            color: isClose ? AppColors.gold : AppColors.white30,
                             fontSize: 8,
-                            fontWeight: FontWeight.w600,
+                            fontWeight: isClose ? FontWeight.w900 : FontWeight.w600,
+                            letterSpacing: 0.5,
                           ),
                         ),
                       ],
-                    ),
-                    const SizedBox(height: 4),
-                    // XP Progress bar
-                    Container(
-                      height: 4,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(2),
-                        color: AppColors.white05,
-                      ),
-                      child: FractionallySizedBox(
-                        alignment: Alignment.centerLeft,
-                        widthFactor: bp.progress.clamp(0.0, 1.0),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(2),
-                            gradient: LinearGradient(
-                              colors: isClose
-                                  ? [AppColors.gold, const Color(0xFFFF8F00)]
-                                  : [
-                                      AppColors.purpleNeon,
-                                      AppColors.purpleDeep,
-                                    ],
-                            ),
-                            boxShadow: isClose
-                                ? [
-                                    BoxShadow(
-                                      color: AppColors.gold.withValues(
-                                        alpha: 0.4,
-                                      ),
-                                      blurRadius: 4,
-                                    ),
-                                  ]
-                                : null,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    // FOMO text
-                    Text(
-                      isClose ? '⚡ $xpToNext XP to reward!' : 'BATTLE PASS',
-                      style: TextStyle(
-                        color: isClose ? AppColors.gold : AppColors.white30,
-                        fontSize: 8,
-                        fontWeight: isClose ? FontWeight.w700 : FontWeight.w500,
-                      ),
                     ),
                   ],
                 ),
@@ -172,4 +220,24 @@ class _BattlePassMiniWidgetState extends ConsumerState<BattlePassMiniWidget>
       ),
     );
   }
+}
+
+class _MeshPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.1)
+      ..strokeWidth = 1.0;
+    
+    for (double i = -size.height; i < size.width; i += 8) {
+      canvas.drawLine(
+        Offset(i, 0),
+        Offset(i + size.height, size.height),
+        paint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

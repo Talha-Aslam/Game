@@ -120,12 +120,12 @@ class _StoreItemCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return GestureDetector(
       onTap: () async {
-        final success = await ref.read(storeProvider.notifier).purchase(item);
+        final error = await ref.read(storeProvider.notifier).purchase(item);
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(success ? 'Purchase successful!' : 'Purchase failed. Check balance.'),
-              backgroundColor: success ? AppColors.cyan : AppColors.crimsonRed,
+              content: Text(error ?? 'Purchase successful!'),
+              backgroundColor: error == null ? AppColors.cyan : AppColors.crimsonRed,
               duration: const Duration(seconds: 2),
             ),
           );
