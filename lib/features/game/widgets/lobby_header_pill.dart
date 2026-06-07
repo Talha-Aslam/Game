@@ -57,27 +57,30 @@ class _LobbyHeaderPillState extends State<LobbyHeaderPill>
               border: Border.all(color: color.withValues(alpha: 0.2 + _glow.value * 0.1), width: 0.5),
               boxShadow: [BoxShadow(color: color.withValues(alpha: 0.08 + _glow.value * 0.04), blurRadius: 12)],
             ),
-            child: Row(mainAxisSize: MainAxisSize.min, children: [
-              // Round
-              Text('Round ${widget.roundNumber}', style: TextStyle(
-                color: AppColors.white50, fontSize: 11, fontWeight: FontWeight.w500)),
-              Container(width: 1, height: 14, margin: const EdgeInsets.symmetric(horizontal: 10),
-                color: AppColors.glassBorder),
-              // Phase
-              Text(widget.phase.displayName, style: TextStyle(
-                color: color, fontSize: 13, fontWeight: FontWeight.w800, letterSpacing: 1.5,
-                shadows: [Shadow(color: color.withValues(alpha: 0.4), blurRadius: 8)])),
-              Container(width: 1, height: 14, margin: const EdgeInsets.symmetric(horizontal: 10),
-                color: AppColors.glassBorder),
-              // Alive count
-              Row(mainAxisSize: MainAxisSize.min, children: [
-                Container(width: 6, height: 6, decoration: BoxDecoration(
-                  shape: BoxShape.circle, color: AppColors.online)),
-                const SizedBox(width: 4),
-                Text('${widget.aliveCount} Alive', style: const TextStyle(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                // Round
+                Text('Round ${widget.roundNumber}', style: TextStyle(
                   color: AppColors.white50, fontSize: 11, fontWeight: FontWeight.w500)),
+                Container(width: 1, height: 14, margin: const EdgeInsets.symmetric(horizontal: 10),
+                  color: AppColors.glassBorder),
+                // Phase
+                Text(widget.phase.displayName, style: TextStyle(
+                  color: color, fontSize: 13, fontWeight: FontWeight.w800, letterSpacing: 1.5,
+                  shadows: [Shadow(color: color.withValues(alpha: 0.4), blurRadius: 8)])),
+                Container(width: 1, height: 14, margin: const EdgeInsets.symmetric(horizontal: 10),
+                  color: AppColors.glassBorder),
+                // Alive count
+                Row(mainAxisSize: MainAxisSize.min, children: [
+                  Container(width: 6, height: 6, decoration: BoxDecoration(
+                    shape: BoxShape.circle, color: AppColors.online)),
+                  const SizedBox(width: 4),
+                  Text('${widget.aliveCount} Alive', style: const TextStyle(
+                    color: AppColors.white50, fontSize: 11, fontWeight: FontWeight.w500)),
+                ]),
               ]),
-            ]),
+            ),
           ),
         ),
       );

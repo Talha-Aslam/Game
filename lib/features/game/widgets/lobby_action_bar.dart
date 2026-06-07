@@ -250,17 +250,61 @@ class LobbyActionBar extends StatelessWidget {
 
   // ── DAY ──
   Widget _dayBar() {
-    return Row(children: [
-      Container(
-        width: 20, height: 20,
-        decoration: BoxDecoration(shape: BoxShape.circle,
-          color: AppColors.online.withValues(alpha: 0.1),
-          border: Border.all(color: AppColors.online.withValues(alpha: 0.3))),
-        child: const Icon(Icons.mic, color: AppColors.online, size: 11)),
-      const SizedBox(width: 8),
-      Expanded(child: Text('Discussion phase — speak freely',
-        style: AppTextStyles.bodySmall.copyWith(color: AppColors.white50))),
-    ]);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        color: AppColors.online.withValues(alpha: 0.05),
+        border: Border.all(
+          color: AppColors.online.withValues(alpha: 0.2),
+          width: 1.0,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.online.withValues(alpha: 0.05),
+            blurRadius: 15,
+            spreadRadius: 2,
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 24,
+            height: 24,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: AppColors.online.withValues(alpha: 0.15),
+              border: Border.all(
+                color: AppColors.online.withValues(alpha: 0.4),
+                width: 1.0,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.online.withValues(alpha: 0.2),
+                  blurRadius: 8,
+                ),
+              ],
+            ),
+            child: const Icon(Icons.mic, color: AppColors.online, size: 14),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              'Discussion phase — speak freely',
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.online.withValues(alpha: 0.9),
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.5,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   // ── VOTING / RUNOFF ──

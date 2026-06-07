@@ -101,8 +101,8 @@ class _DailyBountyPanelState extends ConsumerState<DailyBountyPanel>
                         width: 26,
                         height: 38,
                         child: Center(
-                          child: SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
                             child: _buildCollapsed(completedCount),
                           ),
                         ),
