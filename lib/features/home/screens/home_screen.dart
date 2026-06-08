@@ -3,8 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mafia_wars/providers/custom_room_provider.dart';
-import '../../../providers/party_provider.dart';
-import '../../../providers/custom_room_provider.dart';
 import '../../../providers/notification_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_gradients.dart';
@@ -84,7 +82,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       builder: (ctx) => BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
         child: AlertDialog(
-          backgroundColor: Colors.black.withOpacity(0.85),
+          backgroundColor: Colors.black.withValues(alpha: 0.85),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide(color: AppColors.cyan.withValues(alpha: 0.3))),
           title: const Text('CUSTOM ROOM INVITE', style: TextStyle(color: AppColors.cyan, letterSpacing: 2, fontSize: 18, fontWeight: FontWeight.w900)),
           content: Column(
@@ -145,7 +143,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           child: Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.85),
+              color: Colors.black.withValues(alpha: 0.85),
               borderRadius: const BorderRadius.vertical(
                 top: Radius.circular(30),
               ),
@@ -240,14 +238,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         ),
                       ),
                       GestureDetector(
-                        onTap: () {
+                        onTap: () async {
                           final code = codeController.text.trim();
                           if (code.isNotEmpty) {
-                            Navigator.pop(context);
-                            ref
+                            final success = await ref
                                 .read(customRoomProvider.notifier)
                                 .joinRoom('custom_$code');
-                            context.push('/game/custom');
+                            if (context.mounted) {
+                              if (success) {
+                                Navigator.pop(context);
+                                context.push('/game/custom');
+                              } else {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Room not found or is full.'),
+                                    backgroundColor: AppColors.crimsonRed,
+                                  ),
+                                );
+                              }
+                            }
                           }
                         },
                         child: Container(

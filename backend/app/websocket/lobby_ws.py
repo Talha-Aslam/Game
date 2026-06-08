@@ -89,15 +89,51 @@ async def websocket_lobby(websocket: WebSocket, token: str = Query(...)):
                 elif action == "invite_custom":
                     target_id = payload.get("target_id")
                     room_id = payload.get("room_id")
+                    # Fetch real sender name
+                    from app.config.database import get_database
+                    db = get_database()
+                    sender = await db["users"].find_one({"_id": user_id})
+                    sender_name = sender.get("username", "A player") if sender else "A player"
+                    
                     # Send invite event to target
                     await manager.send_personal_message({
                         "event": "custom_room_invite",
                         "data": {
-                            "sender_name": user_id, # Should fetch real name
+                            "sender_name": sender_name,
                             "room_id": room_id
                         }
                     }, target_id)
                     
+                elif action == "leave_custom":
+                    from app.core.custom_room_manager import custom_room_manager
+                    room_id = custom_room_manager.user_to_room.get(user_id)
+                    if room_id:
+                        custom_room_manager.leave_room(user_id)
+                        room = custom_room_manager.active_rooms.get(room_id)
+                        if room:
+                            payload_data = await custom_room_manager.get_room_payload(room_id)
+                            if payload_data:
+                                await manager.broadcast_to_users({
+                                    "event": "custom_room_update",
+                                    "data": payload_data
+                                }, room.players)
+                                
+                elif action == "kick_custom":
+                    target_id = payload.get("target_id")
+                    from app.core.custom_room_manager import custom_room_manager
+                    room_id = custom_room_manager.user_to_room.get(user_id)
+                    room = custom_room_manager.active_rooms.get(room_id) if room_id else None
+                    if room and room.creator_id == user_id and target_id in room.players:
+                        custom_room_manager.leave_room(target_id)
+                        await manager.send_personal_message({"event": "kicked_from_custom"}, target_id)
+                        # Broadcast update
+                        payload_data = await custom_room_manager.get_room_payload(room_id)
+                        if payload_data:
+                            await manager.broadcast_to_users({
+                                "event": "custom_room_update",
+                                "data": payload_data
+                            }, room.players)
+                            
                 # --- FAMILY WAR ---
                 elif action == "start_family_war":
                     # Broadcast to all online family members
@@ -211,6 +247,23 @@ async def websocket_lobby(websocket: WebSocket, token: str = Query(...)):
     except WebSocketDisconnect:
         if manager.disconnect(user_id, websocket):
             matchmaker.leave_queue(user_id)
+            
+            # Handle leaving custom room on disconnect
+            from app.core.custom_room_manager import custom_room_manager
+            room_id = custom_room_manager.user_to_room.get(user_id)
+            if room_id:
+                custom_room_manager.leave_room(user_id)
+                room = custom_room_manager.active_rooms.get(room_id)
+                if room:
+                    import asyncio
+                    async def _broadcast_room_leave():
+                        payload_data = await custom_room_manager.get_room_payload(room_id)
+                        if payload_data:
+                            await manager.broadcast_to_users({
+                                "event": "custom_room_update",
+                                "data": payload_data
+                            }, room.players)
+                    asyncio.create_task(_broadcast_room_leave())
             
             try:
                 from app.config.database import get_database
