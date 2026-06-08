@@ -250,7 +250,7 @@ class _StoreItemCard extends ConsumerWidget {
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text(error ?? 'Purchase successful!'),
+                              content: Text(error ?? 'Item purchased!'),
                               backgroundColor: error == null ? AppColors.cyan : AppColors.crimsonRed,
                             ),
                           );

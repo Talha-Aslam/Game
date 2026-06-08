@@ -78,6 +78,24 @@ class InventoryModel {
     }
   }
 
+  InventoryModel copyWith({
+    List<String>? premiumAvatars,
+    List<String>? cardStyles,
+    List<String>? borders,
+    List<String>? eliminationFx,
+    List<String>? voicePacks,
+    List<String>? bundles,
+  }) {
+    return InventoryModel(
+      premiumAvatars: premiumAvatars ?? this.premiumAvatars,
+      cardStyles: cardStyles ?? this.cardStyles,
+      borders: borders ?? this.borders,
+      eliminationFx: eliminationFx ?? this.eliminationFx,
+      voicePacks: voicePacks ?? this.voicePacks,
+      bundles: bundles ?? this.bundles,
+    );
+  }
+
   Map<String, dynamic> toJson() => {
     'premium_avatars': premiumAvatars,
     'card_styles': cardStyles,

@@ -2,6 +2,9 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mafia_wars/providers/custom_room_provider.dart';
+import '../../../providers/party_provider.dart';
+import '../../../providers/custom_room_provider.dart';
 import '../../../providers/notification_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_gradients.dart';
@@ -26,6 +29,8 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
+  int _selectedMode = 0;
+
   @override
   void initState() {
     super.initState();
@@ -36,34 +41,243 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       }
       ws.eventStream.listen((msg) {
         if (!mounted) return;
-        
+
         switch (msg.event) {
           case 'friend_request_accepted':
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text((msg.data['message'] as String?) ?? 'Friend request accepted!'),
+                content: Text(
+                  (msg.data['message'] as String?) ??
+                      'Friend request accepted!',
+                ),
                 backgroundColor: AppColors.purpleNeon,
                 behavior: SnackBarBehavior.floating,
               ),
             );
             break;
-            
+
           case 'family_invite_received':
             _showFamilyInviteDialog(msg.data);
             break;
-            
+
           case 'gift_received':
             _showGiftReceivedSnackBar(msg.data);
             break;
-            
+
           case 'family_role_updated':
             if (msg.data['new_role'] == 'boss') {
               _showCongratulatoryDialog();
             }
             break;
+            
+          case 'custom_room_invite':
+            _showCustomRoomInviteDialog(msg.data);
+            break;
         }
       });
     });
+  }
+
+  void _showCustomRoomInviteDialog(Map<String, dynamic> data) {
+    showDialog(
+      context: context,
+      builder: (ctx) => BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: AlertDialog(
+          backgroundColor: Colors.black.withOpacity(0.85),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide(color: AppColors.cyan.withValues(alpha: 0.3))),
+          title: const Text('CUSTOM ROOM INVITE', style: TextStyle(color: AppColors.cyan, letterSpacing: 2, fontSize: 18, fontWeight: FontWeight.w900)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.sports_esports, color: AppColors.cyan, size: 48),
+              const SizedBox(height: 16),
+              Text('${data['sender_name']} has invited you to a custom match.', textAlign: TextAlign.center, style: const TextStyle(color: AppColors.white70, fontSize: 14)),
+              const SizedBox(height: 4),
+              Text('Room: ${data['room_id']?.split('_').last ?? "Unknown"}', style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('DECLINE', style: TextStyle(color: AppColors.white30))),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.cyan),
+              onPressed: () {
+                Navigator.pop(ctx);
+                ref.read(customRoomProvider.notifier).joinRoom(data['room_id']);
+                context.push('/game/custom');
+              },
+              child: const Text('JOIN ROOM', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _handlePlay() {
+    switch (_selectedMode) {
+      case 0: // Ranked
+      case 1: // Casual
+        context.push('/matchmaking');
+        break;
+      case 2: // Family War
+        context.push('/family/war');
+        break;
+      case 3: // Custom
+        _showCustomRoomEntrySheet();
+        break;
+    }
+  }
+
+  void _showCustomRoomEntrySheet() {
+    final codeController = TextEditingController();
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.85),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(30),
+              ),
+              border: Border.all(color: AppColors.white10),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.white10,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                const Text(
+                  'CUSTOM MATCH',
+                  style: TextStyle(
+                    color: AppColors.purpleGlow,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 2,
+                  ),
+                ),
+                const SizedBox(height: 32),
+
+                // Create Button
+                SizedBox(
+                  width: double.infinity,
+                  child: GlassButton(
+                    label: 'CREATE NEW ROOM',
+                    glowColor: AppColors.purpleNeon,
+                    onPressed: () {
+                      Navigator.pop(context);
+                      ref.read(customRoomProvider.notifier).createRoom();
+                      context.push('/game/custom');
+                    },
+                  ),
+                ),
+
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 24),
+                  child: Row(
+                    children: [
+                      Expanded(child: Divider(color: AppColors.white10)),
+                      Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 12),
+                        child: Text(
+                          'OR',
+                          style: TextStyle(
+                            color: AppColors.white30,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      Expanded(child: Divider(color: AppColors.white10)),
+                    ],
+                  ),
+                ),
+
+                // Join Field & Button
+                Container(
+                  decoration: BoxDecoration(
+                    color: AppColors.white05,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppColors.glassBorder),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: codeController,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 2,
+                          ),
+                          textCapitalization: TextCapitalization.characters,
+                          decoration: const InputDecoration(
+                            hintText: 'ENTER ROOM CODE',
+                            hintStyle: TextStyle(
+                              color: AppColors.white30,
+                              letterSpacing: 1,
+                            ),
+                            border: InputBorder.none,
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 20,
+                            ),
+                          ),
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () {
+                          final code = codeController.text.trim();
+                          if (code.isNotEmpty) {
+                            Navigator.pop(context);
+                            ref
+                                .read(customRoomProvider.notifier)
+                                .joinRoom('custom_$code');
+                            context.push('/game/custom');
+                          }
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 16,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.cyan,
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: const Text(
+                            'JOIN',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   void _showFamilyInviteDialog(Map<String, dynamic> data) {
@@ -73,27 +287,66 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
         child: AlertDialog(
           backgroundColor: Colors.black.withValues(alpha: 0.85),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide(color: AppColors.purpleNeon.withValues(alpha: 0.3))),
-          title: const Text('FAMILY INVITATION', style: TextStyle(color: AppColors.purpleGlow, letterSpacing: 2, fontSize: 18, fontWeight: FontWeight.w900)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: BorderSide(
+              color: AppColors.purpleNeon.withValues(alpha: 0.3),
+            ),
+          ),
+          title: const Text(
+            'FAMILY INVITATION',
+            style: TextStyle(
+              color: AppColors.purpleGlow,
+              letterSpacing: 2,
+              fontSize: 18,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               const Icon(Icons.shield, color: AppColors.purpleGlow, size: 48),
               const SizedBox(height: 16),
-              Text('${data['sender_name']} has invited you to join', style: const TextStyle(color: AppColors.white70, fontSize: 14)),
+              Text(
+                '${data['sender_name']} has invited you to join',
+                style: const TextStyle(color: AppColors.white70, fontSize: 14),
+              ),
               const SizedBox(height: 4),
-              Text(data['family_name'], style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+              Text(
+                data['family_name'],
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ],
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('DECLINE', style: TextStyle(color: AppColors.white30))),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text(
+                'DECLINE',
+                style: TextStyle(color: AppColors.white30),
+              ),
+            ),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.purpleNeon),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.purpleNeon,
+              ),
               onPressed: () {
-                ref.read(familyProvider.notifier).applyToFamily(data['family_id'], isInvite: true);
+                ref
+                    .read(familyProvider.notifier)
+                    .applyToFamily(data['family_id'], isInvite: true);
                 Navigator.pop(ctx);
               },
-              child: const Text('ACCEPT & JOIN', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              child: const Text(
+                'ACCEPT & JOIN',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
           ],
         ),
@@ -108,7 +361,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           children: [
             const Icon(Icons.card_giftcard, color: AppColors.gold, size: 20),
             const SizedBox(width: 12),
-            Text('${data['sender_name']} sent you ${data['amount']} Syndicate Coins!'),
+            Text(
+              '${data['sender_name']} sent you ${data['amount']} Syndicate Coins!',
+            ),
           ],
         ),
         backgroundColor: AppColors.surface,
@@ -124,17 +379,40 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
         child: AlertDialog(
           backgroundColor: Colors.black.withValues(alpha: 0.9),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24), side: BorderSide(color: AppColors.gold.withValues(alpha: 0.5))),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+            side: BorderSide(color: AppColors.gold.withValues(alpha: 0.5)),
+          ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.workspace_premium, color: AppColors.gold, size: 64),
+              const Icon(
+                Icons.workspace_premium,
+                color: AppColors.gold,
+                size: 64,
+              ),
               const SizedBox(height: 20),
-              const Text('CONGRATULATIONS!', style: TextStyle(color: AppColors.gold, fontSize: 24, fontWeight: FontWeight.w900, letterSpacing: 1.5)),
+              const Text(
+                'CONGRATULATIONS!',
+                style: TextStyle(
+                  color: AppColors.gold,
+                  fontSize: 24,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.5,
+                ),
+              ),
               const SizedBox(height: 12),
-              const Text('You have been promoted to the rank of BOSS. The future of the family is in your hands.', textAlign: TextAlign.center, style: TextStyle(color: AppColors.white70, fontSize: 14)),
+              const Text(
+                'You have been promoted to the rank of BOSS. The future of the family is in your hands.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: AppColors.white70, fontSize: 14),
+              ),
               const SizedBox(height: 32),
-              GlassButton(label: 'I ACCEPT THE THRONE', glowColor: AppColors.gold, onPressed: () => Navigator.pop(ctx)),
+              GlassButton(
+                label: 'I ACCEPT THE THRONE',
+                glowColor: AppColors.gold,
+                onPressed: () => Navigator.pop(ctx),
+              ),
             ],
           ),
         ),
@@ -307,7 +585,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: MatchmakingButton(
-                    onPlay: () => context.push('/matchmaking'),
+                    onPlay: _handlePlay,
+                    onModeChange: (i) => setState(() => _selectedMode = i),
                   ),
                 ),
 
