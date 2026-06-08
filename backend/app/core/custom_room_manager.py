@@ -80,7 +80,7 @@ class CustomRoomManager:
         if user_id != room.creator_id:
             return
             
-        if len(room.players) < 4:
+        if len(room.players) < 5:
             # Maybe allow start with bots? For now just check min players
             pass
             
@@ -101,5 +101,36 @@ class CustomRoomManager:
             if p in self.user_to_room:
                 del self.user_to_room[p]
         del self.active_rooms[room_id]
+
+    async def get_room_payload(self, room_id: str) -> Optional[dict]:
+        if room_id not in self.active_rooms:
+            return None
+        room = self.active_rooms[room_id]
+        
+        from app.config.database import get_database
+        db = get_database()
+        
+        users = await db["users"].find({"_id": {"$in": room.players}}).to_list(length=room.max_players)
+        user_dict = {str(u["_id"]): u for u in users}
+        
+        players_data = []
+        for pid in room.players:
+            u = user_dict.get(pid, {})
+            players_data.append({
+                "id": pid,
+                "name": u.get("username", f"Player {pid[:4]}"),
+                "avatarUrl": u.get("profile_picture", ""),
+                "equippedCosmetics": u.get("equipped_cosmetics", {}),
+                "rankTier": u.get("rankTier", 1) # Fallback if missing
+            })
+            
+        return {
+            "room_id": room.room_id,
+            "creator_id": room.creator_id,
+            "mode": room.mode,
+            "players": players_data,
+            "max_players": room.max_players,
+            "is_started": room.is_started
+        }
 
 custom_room_manager = CustomRoomManager()

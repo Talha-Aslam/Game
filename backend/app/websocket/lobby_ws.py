@@ -62,9 +62,10 @@ async def websocket_lobby(websocket: WebSocket, token: str = Query(...)):
                 elif action == "create_custom":
                     from app.core.custom_room_manager import custom_room_manager
                     room = custom_room_manager.create_room(user_id)
+                    payload = await custom_room_manager.get_room_payload(room.room_id)
                     await manager.send_personal_message({
                         "event": "custom_room_update",
-                        "data": room.to_dict()
+                        "data": payload
                     }, user_id)
                     
                 elif action == "join_custom":
@@ -72,9 +73,10 @@ async def websocket_lobby(websocket: WebSocket, token: str = Query(...)):
                     room_id = payload.get("room_id")
                     room = custom_room_manager.join_room(user_id, room_id)
                     if room:
+                        payload = await custom_room_manager.get_room_payload(room.room_id)
                         await manager.broadcast_to_users({
                             "event": "custom_room_update",
-                            "data": room.to_dict()
+                            "data": payload
                         }, room.players)
                     else:
                         await manager.send_personal_message({"event": "error", "message": "Failed to join room"}, user_id)

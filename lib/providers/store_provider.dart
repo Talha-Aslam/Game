@@ -41,10 +41,41 @@ class StoreNotifier extends Notifier<bool> {
       final response = await _api.purchaseItem(item.id, currency, price, item.category.name);
       
       if (response != null && response['new_balance'] != null) {
-        // Fix the logout bug: Update user locally instead of ref.invalidate(authProvider)
-        final updatedUser = currency == 'syndicate' 
-            ? user.copyWith(syndicateCoins: (response['new_balance'] as num).toInt())
-            : user.copyWith(influencePoints: (response['new_balance'] as num).toInt());
+        // 1. Update Inventory locally
+        final currentOwned = List<String>.from(user.inventory.getCategoryList(item.category.name));
+        if (!currentOwned.contains(item.id)) {
+          currentOwned.add(item.id);
+        }
+
+        // 2. Map back to InventoryModel
+        InventoryModel updatedInventory = user.inventory;
+        switch (item.category) {
+          case StoreCategory.avatars:
+            updatedInventory = user.inventory.copyWith(premiumAvatars: currentOwned);
+            break;
+          case StoreCategory.cardStyles:
+            updatedInventory = user.inventory.copyWith(cardStyles: currentOwned);
+            break;
+          case StoreCategory.borders:
+            updatedInventory = user.inventory.copyWith(borders: currentOwned);
+            break;
+          case StoreCategory.eliminationEffects:
+            updatedInventory = user.inventory.copyWith(eliminationFx: currentOwned);
+            break;
+          case StoreCategory.voicePacks:
+            updatedInventory = user.inventory.copyWith(voicePacks: currentOwned);
+            break;
+          case StoreCategory.bundles:
+            updatedInventory = user.inventory.copyWith(bundles: currentOwned);
+            break;
+        }
+
+        // 3. Update User locally with new balance AND inventory
+        final updatedUser = user.copyWith(
+          syndicateCoins: currency == 'syndicate' ? (response['new_balance'] as num).toInt() : user.syndicateCoins,
+          influencePoints: currency == 'influence' ? (response['new_balance'] as num).toInt() : user.influencePoints,
+          inventory: updatedInventory,
+        );
         
         ref.read(authProvider.notifier).updateUserLocal(updatedUser);
         state = false;
