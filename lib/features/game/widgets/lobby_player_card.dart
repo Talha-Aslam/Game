@@ -16,6 +16,8 @@ class LobbyPlayerCard extends StatefulWidget {
   final String? floatingEmoji;
   final double size;
 
+  final bool isHost;
+
   const LobbyPlayerCard({
     super.key,
     required this.player,
@@ -26,6 +28,7 @@ class LobbyPlayerCard extends StatefulWidget {
     this.onTap,
     this.floatingEmoji,
     this.size = 52,
+    this.isHost = false,
   });
 
   @override
@@ -269,12 +272,14 @@ class _LobbyPlayerCardState extends State<LobbyPlayerCard>
                 0.2126, 0.7152, 0.0722, 0, 0,
                 0, 0, 0, 0.4, 0,
               ]),
-        child: Image.network(
-          resolved,
-          fit: BoxFit.cover,
-          width: s,
-          height: s,
-          errorBuilder: (c, e, st) => _buildInitials(s, isAlive),
+        child: ClipOval(
+          child: Image.network(
+            resolved,
+            fit: BoxFit.cover,
+            width: s,
+            height: s,
+            errorBuilder: (c, e, st) => _buildInitials(s, isAlive),
+          ),
         ),
       );
     }

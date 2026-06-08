@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/player_model.dart';
-import '../services/websocket_service.dart';
 import 'matchmaking_provider.dart';
 
 class CustomRoomState {
@@ -76,8 +75,29 @@ class CustomRoomNotifier extends Notifier<CustomRoomState> {
     ref.read(webSocketServiceProvider).send('create_custom');
   }
 
-  void joinRoom(String roomId) {
-    ref.read(webSocketServiceProvider).send('join_custom', {'room_id': roomId});
+  Future<bool> joinRoom(String roomId) async {
+    final completer = Completer<bool>();
+    
+    final ws = ref.read(webSocketServiceProvider);
+    StreamSubscription? tempSub;
+    tempSub = ws.eventStream.listen((msg) {
+      if (msg.event == 'custom_room_update' && msg.data['room_id'] == roomId) {
+        tempSub?.cancel();
+        if (!completer.isCompleted) completer.complete(true);
+      } else if (msg.event == 'error' && msg.data['message'] == 'Failed to join room') {
+        tempSub?.cancel();
+        if (!completer.isCompleted) completer.complete(false);
+      }
+    });
+
+    ws.send('join_custom', {'room_id': roomId});
+    
+    Future.delayed(const Duration(seconds: 5), () {
+      tempSub?.cancel();
+      if (!completer.isCompleted) completer.complete(false);
+    });
+
+    return completer.future;
   }
 
   void startMatch() {

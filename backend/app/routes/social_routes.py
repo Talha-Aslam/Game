@@ -53,6 +53,36 @@ async def leaderboard(limit: int = 50):
     return await get_leaderboard(limit)
 
 
+@router.get("/online-global")
+async def online_global(user: dict = Depends(get_current_user)):
+    from app.core.websocket_manager import manager
+    from app.config.database import get_database
+    
+    db = get_database()
+    active_ids = list(manager.active_connections.keys())
+    
+    # Exclude self and friends
+    friends = user.get("friends", [])
+    exclude_ids = friends + [str(user["_id"])]
+    
+    global_ids = [uid for uid in active_ids if uid not in exclude_ids]
+    
+    if not global_ids:
+        return []
+        
+    global_users = await db["users"].find({"_id": {"$in": global_ids}}).to_list(length=20)
+    
+    results = []
+    for u in global_users:
+        results.append({
+            "id": str(u["_id"]),
+            "username": u.get("username", "Unknown"),
+            "avatarUrl": u.get("profile_picture", ""),
+            "rankTier": u.get("rankTier", 1),
+            "equippedCosmetics": u.get("equipped_cosmetics", {})
+        })
+    return results
+
 @router.get("/chat/{friend_id}")
 async def get_private_chat(friend_id: str, limit: int = 50, user: dict = Depends(get_current_user)):
     return await get_private_chat_history(user["_id"], friend_id, limit)
