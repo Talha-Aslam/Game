@@ -50,6 +50,7 @@ class _AvatarShowcaseWidgetState extends ConsumerState<AvatarShowcaseWidget>
   Widget build(BuildContext context) {
     final user = ref.watch(authProvider).user;
     final rank = RankModel.fromTier(user?.rankTier ?? 0);
+    final ec = user?.equippedCosmetics;
 
     return AnimatedBuilder(
       animation: _anim,
@@ -65,6 +66,8 @@ class _AvatarShowcaseWidgetState extends ConsumerState<AvatarShowcaseWidget>
             rank: rank,
             animPhase: t,
             glowAlpha: glowAlpha,
+            backgroundId: ec?.background ?? '',
+            borderId: ec?.cardBorder ?? '',
           ),
         );
       },
@@ -80,12 +83,16 @@ class _ProfileCard extends StatelessWidget {
   final RankModel rank;
   final double animPhase;
   final double glowAlpha;
+  final String backgroundId;
+  final String borderId;
 
   const _ProfileCard({
     required this.user,
     required this.rank,
     required this.animPhase,
     required this.glowAlpha,
+    required this.backgroundId,
+    required this.borderId,
   });
 
   // Avatar diameter
@@ -95,7 +102,7 @@ class _ProfileCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final frameStyle = _FrameStyle.forTier(rank.tier);
+    final frameStyle = _FrameStyle.forTier(rank.tier, borderId);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 28.0),
@@ -109,6 +116,8 @@ class _ProfileCard extends StatelessWidget {
             child: _GlassCard(
               rank: rank,
               glowAlpha: glowAlpha,
+              backgroundId: backgroundId,
+              borderId: borderId,
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(20, _avatarSize - _avatarOverflow + 10, 20, 18),
                 child: Column(
@@ -119,7 +128,7 @@ class _ProfileCard extends StatelessWidget {
                       constraints: const BoxConstraints(maxWidth: double.infinity),
                       child: ShaderMask(
                         shaderCallback: (bounds) => LinearGradient(
-                          colors: [Colors.white, rank.color.withValues(alpha: 0.80)],
+                          colors: [Colors.white, frameStyle.ringColors.first.withValues(alpha: 0.80)],
                           begin: Alignment.centerLeft,
                           end: Alignment.centerRight,
                         ).createShader(bounds),
@@ -146,12 +155,13 @@ class _ProfileCard extends StatelessWidget {
                           ? user!.equippedTitle!
                           : 'Shadow Boss',
                       rank: rank,
+                      accentColor: frameStyle.ringColors.first,
                     ),
 
                     const SizedBox(height: 16),
 
                     // ── XP Progress bar ──
-                    _XpBar(user: user, rank: rank),
+                    _XpBar(user: user, rank: rank, accentColor: frameStyle.ringColors.first),
                   ],
                 ),
               ),
@@ -179,15 +189,40 @@ class _GlassCard extends StatelessWidget {
   final RankModel rank;
   final double glowAlpha;
   final Widget child;
+  final String backgroundId;
+  final String borderId;
 
   const _GlassCard({
     required this.rank,
     required this.glowAlpha,
     required this.child,
+    required this.backgroundId,
+    required this.borderId,
   });
 
   @override
   Widget build(BuildContext context) {
+    // Map backgroundId to visual style
+    List<Color> bgColors = [
+      Colors.black.withValues(alpha: 0.45),
+      const Color(0xFF0D0D1F).withValues(alpha: 0.60),
+      Colors.black.withValues(alpha: 0.38),
+    ];
+
+    if (backgroundId == 's2') { // Neon Circuit
+      bgColors = [
+        const Color(0xFF001220).withValues(alpha: 0.8),
+        const Color(0xFF00458B).withValues(alpha: 0.6),
+        const Color(0xFF001220).withValues(alpha: 0.8),
+      ];
+    } else if (backgroundId == 's8') { // Royal Gold
+      bgColors = [
+        const Color(0xFF1A1A00).withValues(alpha: 0.8),
+        const Color(0xFF4D4D00).withValues(alpha: 0.6),
+        const Color(0xFF1A1A00).withValues(alpha: 0.8),
+      ];
+    }
+
     return ClipRRect(
       borderRadius: BorderRadius.circular(22),
       child: BackdropFilter(
@@ -196,15 +231,10 @@ class _GlassCard extends StatelessWidget {
           width: double.infinity,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(22),
-            // Dark translucent glassmorphic fill — black + faint slate tint
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                Colors.black.withValues(alpha: 0.45),
-                const Color(0xFF0D0D1F).withValues(alpha: 0.60),
-                Colors.black.withValues(alpha: 0.38),
-              ],
+              colors: bgColors,
               stops: const [0.0, 0.5, 1.0],
             ),
             border: Border.all(
@@ -256,6 +286,8 @@ class _AvatarRing extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final accentColor = frameStyle.ringColors.first;
+
     return SizedBox(
       width: _size + 18,
       height: _size + 18,
@@ -270,12 +302,12 @@ class _AvatarRing extends StatelessWidget {
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: rank.glowColor.withValues(alpha: glowAlpha),
+                  color: accentColor.withValues(alpha: glowAlpha),
                   blurRadius: 22,
                   spreadRadius: 5,
                 ),
                 BoxShadow(
-                  color: rank.glowColor.withValues(alpha: glowAlpha * 0.35),
+                  color: accentColor.withValues(alpha: glowAlpha * 0.35),
                   blurRadius: 44,
                   spreadRadius: 10,
                 ),
@@ -336,6 +368,7 @@ class _AvatarRing extends StatelessWidget {
   }
 
   Widget _fallback() {
+    final accentColor = frameStyle.ringColors.first;
     final initials = (user?.username.isNotEmpty == true)
         ? user!.username[0].toUpperCase()
         : 'A';
@@ -345,7 +378,7 @@ class _AvatarRing extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            rank.color.withValues(alpha: 0.35),
+            accentColor.withValues(alpha: 0.35),
             AppColors.purpleDeep.withValues(alpha: 0.55),
           ],
         ),
@@ -357,7 +390,7 @@ class _AvatarRing extends StatelessWidget {
             color: Colors.white,
             fontSize: 34,
             fontWeight: FontWeight.w900,
-            shadows: [Shadow(color: rank.glowColor, blurRadius: 14)],
+            shadows: [Shadow(color: accentColor, blurRadius: 14)],
           ),
         ),
       ),
@@ -388,7 +421,7 @@ class _RankBadge extends StatelessWidget {
         ),
         border: Border.all(color: AppColors.background, width: 2.0),
         boxShadow: [
-          BoxShadow(color: rank.glowColor, blurRadius: 8),
+          BoxShadow(color: colors.first.withValues(alpha: 0.5), blurRadius: 8),
         ],
       ),
       child: Icon(_tierIcon(rank.tier), color: Colors.white, size: 13),
@@ -412,7 +445,8 @@ class _RankBadge extends StatelessWidget {
 class _TitleChip extends StatelessWidget {
   final String title;
   final RankModel rank;
-  const _TitleChip({required this.title, required this.rank});
+  final Color accentColor;
+  const _TitleChip({required this.title, required this.rank, required this.accentColor});
 
   @override
   Widget build(BuildContext context) {
@@ -423,21 +457,21 @@ class _TitleChip extends StatelessWidget {
         // Dark accent gradient fill as specified
         gradient: LinearGradient(
           colors: [
-            rank.color.withValues(alpha: 0.18),
+            accentColor.withValues(alpha: 0.18),
             Colors.black.withValues(alpha: 0.35),
           ],
           begin: Alignment.centerLeft,
           end: Alignment.centerRight,
         ),
         border: Border.all(
-          color: rank.color.withValues(alpha: 0.28),
+          color: accentColor.withValues(alpha: 0.28),
           width: 0.8,
         ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.auto_awesome, color: rank.color, size: 9),
+          Icon(Icons.auto_awesome, color: accentColor, size: 9),
           const SizedBox(width: 5),
           Flexible(
             child: Text(
@@ -445,7 +479,7 @@ class _TitleChip extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                color: rank.color,
+                color: accentColor,
                 fontSize: 9,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 1.8,
@@ -464,7 +498,8 @@ class _TitleChip extends StatelessWidget {
 class _XpBar extends StatelessWidget {
   final UserModel? user;
   final RankModel rank;
-  const _XpBar({required this.user, required this.rank});
+  final Color accentColor;
+  const _XpBar({required this.user, required this.rank, required this.accentColor});
 
   @override
   Widget build(BuildContext context) {
@@ -503,7 +538,7 @@ class _XpBar extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.right,
                 style: TextStyle(
-                  color: rank.color.withValues(alpha: 0.65),
+                  color: accentColor.withValues(alpha: 0.65),
                   fontSize: 8,
                   fontWeight: FontWeight.w600,
                   letterSpacing: 0.4,
@@ -522,7 +557,7 @@ class _XpBar extends StatelessWidget {
             child: LinearProgressIndicator(
               value: progress,
               backgroundColor: Colors.white.withValues(alpha: 0.06),
-              valueColor: AlwaysStoppedAnimation<Color>(rank.color),
+              valueColor: AlwaysStoppedAnimation<Color>(accentColor),
               minHeight: 8,
             ),
           ),
@@ -548,7 +583,28 @@ class _FrameStyle {
     this.strokeWidth = 3.0,
   });
 
-  static _FrameStyle forTier(int tier) {
+  static _FrameStyle forTier(int tier, String borderId) {
+    // Check for equipped premium borders first
+    if (borderId == 's1') { // Crimson Flame
+      return const _FrameStyle(
+        ringColors: [AppColors.crimsonRed, Color(0xFFFF5252), Color(0xFFFF8A80)],
+        shape: _FrameShape.octagon,
+        strokeWidth: 3.5,
+      );
+    } else if (borderId == 's7') { // Ice Aura
+      return const _FrameStyle(
+        ringColors: [Color(0xFF80D8FF), Color(0xFF40C4FF), Color(0xFF00B0FF)],
+        shape: _FrameShape.octagon,
+        strokeWidth: 3.5,
+      );
+    } else if (borderId == 's8') { // Royal Gold
+      return const _FrameStyle(
+        ringColors: [AppColors.gold, Color(0xFFFFD600), Color(0xFFFFFF8D)],
+        shape: _FrameShape.hexagonal,
+        strokeWidth: 3.5,
+      );
+    }
+
     switch (tier) {
       case 0: // Bronze
         return const _FrameStyle(
@@ -583,6 +639,7 @@ class _FrameStyle {
     }
   }
 }
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  Ring painter — animated sweep gradient

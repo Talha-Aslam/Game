@@ -20,6 +20,8 @@ class Player(BaseModel):
     rankTier: int = 1
     familyTag: Optional[str] = None
     avatarIndex: int = 0
+    avatar_url: str = ""
+    equipped_cosmetics: dict = {}
     
     # State flags
     status: str = "alive" # alive, eliminated
@@ -35,6 +37,8 @@ class Player(BaseModel):
             "rankTier": self.rankTier,
             "familyTag": self.familyTag,
             "avatarIndex": self.avatarIndex,
+            "avatarUrl": self.avatar_url,
+            "equippedCosmetics": self.equipped_cosmetics,
             "status": self.status,
             "isEliminating": self.is_eliminating,
             "voiceState": self.voice_state
@@ -117,7 +121,9 @@ class GameEngine:
                     name=user_data.get("username", f"Player_{pid[:4]}"),
                     rankTier=1, # Could map from MMR
                     familyTag=None, # Could fetch from family DB
-                    avatarIndex=random.randint(0, 9) # Could map from premium_avatar
+                    avatarIndex=random.randint(0, 9), # Could map from premium_avatar
+                    avatar_url=user_data.get("profile_picture", ""),
+                    equipped_cosmetics=user_data.get("equipped_cosmetics", {})
                 )
 
         # Start autonomous game loop

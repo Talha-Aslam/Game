@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../models/player_model.dart';
 
@@ -56,17 +57,32 @@ class _LobbyPlayerCardState extends State<LobbyPlayerCard>
     super.dispose();
   }
 
-  Color get _speakColor {
-    if (!widget.player.isSpeaking) return Colors.transparent;
-    if (widget.player.isMafia) return AppColors.purpleNeon;
-    return AppColors.gold;
+  Color get _glowColor {
+    if (!widget.player.isAlive) return Colors.transparent;
+    
+    // Custom border colors from equipped cosmetics
+    final borderId = widget.player.equippedCosmetics['card_border']?.toString();
+    if (borderId == 's1') return AppColors.crimsonRed;
+    if (borderId == 's7') return const Color(0xFF00B0FF);
+    if (borderId == 's8') return AppColors.gold;
+
+    if (widget.player.isSpeaking) return widget.player.isMafia ? AppColors.purpleNeon : AppColors.gold;
+    if (widget.isSelected) return AppColors.gold;
+    if (widget.isLocalPlayer) return AppColors.purpleNeon;
+    return AppColors.white10;
   }
 
   Color get _borderColor {
     if (!widget.player.isAlive) return AppColors.white10;
     if (widget.isTied) return AppColors.crimsonRed;
+    
+    final borderId = widget.player.equippedCosmetics['card_border']?.toString();
+    if (borderId == 's1') return AppColors.crimsonRed;
+    if (borderId == 's7') return const Color(0xFF00B0FF);
+    if (borderId == 's8') return AppColors.gold;
+
     if (widget.isSelected) return AppColors.gold;
-    if (widget.player.isSpeaking) return _speakColor;
+    if (widget.player.isSpeaking) return _glowColor;
     if (widget.isLocalPlayer) {
       return AppColors.purpleNeon.withValues(alpha: 0.6);
     }
@@ -78,6 +94,7 @@ class _LobbyPlayerCardState extends State<LobbyPlayerCard>
     final isAlive = widget.player.isAlive;
     final isSpeaking = widget.player.isSpeaking;
     final s = widget.size;
+    final borderId = widget.player.equippedCosmetics['card_border']?.toString();
 
     return GestureDetector(
       onTap: isAlive ? widget.onTap : null,
@@ -110,8 +127,8 @@ class _LobbyPlayerCardState extends State<LobbyPlayerCard>
                         alignment: Alignment.center,
                         clipBehavior: Clip.none,
                         children: [
-                          // Outer voice glow ring or selection ring
-                          if (isSpeaking && isAlive)
+                          // Outer voice glow ring or selection ring or premium glow
+                          if (isAlive && (isSpeaking || widget.isSelected || borderId != null))
                             Container(
                               width: s + 6,
                               height: s + 6,
@@ -119,28 +136,11 @@ class _LobbyPlayerCardState extends State<LobbyPlayerCard>
                                 shape: BoxShape.circle,
                                 boxShadow: [
                                   BoxShadow(
-                                    color: _speakColor.withValues(
-                                      alpha: 0.25 + _voicePulse.value * 0.2,
+                                    color: _glowColor.withValues(
+                                      alpha: isSpeaking ? (0.25 + _voicePulse.value * 0.2) : 0.4,
                                     ),
-                                    blurRadius: 12 + _voicePulse.value * 6,
-                                    spreadRadius: 1,
-                                  ),
-                                ],
-                              ),
-                            )
-                          else if (widget.isSelected && isAlive)
-                            Container(
-                              width: s + 6,
-                              height: s + 6,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: AppColors.gold.withValues(
-                                      alpha: 0.5,
-                                    ),
-                                    blurRadius: 16,
-                                    spreadRadius: 2,
+                                    blurRadius: isSpeaking ? (12 + _voicePulse.value * 6) : (borderId != null ? 15 : 16),
+                                    spreadRadius: isSpeaking ? 1 : (borderId != null ? 2 : 2),
                                   ),
                                 ],
                               ),
@@ -162,7 +162,7 @@ class _LobbyPlayerCardState extends State<LobbyPlayerCard>
                                         ),
                                   border: Border.all(
                                     color: _borderColor,
-                                    width: isSpeaking ? 1.5 : 1,
+                                    width: (isSpeaking || borderId != null) ? 1.5 : 1,
                                   ),
                                   gradient: isAlive
                                       ? const LinearGradient(
@@ -178,50 +178,7 @@ class _LobbyPlayerCardState extends State<LobbyPlayerCard>
                                 child: Stack(
                                   children: [
                                     // Avatar Image or Letter Fallback
-                                    if (widget.player.avatarUrl.isNotEmpty)
-                                      ColorFiltered(
-                                        colorFilter: isAlive
-                                            ? const ColorFilter.mode(
-                                                Colors.transparent,
-                                                BlendMode.multiply,
-                                              )
-                                            : const ColorFilter.matrix(<double>[
-                                                0.2126,
-                                                0.7152,
-                                                0.0722,
-                                                0,
-                                                0,
-                                                0.2126,
-                                                0.7152,
-                                                0.0722,
-                                                0,
-                                                0,
-                                                0.2126,
-                                                0.7152,
-                                                0.0722,
-                                                0,
-                                                0,
-                                                0,
-                                                0,
-                                                0,
-                                                0.4,
-                                                0,
-                                              ]),
-                                        child: Image.network(
-                                          widget.player.avatarUrl.startsWith(
-                                                'http',
-                                              )
-                                              ? widget.player.avatarUrl
-                                              : 'http://182.188.100.13:8000${widget.player.avatarUrl}',
-                                          fit: BoxFit.cover,
-                                          width: s,
-                                          height: s,
-                                          errorBuilder: (c, e, st) =>
-                                              _buildInitials(s, isAlive),
-                                        ),
-                                      )
-                                    else
-                                      _buildInitials(s, isAlive),
+                                    _avatarContent(s, isAlive),
 
                                     // Eliminated X
                                     if (!isAlive)
@@ -246,7 +203,7 @@ class _LobbyPlayerCardState extends State<LobbyPlayerCard>
                               right: 0,
                               child: _VoiceBadge(
                                 voiceState: widget.player.voiceState,
-                                speakColor: _speakColor,
+                                speakColor: _glowColor,
                               ),
                             ),
 
@@ -294,6 +251,34 @@ class _LobbyPlayerCardState extends State<LobbyPlayerCard>
         },
       ),
     );
+  }
+
+  Widget _avatarContent(double s, bool isAlive) {
+    final url = widget.player.avatarUrl;
+    final resolved = url.startsWith('/')
+        ? '${AppConstants.apiBaseUrl}$url'
+        : url;
+
+    if (resolved.isNotEmpty) {
+      return ColorFiltered(
+        colorFilter: isAlive
+            ? const ColorFilter.mode(Colors.transparent, BlendMode.multiply)
+            : const ColorFilter.matrix(<double>[
+                0.2126, 0.7152, 0.0722, 0, 0,
+                0.2126, 0.7152, 0.0722, 0, 0,
+                0.2126, 0.7152, 0.0722, 0, 0,
+                0, 0, 0, 0.4, 0,
+              ]),
+        child: Image.network(
+          resolved,
+          fit: BoxFit.cover,
+          width: s,
+          height: s,
+          errorBuilder: (c, e, st) => _buildInitials(s, isAlive),
+        ),
+      );
+    }
+    return _buildInitials(s, isAlive);
   }
 
   Widget _buildInitials(double size, bool isAlive) {

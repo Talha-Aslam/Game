@@ -71,7 +71,7 @@ class _AvatarInventoryScreenState extends ConsumerState<AvatarInventoryScreen> {
 
     // For demo purposes, let's pretend a1 and a4 are owned if they aren't explicitly in ownedAvatars
     bool isOwned =
-        user.ownedAvatars.contains(avatar.id) ||
+        user.inventory.premiumAvatars.contains(avatar.id) ||
         avatar.id == 'a1' ||
         avatar.id == 'a4';
 

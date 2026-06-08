@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/store_item_model.dart';
+import '../models/user_model.dart';
 import '../services/store_api_service.dart';
 import 'auth_provider.dart';
 
@@ -56,7 +57,88 @@ class StoreNotifier extends Notifier<bool> {
       return e.toString().replaceFirst('Exception: ', '');
     }
   }
+
+  Future<String?> equip(StoreItemModel item) async {
+    final user = ref.read(authProvider).user;
+    if (user == null) return 'Session expired. Please log in.';
+
+    state = true;
+    try {
+      final response = await _api.equipItem(item.id, item.category.name);
+      
+      if (response != null && response['equipped_cosmetics'] != null) {
+        // Update user locally
+        final updatedCosmetics = EquippedCosmeticsModel.fromJson(response['equipped_cosmetics']);
+        UserModel updatedUser = user.copyWith(equippedCosmetics: updatedCosmetics);
+        
+        if (item.category == StoreCategory.avatars) {
+           updatedUser = updatedUser.copyWith(
+             premiumAvatarId: response['premium_avatar'],
+             // using_premium_avatar logic? Maybe add to UserModel if needed, 
+             // but for now avatarUrl/premiumAvatarId is enough.
+           );
+        }
+
+        ref.read(authProvider.notifier).updateUserLocal(updatedUser);
+        state = false;
+        return null; // Success
+      }
+      state = false;
+      return 'Unexpected server response';
+    } catch (e) {
+      state = false;
+      return e.toString().replaceFirst('Exception: ', '');
+    }
+  }
 }
 
 final storeProvider = NotifierProvider<StoreNotifier, bool>(StoreNotifier.new);
+
+/// Provider that combines store definitions with current user ownership state
+final ownedStoreItemsProvider = Provider<List<StoreItemModel>>((ref) {
+  final items = ref.watch(storeItemsProvider);
+  final user = ref.watch(authProvider).user;
+  
+  if (user == null) return items;
+
+  return items.map((item) {
+    final ownedList = user.inventory.getCategoryList(item.category.name);
+    final isOwned = ownedList.contains(item.id);
+    
+    bool isEquipped = false;
+    final ec = user.equippedCosmetics;
+    switch (item.category) {
+      case StoreCategory.cardStyles:
+        isEquipped = ec.background == item.id;
+        break;
+      case StoreCategory.borders:
+        isEquipped = ec.cardBorder == item.id;
+        break;
+      case StoreCategory.voicePacks:
+        isEquipped = ec.voicePack == item.id;
+        break;
+      case StoreCategory.avatars:
+        isEquipped = user.premiumAvatarId == item.id;
+        break;
+      case StoreCategory.eliminationEffects:
+        isEquipped = ec.nameplate == item.id;
+        break;
+      default:
+        break;
+    }
+
+    return StoreItemModel(
+      id: item.id,
+      name: item.name,
+      description: item.description,
+      category: item.category,
+      priceInfluence: item.priceInfluence,
+      priceSyndicate: item.priceSyndicate,
+      previewImageUrl: item.previewImageUrl,
+      isOwned: isOwned,
+      isEquipped: isEquipped,
+      isLimited: item.isLimited,
+    );
+  }).toList();
+});
 

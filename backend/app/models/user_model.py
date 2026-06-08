@@ -17,7 +17,13 @@ class EquippedCosmetics(BaseModel):
 class Inventory(BaseModel):
     premium_avatars: List[str] = []
     card_styles: List[str] = []
+    borders: List[str] = []
     elimination_fx: List[str] = []
+    voice_packs: List[str] = []
+    bundles: List[str] = []
+
+    class Config:
+        extra = "allow"
 
 class RoleStats(BaseModel):
     mafia_wins: int = 0
