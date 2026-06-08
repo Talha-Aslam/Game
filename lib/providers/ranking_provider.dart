@@ -1,90 +1,40 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../services/social_api_service.dart';
+import '../services/http_service.dart';
 
-class RankingEntry {
-  final int position;
-  final String id;
+class RankingModel {
+  final int rank;
   final String username;
   final String avatarUrl;
-  final int rankTier;
-  final int points;
-  final String? familyTag;
-  final int wins;
-  final int losses;
+  final int level;
+  final int mmr;
+  final bool isMe;
 
-  const RankingEntry({
-    required this.position,
-    this.id = '',
+  RankingModel({
+    required this.rank,
     required this.username,
-    this.avatarUrl = '',
-    required this.rankTier,
-    required this.points,
-    this.familyTag,
-    this.wins = 0,
-    this.losses = 0,
-  });
-}
-
-class LeaderboardState {
-  final List<RankingEntry> entries;
-  final bool isLoading;
-  final String? error;
-
-  const LeaderboardState({
-    this.entries = const [],
-    this.isLoading = false,
-    this.error,
+    required this.avatarUrl,
+    required this.level,
+    required this.mmr,
+    this.isMe = false,
   });
 
-  LeaderboardState copyWith({
-    List<RankingEntry>? entries,
-    bool? isLoading,
-    String? error,
-  }) {
-    return LeaderboardState(
-      entries: entries ?? this.entries,
-      isLoading: isLoading ?? this.isLoading,
-      error: error,
+  factory RankingModel.fromJson(Map<String, dynamic> json) {
+    return RankingModel(
+      rank: json['rank'] ?? 0,
+      username: json['username'] ?? 'Unknown',
+      avatarUrl: json['avatarUrl'] ?? '',
+      level: json['level'] ?? 1,
+      mmr: json['mmr'] ?? 0,
+      isMe: json['is_me'] ?? false,
     );
   }
 }
 
-class LeaderboardNotifier extends Notifier<LeaderboardState> {
-  @override
-  LeaderboardState build() {
-    _loadLeaderboard();
-    return const LeaderboardState(isLoading: true);
+final rankingsProvider = FutureProvider<List<RankingModel>>((ref) async {
+  final http = HttpService();
+  final response = await http.get('/rankings');
+  if (response is List) {
+    return response.map((e) => RankingModel.fromJson(e)).toList();
   }
-
-  Future<void> _loadLeaderboard() async {
-    try {
-      final api = SocialApiService();
-      final data = await api.getLeaderboard(limit: 50);
-      final entries = data.map((json) => RankingEntry(
-        position: json['position'] ?? 0,
-        id: json['id'] ?? '',
-        username: json['username'] ?? '',
-        avatarUrl: json['avatarUrl'] ?? json['avatar_url'] ?? '',
-        rankTier: json['rankTier'] ?? json['rank_tier'] ?? 0,
-        points: json['points'] ?? 0,
-        familyTag: json['familyTag'] ?? json['family_tag'],
-        wins: json['wins'] ?? 0,
-        losses: json['losses'] ?? 0,
-      )).toList();
-      state = LeaderboardState(entries: entries, isLoading: false);
-    } catch (e) {
-      state = LeaderboardState(isLoading: false, error: e.toString());
-    }
-  }
-
-  Future<void> refresh() async => _loadLeaderboard();
-}
-
-final leaderboardNotifierProvider = NotifierProvider<LeaderboardNotifier, LeaderboardState>(
-  LeaderboardNotifier.new,
-);
-
-/// Backward-compatible provider for screens that use the old static list
-final leaderboardProvider = Provider<List<RankingEntry>>((ref) {
-  return ref.watch(leaderboardNotifierProvider).entries;
+  return [];
 });

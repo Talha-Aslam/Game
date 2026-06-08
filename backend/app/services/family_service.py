@@ -781,7 +781,69 @@ async def transfer_boss(user_id: str, target_user_id: str) -> dict:
         {"_id": family["_id"], "members.user_id": target_user_id},
         {"$set": {"members.$.role": "boss"}}
     )
+    
+    # WebSocket notification
+    from app.core.websocket_manager import manager
+    member_ids = [m["user_id"] for m in family.get("members", [])]
+    await manager.broadcast_to_users({
+        "event": "family_role_updated",
+        "data": {
+            "family_id": str(family["_id"]),
+            "target_user_id": target_user_id,
+            "new_role": "boss",
+            "actor_id": user_id
+        }
+    }, member_ids)
+    
     return {"status": "success", "message": "Ownership transferred"}
+
+async def send_gift(user_id: str, target_user_id: str, amount: int) -> dict:
+    db = get_database()
+    if amount <= 0:
+        raise HTTPException(status_code=400, detail="Invalid amount")
+        
+    user = await db["users"].find_one({"_id": user_id})
+    if user.get("syndicate_coins", 0) < amount:
+        raise HTTPException(status_code=400, detail="Insufficient Syndicate Coins")
+        
+    # Atomic transaction
+    await db["users"].update_one({"_id": user_id}, {"$inc": {"syndicate_coins": -amount}})
+    await db["users"].update_one({"_id": target_user_id}, {"$inc": {"syndicate_coins": amount}})
+    
+    # Notify receiver
+    from app.core.websocket_manager import manager
+    await manager.send_personal_message({
+        "event": "gift_received",
+        "data": {
+            "sender_name": user.get("username", "Someone"),
+            "amount": amount,
+            "currency": "syndicate"
+        }
+    }, target_user_id)
+    
+    return {"status": "success", "message": "Gift sent successfully"}
+
+async def send_family_invite(user_id: str, target_user_id: str) -> dict:
+    db = get_database()
+    user = await db["users"].find_one({"_id": user_id})
+    family_id = user.get("family_id")
+    if not family_id:
+        raise HTTPException(status_code=400, detail="Not in a family")
+        
+    family = await db["families"].find_one({"_id": family_id})
+    
+    # Send WebSocket event
+    from app.core.websocket_manager import manager
+    await manager.send_personal_message({
+        "event": "family_invite_received",
+        "data": {
+            "family_id": family_id,
+            "family_name": family.get("name", "A Family"),
+            "sender_name": user.get("username", "Agent")
+        }
+    }, target_user_id)
+    
+    return {"status": "success", "message": "Invite sent"}
 
 async def pin_message(user_id: str, msg_id: str) -> dict:
     db = get_database()

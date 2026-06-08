@@ -42,6 +42,22 @@ class ApplyRequest(BaseModel):
     message: str = ""
     is_invite: bool = False
 
+class GiftRequest(BaseModel):
+    target_user_id: str
+    amount: int
+
+class InviteRequest(BaseModel):
+    target_user_id: str
+
+@router.post("/gift")
+async def gift_member(req: GiftRequest, user: dict = Depends(get_current_user)):
+    from app.services.family_service import send_gift
+    return await send_gift(user["_id"], req.target_user_id, req.amount)
+
+@router.post("/invite")
+async def invite_to_family(req: InviteRequest, user: dict = Depends(get_current_user)):
+    from app.services.family_service import send_family_invite
+    return await send_family_invite(user["_id"], req.target_user_id)
 
 @router.post("/create")
 async def create(req: CreateFamilyRequest, user: dict = Depends(get_current_user)):

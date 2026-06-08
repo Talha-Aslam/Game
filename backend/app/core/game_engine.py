@@ -45,8 +45,9 @@ class Player(BaseModel):
         }
 
 class Room:
-    def __init__(self, room_id: str, player_ids: List[str]):
+    def __init__(self, room_id: str, player_ids: List[str], room_type: str = "Standard"):
         self.room_id = room_id
+        self.room_type = room_type # Standard, FamilyWar, Custom
         self.players: Dict[str, Player] = {}
         # Will be populated with Player objects after fetching from DB
         
@@ -86,8 +87,8 @@ class GameEngine:
     def __init__(self):
         self.active_rooms: Dict[str, Room] = {}
 
-    async def create_room(self, room_id: str, player_ids: List[str]):
-        room = Room(room_id, player_ids)
+    async def create_room(self, room_id: str, player_ids: List[str], room_type: str = "Standard"):
+        room = Room(room_id, player_ids, room_type)
         self.active_rooms[room_id] = room
         
         # 1. Fetch real player data from DB and setup bots
@@ -128,7 +129,7 @@ class GameEngine:
 
         # Start autonomous game loop
         room.task = asyncio.create_task(self._game_loop(room))
-        logger.info(f"Room {room_id} loop started with {len(room.players)} players")
+        logger.info(f"Room {room_id} ({room_type}) loop started with {len(room.players)} players")
 
     def end_room(self, room_id: str):
         if room_id in self.active_rooms:

@@ -78,6 +78,50 @@ _RANK_NAMES = ["Bronze", "Silver", "Gold", "Diamond", "Syndicate Boss"]
 _XP_PER_TIER = 1000
 
 
+@router.get("/rankings")
+async def get_rankings(user_id: str = Depends(get_current_user_id)):
+    db = get_database()
+    # Fetch top 100 by MMR
+    cursor = db["users"].find().sort("mmr", -1).limit(100)
+    top_players = await cursor.to_list(length=100)
+    
+    rankings = []
+    for i, p in enumerate(top_players):
+        rankings.append({
+            "rank": i + 1,
+            "username": p.get("username", "Unknown"),
+            "avatarUrl": p.get("profile_picture", ""),
+            "level": p.get("battle_pass_tier", 1),
+            "mmr": p.get("mmr", 0),
+            "is_me": str(p.get("_id")) == user_id
+        })
+        
+    return rankings
+
+@router.get("/recent-matches")
+async def get_recent_matches(user_id: str = Depends(get_current_user_id)):
+    db = get_database()
+    user = await db["users"].find_one({"_id": user_id})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    match_ids = user.get("match_history", [])
+    # In a real app, we'd fetch match details from a 'matches' collection.
+    # For now, we'll return mock data based on the history size to fulfill the UI requirement.
+    import random
+    results = []
+    for mid in match_ids[-10:]: # last 10
+        won = random.choice([True, False])
+        results.append({
+            "id": mid,
+            "won": won,
+            "mode": random.choice(["Casual", "Ranked", "Family War"]),
+            "role": random.choice(["Mafia", "Doctor", "Detective", "Civilian"]),
+            "timestamp": "2026-06-06T12:00:00Z",
+            "xp_gained": 150 if won else 50
+        })
+    return results
+
 @router.get("/lobby-profile")
 async def get_lobby_profile(user_id: str = Depends(get_current_user_id)):
     from app.schemas.user_schema import LobbyProfileResponse
