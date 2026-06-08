@@ -11,6 +11,7 @@ import 'tabs/online_friends_tab.dart';
 import 'tabs/all_friends_tab.dart';
 import 'tabs/friend_requests_tab.dart';
 import 'tabs/recent_players_tab.dart';
+import 'tabs/recent_matches_tab.dart';
 import 'tabs/party_invites_tab.dart';
 import 'tabs/family_invites_tab.dart';
 
@@ -29,7 +30,8 @@ class _FriendsHubScreenState extends ConsumerState<FriendsHubScreen>
     _TabItem(icon: Icons.circle, label: 'Online'),
     _TabItem(icon: Icons.people, label: 'All'),
     _TabItem(icon: Icons.person_add, label: 'Requests'),
-    _TabItem(icon: Icons.history, label: 'Recent'),
+    _TabItem(icon: Icons.history, label: 'Players'),
+    _TabItem(icon: Icons.emoji_events, label: 'Matches'),
     _TabItem(icon: Icons.groups, label: 'Party'),
     _TabItem(icon: Icons.shield, label: 'Family'),
   ];
@@ -108,6 +110,7 @@ class _FriendsHubScreenState extends ConsumerState<FriendsHubScreen>
                       AllFriendsTab(),
                       FriendRequestsTab(),
                       RecentPlayersTab(),
+                      RecentMatchesTab(),
                       PartyInvitesTab(),
                       FamilyInvitesTab(),
                     ],

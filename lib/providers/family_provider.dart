@@ -8,8 +8,10 @@ import '../models/family/family_audit_log_model.dart';
 import '../models/family/family_chat_model.dart';
 import '../services/family_service.dart';
 import '../services/family_chat_service.dart';
+import '../services/http_service.dart';
 import 'dart:async';
-import 'package:mafia_wars/providers/matchmaking_provider.dart';
+import 'matchmaking_provider.dart';
+import 'auth_provider.dart';
 
 // ── Service Providers ──
 final familyServiceProvider = Provider<FamilyService>((ref) => FamilyService());
@@ -88,6 +90,7 @@ class FamilyHubState {
 class FamilyHubNotifier extends Notifier<FamilyHubState> {
   StreamSubscription? _wsSub;
   StreamSubscription? _chatSub;
+  final _http = HttpService();
 
   @override
   FamilyHubState build() {
@@ -99,19 +102,22 @@ class FamilyHubNotifier extends Notifier<FamilyHubState> {
       if (msg.event == 'family_application') {
         refresh();
       } else if (msg.event == 'family_treasury_update') {
-        // Parse treasury directly from WS payload for instant real-time sync
         final treasuryData = msg.data['treasury'] as Map<String, dynamic>?;
         if (treasuryData != null) {
           final treasury = _svc.parseTreasury(treasuryData);
           state = state.copyWith(treasury: treasury);
         } else {
-          // Fallback to HTTP if payload is incomplete
           _loadTreasury();
         }
       } else if (msg.event == 'family_chat_cleared') {
         state = state.copyWith(chatMessages: []);
       } else if (msg.event == 'family_member_updated') {
         _refreshFamily();
+      } else if (msg.event == 'family_role_updated') {
+        final data = msg.data;
+        if (data['target_user_id'] == ref.read(authProvider).user?.id) {
+           _refreshFamily();
+        }
       } else if (msg.event == 'family_member_status') {
         final data = msg.data;
         final userId = data['user_id'] as String;
@@ -134,12 +140,10 @@ class FamilyHubNotifier extends Notifier<FamilyHubState> {
       if (!state.chatMessages.any((m) => m.id == chatMsg.id)) {
         state = state.copyWith(
           chatMessages: [...state.chatMessages, chatMsg],
-          hasUnreadChat: true, // Mark as unread when a new message arrives
+          hasUnreadChat: true,
         );
       }
     });
-
-    _chat.startSimulation();
 
     ref.onDispose(() {
       _wsSub?.cancel();
@@ -151,6 +155,27 @@ class FamilyHubNotifier extends Notifier<FamilyHubState> {
 
   FamilyService get _svc => ref.read(familyServiceProvider);
   FamilyChatService get _chat => ref.read(familyChatServiceProvider);
+
+  Future<bool> sendGift(String targetUserId, int amount) async {
+    try {
+      final res = await _http.post('/family/gift', body: {
+        'target_user_id': targetUserId,
+        'amount': amount,
+      });
+      if (res != null && res['status'] == 'success') {
+        final user = ref.read(authProvider).user;
+        if (user != null) {
+          ref.read(authProvider.notifier).updateUserLocal(
+            user.copyWith(syndicateCoins: user.syndicateCoins - amount),
+          );
+        }
+        return true;
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
+  }
 
   void markChatRead() {
     if (state.hasUnreadChat) {
@@ -186,7 +211,6 @@ class FamilyHubNotifier extends Notifier<FamilyHubState> {
 
   Future<void> refresh() async => _loadAll();
 
-  // ── Creation ──
   Future<void> createFamily({
     required String name,
     required String tag,
@@ -215,7 +239,6 @@ class FamilyHubNotifier extends Notifier<FamilyHubState> {
     state = state.copyWith(clearFamily: true);
   }
 
-  // ── Settings ──
   Future<void> updateSettings({
     String? name,
     String? tag,
@@ -236,7 +259,6 @@ class FamilyHubNotifier extends Notifier<FamilyHubState> {
     state = state.copyWith(family: family);
   }
 
-  // ── Members ──
   Future<void> kickMember(String userId) async {
     await _svc.kickMember(userId);
     await _refreshFamily();
@@ -262,7 +284,6 @@ class FamilyHubNotifier extends Notifier<FamilyHubState> {
     await _refreshFamily();
   }
 
-  // ── Applications ──
   Future<void> acceptApplication(String appId) async {
     await _svc.acceptApplication(appId);
     final apps = await _svc.getApplications();
@@ -276,7 +297,6 @@ class FamilyHubNotifier extends Notifier<FamilyHubState> {
     state = state.copyWith(applications: apps);
   }
 
-  // ── Treasury ──
   Future<void> donate(int amount) async {
     await _svc.donate(amount);
     final treasury = await _svc.getTreasury();
@@ -285,7 +305,6 @@ class FamilyHubNotifier extends Notifier<FamilyHubState> {
   }
 
   Future<bool> activateBoost(FamilyBoostType type) async {
-    // Optimistic update: mark boost as activated immediately in UI
     final now = DateTime.now();
     final optimisticBoost = FamilyBoost(
       id: 'optimistic_${type.name}',
@@ -302,26 +321,21 @@ class FamilyHubNotifier extends Notifier<FamilyHubState> {
 
     final success = await _svc.activateBoost(type);
     if (success) {
-      // Server will broadcast family_treasury_update via WS to all members;
-      // also refresh locally to get the authoritative server state
       final treasury = await _svc.getTreasury();
       state = state.copyWith(treasury: treasury);
     } else {
-      // Revert optimistic update on failure
       final treasury = await _svc.getTreasury();
       state = state.copyWith(treasury: treasury);
     }
     return success;
   }
 
-  // ── Chat ──
   Future<void> sendChatMessage(String content) async {
     await _chat.sendMessage(content);
     final messages = await _chat.getMessages();
     state = state.copyWith(chatMessages: messages);
   }
 
-  // ── Search ──
   Future<void> searchFamilies(String query) async {
     final results = await _svc.searchFamilies(query);
     state = state.copyWith(searchResults: results);
@@ -352,18 +366,17 @@ class FamilyHubNotifier extends Notifier<FamilyHubState> {
     state = state.copyWith(family: family, auditLog: audit);
   }
 
-  // ── Invites & Applications ──
   Future<void> applyToFamily(String familyId, {String message = '', bool isInvite = false}) async {
     await _svc.applyToFamily(familyId, message: message, isInvite: isInvite);
   }
 
   void inviteFriendToFamily(String friendId) {
     if (state.family == null) return;
-    ref.read(webSocketServiceProvider).sendFamilyInvite(
-      friendId, 
-      state.family!.id, 
-      state.family!.name
-    );
+    ref.read(webSocketServiceProvider).send('family_invite', {
+      'targetId': friendId, 
+      'familyId': state.family!.id, 
+      'familyName': state.family!.name
+    });
   }
 }
 

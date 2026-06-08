@@ -57,6 +57,59 @@ async def websocket_lobby(websocket: WebSocket, token: str = Query(...)):
                 elif action == "sync_state":
                     state = matchmaker.get_user_state(user_id)
                     await manager.send_personal_message(state, user_id)
+                    
+                # --- CUSTOM ROOMS ---
+                elif action == "create_custom":
+                    from app.core.custom_room_manager import custom_room_manager
+                    room = custom_room_manager.create_room(user_id)
+                    await manager.send_personal_message({
+                        "event": "custom_room_update",
+                        "data": room.to_dict()
+                    }, user_id)
+                    
+                elif action == "join_custom":
+                    from app.core.custom_room_manager import custom_room_manager
+                    room_id = payload.get("room_id")
+                    room = custom_room_manager.join_room(user_id, room_id)
+                    if room:
+                        await manager.broadcast_to_users({
+                            "event": "custom_room_update",
+                            "data": room.to_dict()
+                        }, room.players)
+                    else:
+                        await manager.send_personal_message({"event": "error", "message": "Failed to join room"}, user_id)
+                        
+                elif action == "start_custom":
+                    from app.core.custom_room_manager import custom_room_manager
+                    room_id = payload.get("room_id")
+                    await custom_room_manager.start_match(user_id, room_id)
+
+                elif action == "invite_custom":
+                    target_id = payload.get("target_id")
+                    room_id = payload.get("room_id")
+                    # Send invite event to target
+                    await manager.send_personal_message({
+                        "event": "custom_room_invite",
+                        "data": {
+                            "sender_name": user_id, # Should fetch real name
+                            "room_id": room_id
+                        }
+                    }, target_id)
+                    
+                # --- FAMILY WAR ---
+                elif action == "start_family_war":
+                    # Broadcast to all online family members
+                    from app.services.family_service import get_family
+                    family = await get_family(user_id)
+                    if family:
+                        member_ids = [m["user_id"] for m in family.get("members", []) if m["user_id"] != user_id]
+                        await manager.broadcast_to_users({
+                            "event": "family_war_invite",
+                            "data": {
+                                "sender_name": user_id,
+                                "family_name": family.get("name")
+                            }
+                        }, member_ids)
 
                 elif action == "join_queue":
                     mode = payload.get("mode", "casual")

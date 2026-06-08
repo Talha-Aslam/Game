@@ -6,6 +6,7 @@ import '../../features/home/screens/home_screen.dart';
 import '../../features/matchmaking/screens/matchmaking_screen.dart';
 import '../../features/game/screens/game_screen.dart';
 import '../../features/game/screens/match_result_screen.dart';
+import '../../features/game/screens/custom_room_screen.dart';
 import '../../features/battle_pass/screens/battle_pass_screen.dart';
 import '../../features/store/screens/store_screen.dart';
 import '../../features/family/screens/family_screen.dart';
@@ -43,6 +44,7 @@ class AppRouter {
         builder: (c, s) => const MatchmakingScreen(),
       ),
       GoRoute(path: '/game', builder: (c, s) => const GameScreen()),
+      GoRoute(path: '/game/custom', builder: (c, s) => const CustomRoomScreen()),
       GoRoute(
         path: '/game/result',
         builder: (c, s) => const MatchResultScreen(),

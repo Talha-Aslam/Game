@@ -6,6 +6,8 @@ import '../../../providers/notification_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_gradients.dart';
 import '../../../providers/auth_provider.dart';
+import '../../../widgets/glass_button.dart';
+import '../../../providers/family_provider.dart';
 import '../../../widgets/particle_field.dart';
 import '../widgets/bottom_nav_bar_glass.dart';
 import '../widgets/battle_pass_mini_widget.dart';
@@ -33,22 +35,111 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ws.connectLobby();
       }
       ws.eventStream.listen((msg) {
-        if (msg.event == 'friend_request_accepted') {
-          if (mounted) {
+        if (!mounted) return;
+        
+        switch (msg.event) {
+          case 'friend_request_accepted':
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text(
-                  (msg.data['message'] as String?) ??
-                      'Friend request accepted!',
-                ),
+                content: Text((msg.data['message'] as String?) ?? 'Friend request accepted!'),
                 backgroundColor: AppColors.purpleNeon,
                 behavior: SnackBarBehavior.floating,
               ),
             );
-          }
+            break;
+            
+          case 'family_invite_received':
+            _showFamilyInviteDialog(msg.data);
+            break;
+            
+          case 'gift_received':
+            _showGiftReceivedSnackBar(msg.data);
+            break;
+            
+          case 'family_role_updated':
+            if (msg.data['new_role'] == 'boss') {
+              _showCongratulatoryDialog();
+            }
+            break;
         }
       });
     });
+  }
+
+  void _showFamilyInviteDialog(Map<String, dynamic> data) {
+    showDialog(
+      context: context,
+      builder: (ctx) => BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: AlertDialog(
+          backgroundColor: Colors.black.withValues(alpha: 0.85),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide(color: AppColors.purpleNeon.withValues(alpha: 0.3))),
+          title: const Text('FAMILY INVITATION', style: TextStyle(color: AppColors.purpleGlow, letterSpacing: 2, fontSize: 18, fontWeight: FontWeight.w900)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.shield, color: AppColors.purpleGlow, size: 48),
+              const SizedBox(height: 16),
+              Text('${data['sender_name']} has invited you to join', style: const TextStyle(color: AppColors.white70, fontSize: 14)),
+              const SizedBox(height: 4),
+              Text(data['family_name'], style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('DECLINE', style: TextStyle(color: AppColors.white30))),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.purpleNeon),
+              onPressed: () {
+                ref.read(familyProvider.notifier).applyToFamily(data['family_id'], isInvite: true);
+                Navigator.pop(ctx);
+              },
+              child: const Text('ACCEPT & JOIN', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showGiftReceivedSnackBar(Map<String, dynamic> data) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.card_giftcard, color: AppColors.gold, size: 20),
+            const SizedBox(width: 12),
+            Text('${data['sender_name']} sent you ${data['amount']} Syndicate Coins!'),
+          ],
+        ),
+        backgroundColor: AppColors.surface,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  void _showCongratulatoryDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+        child: AlertDialog(
+          backgroundColor: Colors.black.withValues(alpha: 0.9),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24), side: BorderSide(color: AppColors.gold.withValues(alpha: 0.5))),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.workspace_premium, color: AppColors.gold, size: 64),
+              const SizedBox(height: 20),
+              const Text('CONGRATULATIONS!', style: TextStyle(color: AppColors.gold, fontSize: 24, fontWeight: FontWeight.w900, letterSpacing: 1.5)),
+              const SizedBox(height: 12),
+              const Text('You have been promoted to the rank of BOSS. The future of the family is in your hands.', textAlign: TextAlign.center, style: TextStyle(color: AppColors.white70, fontSize: 14)),
+              const SizedBox(height: 32),
+              GlassButton(label: 'I ACCEPT THE THRONE', glowColor: AppColors.gold, onPressed: () => Navigator.pop(ctx)),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   @override

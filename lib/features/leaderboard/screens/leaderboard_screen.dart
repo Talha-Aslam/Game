@@ -5,140 +5,154 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/theme/app_gradients.dart';
 import '../../../providers/ranking_provider.dart';
-import '../../../models/rank_model.dart';
 import '../../../widgets/neon_text.dart';
-import '../../../widgets/rank_badge.dart';
+import '../../../widgets/particle_field.dart';
 
 class LeaderboardScreen extends ConsumerWidget {
   const LeaderboardScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final entries = ref.watch(leaderboardProvider);
+    final rankingsAsync = ref.watch(rankingsProvider);
 
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(gradient: AppGradients.backgroundGradient),
-        child: SafeArea(
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    GestureDetector(onTap: () => context.pop(), child: const Icon(Icons.arrow_back, color: AppColors.white70)),
-                    const SizedBox(width: 16),
-                    const Expanded(child: NeonText(text: 'LEADERBOARD', fontSize: 20, color: AppColors.gold, glowRadius: 15)),
-                  ],
-                ),
-              ),
-
-              // Top 3 podium
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    if (entries.length > 1) _PodiumCard(entry: entries[1], height: 100, medal: '🥈'),
-                    if (entries.isNotEmpty) _PodiumCard(entry: entries[0], height: 130, medal: '🥇'),
-                    if (entries.length > 2) _PodiumCard(entry: entries[2], height: 80, medal: '🥉'),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 16),
-
-              // Rest of leaderboard
-              Expanded(
-                child: ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: entries.length > 3 ? entries.length - 3 : 0,
-                  itemBuilder: (context, i) {
-                    final entry = entries[i + 3];
-                    final rank = RankModel.fromTier(entry.rankTier);
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
-                        color: AppColors.white05,
-                        border: Border.all(color: AppColors.glassBorder),
+      body: Stack(
+        children: [
+          Container(decoration: const BoxDecoration(gradient: AppGradients.backgroundGradient)),
+          const ParticleField(particleCount: 15, particleColor: AppColors.gold),
+          SafeArea(
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      GestureDetector(
+                        onTap: () => context.pop(),
+                        child: const Icon(Icons.arrow_back, color: AppColors.white70),
                       ),
-                      child: Row(
-                        children: [
-                          SizedBox(width: 28, child: Text('#${entry.position}', style: TextStyle(color: AppColors.white50, fontWeight: FontWeight.w700, fontSize: 13))),
-                          const SizedBox(width: 8),
-                          Container(
-                            width: 36, height: 36,
-                            decoration: BoxDecoration(shape: BoxShape.circle, color: AppColors.surfaceLight, border: Border.all(color: rank.color, width: 1.5)),
-                            child: Center(child: Text(entry.username[0], style: TextStyle(color: rank.color, fontWeight: FontWeight.w700))),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Text(entry.username, style: AppTextStyles.labelLarge),
-                                    if (entry.familyTag != null) ...[
-                                      const SizedBox(width: 4),
-                                      Text(entry.familyTag!, style: TextStyle(color: AppColors.gold.withValues(alpha: 0.6), fontSize: 10)),
-                                    ],
-                                  ],
-                                ),
-                                Text('${entry.points} RP', style: AppTextStyles.labelSmall),
-                              ],
-                            ),
-                          ),
-                          RankBadge(tier: entry.rankTier, size: 22, showLabel: false),
-                        ],
+                      const SizedBox(width: 16),
+                      const Expanded(
+                        child: NeonText(
+                          text: 'GLOBAL RANKINGS',
+                          fontSize: 22,
+                          color: AppColors.gold,
+                          glowRadius: 15,
+                        ),
                       ),
-                    );
-                  },
+                    ],
+                  ),
                 ),
-              ),
-            ],
+                
+                Expanded(
+                  child: rankingsAsync.when(
+                    loading: () => const Center(child: CircularProgressIndicator(color: AppColors.gold)),
+                    error: (e, _) => Center(child: Text('Error: $e', style: const TextStyle(color: Colors.white))),
+                    data: (rankings) => ListView.builder(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+                      itemCount: rankings.length,
+                      itemBuilder: (context, index) {
+                        final player = rankings[index];
+                        return _RankingCard(player: player);
+                      },
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
+          
+          // My Rank Footer
+          if (rankingsAsync.hasValue)
+            Positioned(
+              bottom: 0, left: 0, right: 0,
+              child: _MyRankFooter(rankings: rankingsAsync.value!),
+            ),
+        ],
       ),
     );
   }
 }
 
-class _PodiumCard extends StatelessWidget {
-  final RankingEntry entry;
-  final double height;
-  final String medal;
-  const _PodiumCard({required this.entry, required this.height, required this.medal});
+class _RankingCard extends StatelessWidget {
+  final RankingModel player;
+  const _RankingCard({required this.player});
 
   @override
   Widget build(BuildContext context) {
-    final rank = RankModel.fromTier(entry.rankTier);
-    return Column(
-      children: [
-        Text(medal, style: const TextStyle(fontSize: 24)),
-        const SizedBox(height: 4),
-        Container(
-          width: 50, height: 50,
-          decoration: BoxDecoration(shape: BoxShape.circle, color: AppColors.surfaceLight, border: Border.all(color: rank.color, width: 2),
-            boxShadow: [BoxShadow(color: rank.glowColor, blurRadius: 10)]),
-          child: Center(child: Text(entry.username[0], style: TextStyle(color: rank.color, fontWeight: FontWeight.w800, fontSize: 18))),
+    final isTop3 = player.rank <= 3;
+    final medalColor = player.rank == 1 ? AppColors.gold : (player.rank == 2 ? const Color(0xFFC0C0C0) : const Color(0xFFCD7F32));
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: player.isMe ? AppColors.gold.withValues(alpha: 0.1) : AppColors.white05,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: player.isMe ? AppColors.gold.withValues(alpha: 0.4) : AppColors.glassBorder,
+          width: player.isMe ? 1.5 : 1,
         ),
-        const SizedBox(height: 4),
-        Text(entry.username, style: AppTextStyles.labelSmall, overflow: TextOverflow.ellipsis),
-        Text('${entry.points}', style: TextStyle(color: rank.color, fontSize: 11, fontWeight: FontWeight.w600)),
-        const SizedBox(height: 4),
-        Container(
-          width: 70, height: height,
-          decoration: BoxDecoration(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
-            gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [rank.color.withValues(alpha: 0.3), rank.color.withValues(alpha: 0.05)]),
-            border: Border.all(color: rank.color.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        children: [
+          // Rank
+          SizedBox(
+            width: 40,
+            child: isTop3 
+              ? Icon(Icons.workspace_premium, color: medalColor, size: 24)
+              : Text('#${player.rank}', style: AppTextStyles.labelMedium.copyWith(color: AppColors.white50)),
           ),
-        ),
-      ],
+          // Avatar
+          CircleAvatar(
+            radius: 20,
+            backgroundColor: AppColors.purpleNeon.withValues(alpha: 0.2),
+            backgroundImage: player.avatarUrl.isNotEmpty ? NetworkImage(player.avatarUrl) : null,
+            child: player.avatarUrl.isEmpty ? const Icon(Icons.person, color: AppColors.purpleNeon, size: 20) : null,
+          ),
+          const SizedBox(width: 12),
+          // Name & Level
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(player.username, style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.w700)),
+                Text('Level ${player.level}', style: AppTextStyles.labelSmall.copyWith(color: AppColors.white30)),
+              ],
+            ),
+          ),
+          // MMR
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text('${player.mmr}', style: const TextStyle(color: AppColors.cyan, fontWeight: FontWeight.bold, fontSize: 16)),
+              const Text('POINTS', style: TextStyle(color: AppColors.white30, fontSize: 8, letterSpacing: 1)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MyRankFooter extends StatelessWidget {
+  final List<RankingModel> rankings;
+  const _MyRankFooter({required this.rankings});
+
+  @override
+  Widget build(BuildContext context) {
+    final myRank = rankings.where((r) => r.isMe).firstOrNull;
+    if (myRank == null) return const SizedBox.shrink();
+    if (myRank.rank <= 8) return const SizedBox.shrink(); // Don't show if already visible at top
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        border: Border(top: BorderSide(color: AppColors.gold.withValues(alpha: 0.3))),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.5), blurRadius: 20, offset: const Offset(0, -5))],
+      ),
+      child: _RankingCard(player: myRank),
     );
   }
 }

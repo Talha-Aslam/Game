@@ -7,6 +7,7 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../core/theme/app_gradients.dart';
 import '../../../providers/store_provider.dart';
 import '../../../providers/auth_provider.dart';
+import '../../../widgets/glass_button.dart';
 import '../../../models/store_item_model.dart';
 import '../../../widgets/neon_text.dart';
 
@@ -186,6 +187,87 @@ class _StoreItemCard extends ConsumerWidget {
     );
   }
 
+  void _showPurchaseConfirmation(BuildContext context, WidgetRef ref) {
+    final user = ref.read(authProvider).user;
+    final currency = item.priceSyndicate > 0 ? 'syndicate' : 'influence';
+    final price = item.priceSyndicate > 0 ? item.priceSyndicate : item.priceInfluence;
+    final balance = item.priceSyndicate > 0 ? (user?.syndicateCoins ?? 0) : (user?.influencePoints ?? 0);
+    final canAfford = balance >= price;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.black.withValues(alpha: 0.85),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+            border: Border.all(color: AppColors.white10),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 60, height: 4,
+                margin: const EdgeInsets.only(bottom: 24),
+                decoration: BoxDecoration(color: AppColors.white10, borderRadius: BorderRadius.circular(2)),
+              ),
+              Text('CONFIRM PURCHASE', style: AppTextStyles.labelMedium.copyWith(color: AppColors.white50, letterSpacing: 2)),
+              const SizedBox(height: 20),
+              Text(item.name, style: AppTextStyles.headlineMedium),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text('Price: ', style: AppTextStyles.bodyMedium.copyWith(color: AppColors.white50)),
+                  Icon(currency == 'syndicate' ? Icons.diamond : Icons.toll, color: currency == 'syndicate' ? AppColors.gold : AppColors.cyan, size: 16),
+                  const SizedBox(width: 4),
+                  Text('$price', style: TextStyle(color: currency == 'syndicate' ? AppColors.gold : AppColors.cyan, fontWeight: FontWeight.bold, fontSize: 18)),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text('Your Balance: $balance', style: AppTextStyles.labelSmall.copyWith(color: canAfford ? AppColors.white30 : AppColors.crimsonRed)),
+              const SizedBox(height: 32),
+              Row(
+                children: [
+                  Expanded(
+                    child: GlassButton(
+                      label: 'CANCEL',
+                      isOutlined: true,
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: GlassButton(
+                      label: 'BUY NOW',
+                      glowColor: canAfford ? AppColors.cyan : AppColors.white10,
+                      onPressed: !canAfford ? null : () async {
+                        Navigator.pop(context);
+                        final error = await ref.read(storeProvider.notifier).purchase(item);
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(error ?? 'Purchase successful!'),
+                              backgroundColor: error == null ? AppColors.cyan : AppColors.crimsonRed,
+                            ),
+                          );
+                        }
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return GestureDetector(
@@ -194,17 +276,7 @@ class _StoreItemCard extends ConsumerWidget {
           _showEquipSheet(context, ref);
           return;
         }
-
-        final error = await ref.read(storeProvider.notifier).purchase(item);
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(error ?? 'Purchase successful!'),
-              backgroundColor: error == null ? AppColors.cyan : AppColors.crimsonRed,
-              duration: const Duration(seconds: 2),
-            ),
-          );
-        }
+        _showPurchaseConfirmation(context, ref);
       },
       child: Container(
         decoration: BoxDecoration(
