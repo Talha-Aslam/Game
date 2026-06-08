@@ -33,6 +33,92 @@ class RoleStats {
   };
 }
 
+/// Inventory tracking
+class InventoryModel {
+  final List<String> premiumAvatars;
+  final List<String> cardStyles;
+  final List<String> borders;
+  final List<String> eliminationFx;
+  final List<String> voicePacks;
+  final List<String> bundles;
+
+  const InventoryModel({
+    this.premiumAvatars = const [],
+    this.cardStyles = const [],
+    this.borders = const [],
+    this.eliminationFx = const [],
+    this.voicePacks = const [],
+    this.bundles = const [],
+  });
+
+  factory InventoryModel.fromJson(Map<String, dynamic> json) {
+    List<String> parseList(String key) {
+      return (json[key] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [];
+    }
+
+    return InventoryModel(
+      premiumAvatars: parseList('premium_avatars') + parseList('avatars'),
+      cardStyles: parseList('card_styles') + parseList('cardStyles'),
+      borders: parseList('borders'),
+      eliminationFx: parseList('elimination_fx') + parseList('eliminationEffects'),
+      voicePacks: parseList('voice_packs') + parseList('voicePacks'),
+      bundles: parseList('bundles'),
+    );
+  }
+
+  List<String> getCategoryList(String category) {
+    switch (category) {
+      case 'avatars': return premiumAvatars;
+      case 'cardStyles': return cardStyles;
+      case 'borders': return borders;
+      case 'eliminationEffects': return eliminationFx;
+      case 'voicePacks': return voicePacks;
+      case 'bundles': return bundles;
+      default: return [];
+    }
+  }
+
+  Map<String, dynamic> toJson() => {
+    'premium_avatars': premiumAvatars,
+    'card_styles': cardStyles,
+    'borders': borders,
+    'elimination_fx': eliminationFx,
+    'voice_packs': voicePacks,
+    'bundles': bundles,
+  };
+}
+
+/// Equipped cosmetics tracking
+class EquippedCosmeticsModel {
+  final String cardBorder;
+  final String nameplate;
+  final String background;
+  final String voicePack;
+
+  const EquippedCosmeticsModel({
+    this.cardBorder = '',
+    this.nameplate = '',
+    this.background = '',
+    this.voicePack = '',
+  });
+
+  factory EquippedCosmeticsModel.fromJson(Map<String, dynamic> json) {
+    return EquippedCosmeticsModel(
+      cardBorder: json['card_border']?.toString() ?? json['cardBorder']?.toString() ?? '',
+      nameplate: json['nameplate']?.toString() ?? '',
+      background: json['background']?.toString() ?? '',
+      voicePack: json['voice_pack']?.toString() ?? json['voicePack']?.toString() ?? '',
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'card_border': cardBorder,
+    'nameplate': nameplate,
+    'background': background,
+    'voice_pack': voicePack,
+  };
+}
+
 /// User profile model
 class UserModel {
   final String id;
@@ -42,7 +128,6 @@ class UserModel {
   final String? premiumAvatarId;
   final String? bio;
   final String? equippedTitle;
-  final List<String> ownedAvatars;
   final int rankTier;
   final int rankPoints;
   final int influencePoints; // free currency
@@ -53,7 +138,8 @@ class UserModel {
   final String? familyId;
   final String? familyName;
   final String? familyRole;
-  final List<String> equippedCosmetics;
+  final InventoryModel inventory;
+  final EquippedCosmeticsModel equippedCosmetics;
   final bool hasBattlePass;
   final int battlePassTier;
   final int battlePassXP;
@@ -75,7 +161,6 @@ class UserModel {
     this.premiumAvatarId,
     this.bio,
     this.equippedTitle,
-    this.ownedAvatars = const [],
     this.rankTier = 0,
     this.rankPoints = 0,
     this.influencePoints = 0,
@@ -86,7 +171,8 @@ class UserModel {
     this.familyId,
     this.familyName,
     this.familyRole,
-    this.equippedCosmetics = const [],
+    this.inventory = const InventoryModel(),
+    this.equippedCosmetics = const EquippedCosmeticsModel(),
     this.hasBattlePass = false,
     this.battlePassTier = 0,
     this.battlePassXP = 0,
@@ -116,7 +202,6 @@ class UserModel {
     String? premiumAvatarId,
     String? bio,
     String? equippedTitle,
-    List<String>? ownedAvatars,
     int? rankTier,
     int? rankPoints,
     int? influencePoints,
@@ -127,7 +212,8 @@ class UserModel {
     String? familyId,
     String? familyName,
     String? familyRole,
-    List<String>? equippedCosmetics,
+    InventoryModel? inventory,
+    EquippedCosmeticsModel? equippedCosmetics,
     bool? hasBattlePass,
     int? battlePassTier,
     int? battlePassXP,
@@ -149,7 +235,6 @@ class UserModel {
       premiumAvatarId: premiumAvatarId ?? this.premiumAvatarId,
       bio: bio ?? this.bio,
       equippedTitle: equippedTitle ?? this.equippedTitle,
-      ownedAvatars: ownedAvatars ?? this.ownedAvatars,
       rankTier: rankTier ?? this.rankTier,
       rankPoints: rankPoints ?? this.rankPoints,
       influencePoints: influencePoints ?? this.influencePoints,
@@ -160,6 +245,7 @@ class UserModel {
       familyId: familyId ?? this.familyId,
       familyName: familyName ?? this.familyName,
       familyRole: familyRole ?? this.familyRole,
+      inventory: inventory ?? this.inventory,
       equippedCosmetics: equippedCosmetics ?? this.equippedCosmetics,
       hasBattlePass: hasBattlePass ?? this.hasBattlePass,
       battlePassTier: battlePassTier ?? this.battlePassTier,
@@ -190,13 +276,12 @@ class UserModel {
       return 0; // Default Bronze
     }
 
-    final inventory = json['inventory'] as Map<String, dynamic>?;
     final friendsList = json['friends'] as List<dynamic>?;
     final battlePassTier =
         json['battle_pass_tier'] ?? json['battlePassTier'] ?? 0;
 
     return UserModel(
-      id: json['id']?.toString() ?? '',
+      id: json['id']?.toString() ?? json['_id']?.toString() ?? '',
       username: json['username']?.toString() ?? '',
       email: json['email']?.toString() ?? '',
       avatarUrl:
@@ -209,14 +294,6 @@ class UserModel {
       bio: json['bio']?.toString(),
       equippedTitle:
           json['title']?.toString() ?? json['equippedTitle']?.toString(),
-      ownedAvatars:
-          (inventory?['premium_avatars'] as List<dynamic>?)
-              ?.map((e) => e.toString())
-              .toList() ??
-          (json['ownedAvatars'] as List<dynamic>?)
-              ?.map((e) => e.toString())
-              .toList() ??
-          [],
       rankTier: parseRankTier(json['rank'] ?? json['rankTier']),
       rankPoints: json['mmr'] ?? json['rankPoints'] ?? 0,
       influencePoints: json['influence'] ?? json['influencePoints'] ?? 0,
@@ -225,9 +302,16 @@ class UserModel {
       wins: json['wins'] ?? 0,
       losses: json['losses'] ?? 0,
       familyId: json['family_id']?.toString() ?? json['familyId']?.toString(),
-      familyName: json['familyName']
-          ?.toString(), // Fetched separately later if needed
+      familyName: json['familyName']?.toString(),
       familyRole: json['familyRole']?.toString(),
+      inventory: json['inventory'] != null 
+          ? InventoryModel.fromJson(json['inventory']) 
+          : const InventoryModel(),
+      equippedCosmetics: json['equipped_cosmetics'] != null 
+          ? EquippedCosmeticsModel.fromJson(json['equipped_cosmetics']) 
+          : (json['equippedCosmetics'] != null 
+              ? EquippedCosmeticsModel.fromJson(json['equippedCosmetics']) 
+              : const EquippedCosmeticsModel()),
       hasBattlePass:
           (battlePassTier as int) > 0 ||
           (json['hasBattlePass'] as bool? ?? false),
@@ -271,7 +355,6 @@ class UserModel {
     'premiumAvatarId': premiumAvatarId,
     'bio': bio,
     'equippedTitle': equippedTitle,
-    'ownedAvatars': ownedAvatars,
     'rankTier': rankTier,
     'rankPoints': rankPoints,
     'influencePoints': influencePoints,
@@ -282,6 +365,8 @@ class UserModel {
     'familyId': familyId,
     'familyName': familyName,
     'familyRole': familyRole,
+    'inventory': inventory.toJson(),
+    'equipped_cosmetics': equippedCosmetics.toJson(),
     'hasBattlePass': hasBattlePass,
     'battlePassTier': battlePassTier,
     'battlePassXP': battlePassXP,

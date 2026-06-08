@@ -54,6 +54,7 @@ class PlayerModel {
   final int avatarIndex; // distinct avatar color/letter combo index
   final bool isEliminating; // triggers shatter animation
   final int commendations; // commendation count
+  final Map<String, dynamic> equippedCosmetics;
 
   const PlayerModel({
     required this.id,
@@ -70,6 +71,7 @@ class PlayerModel {
     this.avatarIndex = 0,
     this.isEliminating = false,
     this.commendations = 0,
+    this.equippedCosmetics = const {},
   });
 
   PlayerModel copyWith({
@@ -87,6 +89,7 @@ class PlayerModel {
     int? avatarIndex,
     bool? isEliminating,
     int? commendations,
+    Map<String, dynamic>? equippedCosmetics,
   }) {
     return PlayerModel(
       id: id ?? this.id,
@@ -103,6 +106,7 @@ class PlayerModel {
       avatarIndex: avatarIndex ?? this.avatarIndex,
       isEliminating: isEliminating ?? this.isEliminating,
       commendations: commendations ?? this.commendations,
+      equippedCosmetics: equippedCosmetics ?? this.equippedCosmetics,
     );
   }
 
@@ -125,6 +129,7 @@ class PlayerModel {
       rankTier: json['rankTier'] as int? ?? 0,
       avatarIndex: json['avatarIndex'] as int? ?? 0,
       commendations: json['commendations'] as int? ?? 0,
+      equippedCosmetics: json['equippedCosmetics'] as Map<String, dynamic>? ?? {},
     );
   }
 
@@ -140,6 +145,7 @@ class PlayerModel {
       'rankTier': rankTier,
       'avatarIndex': avatarIndex,
       'commendations': commendations,
+      'equippedCosmetics': equippedCosmetics,
     };
   }
 }

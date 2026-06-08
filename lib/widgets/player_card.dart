@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import '../core/constants/app_constants.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_text_styles.dart';
 import '../models/player_model.dart';
@@ -61,6 +62,13 @@ class _PlayerCardState extends State<PlayerCard> with TickerProviderStateMixin {
 
   Color get _glowColor {
     if (!widget.player.isAlive) return Colors.transparent;
+    
+    // Custom border colors
+    final borderId = widget.player.equippedCosmetics['card_border']?.toString();
+    if (borderId == 's1') return AppColors.crimsonRed;
+    if (borderId == 's7') return const Color(0xFF00B0FF);
+    if (borderId == 's8') return AppColors.gold;
+
     if (widget.isSelected) return AppColors.gold;
     if (widget.player.isSpeaking) return AppColors.cyan;
     if (widget.isLocalPlayer) return AppColors.purpleNeon;
@@ -69,6 +77,12 @@ class _PlayerCardState extends State<PlayerCard> with TickerProviderStateMixin {
 
   Color get _borderColor {
     if (!widget.player.isAlive) return AppColors.white10;
+    
+    final borderId = widget.player.equippedCosmetics['card_border']?.toString();
+    if (borderId == 's1') return AppColors.crimsonRed;
+    if (borderId == 's7') return const Color(0xFF00B0FF);
+    if (borderId == 's8') return AppColors.gold;
+
     if (widget.isSelected) return AppColors.gold;
     if (widget.player.isSpeaking) return AppColors.cyan;
     return AppColors.glassBorder;
@@ -107,6 +121,7 @@ class _PlayerCardState extends State<PlayerCard> with TickerProviderStateMixin {
   Widget _buildCard(bool isSpeaking) {
     final size = widget.size;
     final isAlive = widget.player.isAlive;
+    final borderId = widget.player.equippedCosmetics['card_border']?.toString();
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -120,9 +135,9 @@ class _PlayerCardState extends State<PlayerCard> with TickerProviderStateMixin {
             boxShadow: isAlive
                 ? [
                     BoxShadow(
-                      color: _glowColor.withValues(alpha: isSpeaking ? 0.6 : 0.3),
-                      blurRadius: isSpeaking ? 20 : 10,
-                      spreadRadius: isSpeaking ? 4 : 1,
+                      color: _glowColor.withValues(alpha: isSpeaking ? 0.6 : 0.4),
+                      blurRadius: isSpeaking ? 20 : (borderId != null ? 15 : 10),
+                      spreadRadius: isSpeaking ? 4 : (borderId != null ? 2 : 1),
                     ),
                   ]
                 : null,
@@ -156,7 +171,10 @@ class _PlayerCardState extends State<PlayerCard> with TickerProviderStateMixin {
                 height: size,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(color: _borderColor, width: 2),
+                  border: Border.all(
+                    color: _borderColor, 
+                    width: borderId != null ? 3.0 : 2.0
+                  ),
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
@@ -175,17 +193,7 @@ class _PlayerCardState extends State<PlayerCard> with TickerProviderStateMixin {
                             0.2126, 0.7152, 0.0722, 0, 0,
                             0, 0, 0, 0.5, 0,
                           ]),
-                    child: Center(
-                      child: Text(
-                        widget.player.name.isNotEmpty
-                            ? widget.player.name[0].toUpperCase()
-                            : '?',
-                        style: AppTextStyles.headlineLarge.copyWith(
-                          color: isAlive ? AppColors.purpleGlow : AppColors.white30,
-                          fontSize: size * 0.35,
-                        ),
-                      ),
-                    ),
+                    child: _avatarContent(),
                   ),
                 ),
               ),
@@ -292,6 +300,37 @@ class _PlayerCardState extends State<PlayerCard> with TickerProviderStateMixin {
             ),
           ),
       ],
+    );
+  }
+
+  Widget _avatarContent() {
+    final url = widget.player.avatarUrl;
+    final resolved = url.startsWith('/')
+        ? '${AppConstants.apiBaseUrl}$url'
+        : url;
+
+    if (resolved.isNotEmpty) {
+      return Image.network(
+        resolved,
+        fit: BoxFit.cover,
+        errorBuilder: (ctx, err, stack) => _fallback(),
+      );
+    }
+    return _fallback();
+  }
+
+  Widget _fallback() {
+    final isAlive = widget.player.isAlive;
+    return Center(
+      child: Text(
+        widget.player.name.isNotEmpty
+            ? widget.player.name[0].toUpperCase()
+            : '?',
+        style: AppTextStyles.headlineLarge.copyWith(
+          color: isAlive ? AppColors.purpleGlow : AppColors.white30,
+          fontSize: widget.size * 0.35,
+        ),
+      ),
     );
   }
 

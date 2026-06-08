@@ -11,6 +11,10 @@ class PurchaseRequest(BaseModel):
     price: int
     category: str
 
+class EquipRequest(BaseModel):
+    item_id: str
+    category: str # store category name
+
 @router.post("/buy")
 async def buy_item(request: PurchaseRequest, user_id: str = Depends(get_current_user_id)):
     return await store_service.purchase_item(
@@ -20,3 +24,7 @@ async def buy_item(request: PurchaseRequest, user_id: str = Depends(get_current_
         request.price,
         request.category
     )
+
+@router.post("/equip")
+async def equip_item(request: EquipRequest, user_id: str = Depends(get_current_user_id)):
+    return await store_service.equip_item(user_id, request.item_id, request.category)

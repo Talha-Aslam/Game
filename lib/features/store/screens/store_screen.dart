@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -20,9 +21,16 @@ class _StoreScreenState extends ConsumerState<StoreScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final items = ref.watch(storeItemsProvider);
+    final items = ref.watch(ownedStoreItemsProvider);
     final user = ref.watch(authProvider).user;
+    
+    // Sort logic: Unowned first, Owned last
     final filtered = items.where((i) => i.category == _selectedCategory).toList();
+    filtered.sort((a, b) {
+      if (a.isOwned && !b.isOwned) return 1;
+      if (!a.isOwned && b.isOwned) return -1;
+      return 0;
+    });
 
     return Scaffold(
       body: Container(
@@ -116,10 +124,77 @@ class _StoreItemCard extends ConsumerWidget {
   final StoreItemModel item;
   const _StoreItemCard({required this.item});
 
+  void _showEquipSheet(BuildContext context, WidgetRef ref) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.black.withValues(alpha: 0.85),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+            border: Border.all(color: AppColors.white10),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 100, height: 100,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  gradient: AppGradients.cardGradient,
+                  boxShadow: [BoxShadow(color: AppColors.purpleNeon.withValues(alpha: 0.3), blurRadius: 20)],
+                ),
+                child: const Icon(Icons.auto_awesome, color: Colors.white, size: 50),
+              ),
+              const SizedBox(height: 16),
+              Text(item.name, style: AppTextStyles.headlineMedium),
+              const SizedBox(height: 8),
+              Text(item.description, style: AppTextStyles.labelMedium.copyWith(color: AppColors.white70)),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: item.isEquipped ? AppColors.white10 : AppColors.cyan,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                  onPressed: item.isEquipped ? null : () async {
+                    final error = await ref.read(storeProvider.notifier).equip(item);
+                    if (context.mounted) {
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(error ?? 'Item equipped successfully!'),
+                          backgroundColor: error == null ? AppColors.cyan : AppColors.crimsonRed,
+                        ),
+                      );
+                    }
+                  },
+                  child: Text(item.isEquipped ? 'EQUIPPED' : 'EQUIP NOW', style: const TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1.2)),
+                ),
+              ),
+              const SizedBox(height: 10),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return GestureDetector(
       onTap: () async {
+        if (item.isOwned) {
+          _showEquipSheet(context, ref);
+          return;
+        }
+
         final error = await ref.read(storeProvider.notifier).purchase(item);
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -135,60 +210,101 @@ class _StoreItemCard extends ConsumerWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(14),
           color: AppColors.white05,
-          border: Border.all(color: item.isLimited ? AppColors.gold.withValues(alpha: 0.4) : AppColors.glassBorder),
+          border: Border.all(color: item.isEquipped ? AppColors.cyan : (item.isLimited ? AppColors.gold.withValues(alpha: 0.4) : AppColors.glassBorder)),
         ),
-        child: Column(
-          children: [
-            // Preview area
-            Expanded(
-              child: Container(
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
-                  gradient: LinearGradient(colors: [AppColors.purpleDeep.withValues(alpha: 0.2), AppColors.cyan.withValues(alpha: 0.1)]),
-                ),
-                child: Stack(
-                  children: [
-                    Center(child: Icon(Icons.auto_awesome, color: AppColors.purpleGlow.withValues(alpha: 0.4), size: 40)),
-                    if (item.isLimited)
-                      Positioned(
-                        top: 8, right: 8,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(borderRadius: BorderRadius.circular(6), color: AppColors.crimsonRed),
-                          child: const Text('LIMITED', style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.w700)),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(14),
+          child: Stack(
+            children: [
+              Column(
                 children: [
-                  Text(item.name, style: AppTextStyles.labelMedium, maxLines: 1, overflow: TextOverflow.ellipsis),
-                  const SizedBox(height: 2),
-                  Text(item.description, style: AppTextStyles.labelSmall, maxLines: 1, overflow: TextOverflow.ellipsis),
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      if (item.priceSyndicate > 0) ...[
-                        Icon(Icons.diamond, color: AppColors.gold, size: 12),
-                        const SizedBox(width: 2),
-                        Text('${item.priceSyndicate}', style: TextStyle(color: AppColors.gold, fontSize: 12, fontWeight: FontWeight.w600)),
-                      ] else if (item.priceInfluence > 0) ...[
-                        Icon(Icons.toll, color: AppColors.cyan, size: 12),
-                        const SizedBox(width: 2),
-                        Text('${item.priceInfluence}', style: TextStyle(color: AppColors.cyan, fontSize: 12, fontWeight: FontWeight.w600)),
+                  // Preview area
+                  Expanded(
+                    child: Container(
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(colors: [AppColors.purpleDeep.withValues(alpha: 0.2), AppColors.cyan.withValues(alpha: 0.1)]),
+                      ),
+                      child: Center(child: Icon(Icons.auto_awesome, color: AppColors.purpleGlow.withValues(alpha: 0.4), size: 40)),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(10),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(item.name, style: AppTextStyles.labelMedium, maxLines: 1, overflow: TextOverflow.ellipsis),
+                        const SizedBox(height: 2),
+                        Text(item.description, style: AppTextStyles.labelSmall, maxLines: 1, overflow: TextOverflow.ellipsis),
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            if (item.priceSyndicate > 0) ...[
+                              Icon(Icons.diamond, color: AppColors.gold, size: 12),
+                              const SizedBox(width: 2),
+                              Text('${item.priceSyndicate}', style: TextStyle(color: AppColors.gold, fontSize: 12, fontWeight: FontWeight.w600)),
+                            ] else if (item.priceInfluence > 0) ...[
+                              Icon(Icons.toll, color: AppColors.cyan, size: 12),
+                              const SizedBox(width: 2),
+                              Text('${item.priceInfluence}', style: TextStyle(color: AppColors.cyan, fontSize: 12, fontWeight: FontWeight.w600)),
+                            ],
+                          ],
+                        ),
                       ],
-                    ],
+                    ),
                   ),
                 ],
               ),
-            ),
-          ],
+              
+              if (item.isOwned)
+                Positioned.fill(
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 1, sigmaY: 1),
+                    child: Container(
+                      color: Colors.black.withValues(alpha: 0.4),
+                      child: Center(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.6),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: AppColors.cyan.withValues(alpha: 0.5)),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.check_circle, color: AppColors.cyan, size: 14),
+                              SizedBox(width: 6),
+                              Text('OWNED', style: TextStyle(color: AppColors.cyan, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+
+              if (item.isLimited && !item.isOwned)
+                Positioned(
+                  top: 8, right: 8,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(borderRadius: BorderRadius.circular(6), color: AppColors.crimsonRed),
+                    child: const Text('LIMITED', style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.w700)),
+                  ),
+                ),
+                
+              if (item.isEquipped)
+                Positioned(
+                  top: 8, left: 8,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(borderRadius: BorderRadius.circular(6), color: AppColors.cyan),
+                    child: const Text('EQUIPPED', style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.w700)),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );

@@ -16,4 +16,16 @@ class StoreApiService {
       rethrow;
     }
   }
+
+  Future<Map<String, dynamic>?> equipItem(String itemId, String category) async {
+    try {
+      final response = await _http.post('/store/equip', body: {
+        'item_id': itemId,
+        'category': category,
+      });
+      return response as Map<String, dynamic>;
+    } catch (e) {
+      rethrow;
+    }
+  }
 }
