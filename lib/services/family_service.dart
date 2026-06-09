@@ -115,7 +115,11 @@ class FamilyService {
     await _api.rejectApplication(appId);
   }
 
-  Future<void> applyToFamily(String familyId, {String message = '', bool isInvite = false}) async {
+  Future<void> applyToFamily(
+    String familyId, {
+    String message = '',
+    bool isInvite = false,
+  }) async {
     await _api.applyToFamily(familyId, message: message, isInvite: isInvite);
   }
 
@@ -151,14 +155,18 @@ class FamilyService {
     try {
       final data = await _api.getAchievements();
       if (data.isEmpty) return FamilyAchievement.allAchievements; // Fallback
-      return data.map((a) => FamilyAchievement(
-        id: a['id'] ?? '',
-        title: a['title'] ?? '',
-        description: a['description'] ?? '',
-        target: a['required_value'] ?? a['target'] ?? 1,
-        currentProgress: a['current_value'] ?? a['current_progress'] ?? 0,
-        isUnlocked: a['is_unlocked'] ?? false,
-      )).toList();
+      return data
+          .map(
+            (a) => FamilyAchievement(
+              id: a['id'] ?? '',
+              title: a['title'] ?? '',
+              description: a['description'] ?? '',
+              target: a['required_value'] ?? a['target'] ?? 1,
+              currentProgress: a['current_value'] ?? a['current_progress'] ?? 0,
+              isUnlocked: a['is_unlocked'] ?? false,
+            ),
+          )
+          .toList();
     } catch (_) {
       return FamilyAchievement.allAchievements;
     }
@@ -247,9 +255,7 @@ class FamilyService {
     final donations = List<Map<String, dynamic>>.from(
       json['recent_donations'] ?? [],
     );
-    final boosts = List<Map<String, dynamic>>.from(
-      json['active_boosts'] ?? [],
-    );
+    final boosts = List<Map<String, dynamic>>.from(json['active_boosts'] ?? []);
 
     // Aggregate top contributors from donation history
     final contributorTotals = <String, int>{};
@@ -263,11 +269,16 @@ class FamilyService {
     }
     final topContributors = contributorTotals.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
-    final contributors = topContributors.take(5).map((e) => TreasuryContributor(
-      userId: e.key,
-      username: contributorNames[e.key] ?? e.key,
-      totalDonated: e.value,
-    )).toList();
+    final contributors = topContributors
+        .take(5)
+        .map(
+          (e) => TreasuryContributor(
+            userId: e.key,
+            username: contributorNames[e.key] ?? e.key,
+            totalDonated: e.value,
+          ),
+        )
+        .toList();
 
     return FamilyTreasury(
       balance: json['balance'] ?? 0,
@@ -377,8 +388,6 @@ class FamilyService {
         return MemberActivity.inMatch;
       case 'inVoiceChat':
         return MemberActivity.inVoiceChat;
-      case 'inParty':
-        return MemberActivity.inParty;
       case 'spectating':
         return MemberActivity.spectating;
       case 'idle':

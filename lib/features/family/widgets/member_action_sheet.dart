@@ -1,12 +1,12 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../models/family_model.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/family_provider.dart';
-import '../../../providers/matchmaking_provider.dart';
 
 class MemberActionSheet extends ConsumerWidget {
   final FamilyMember member;
@@ -14,7 +14,6 @@ class MemberActionSheet extends ConsumerWidget {
   final VoidCallback? onPromote;
   final VoidCallback? onDemote;
   final VoidCallback? onKick;
-  final VoidCallback? onMute;
 
   const MemberActionSheet({
     super.key,
@@ -23,7 +22,6 @@ class MemberActionSheet extends ConsumerWidget {
     this.onPromote,
     this.onDemote,
     this.onKick,
-    this.onMute,
   });
 
   static void show(
@@ -45,7 +43,6 @@ class MemberActionSheet extends ConsumerWidget {
         onPromote: onPromote,
         onDemote: onDemote,
         onKick: onKick,
-        onMute: onMute,
       ),
     );
   }
@@ -93,28 +90,16 @@ class MemberActionSheet extends ConsumerWidget {
             const SizedBox(height: 32),
 
             if (!isMe) ...[
-              _ActionButton(icon: Icons.sports_esports, label: 'MATCH INVITE', color: AppColors.cyan, onTap: () {
-                Navigator.pop(context);
-                ref.read(webSocketServiceProvider).send('invite_custom', {
-                  'target_id': member.userId,
-                  'room_id': 'lobby'
-                });
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Match invite sent to ${member.username}'), backgroundColor: AppColors.cyan));
-              }),
-              _ActionButton(icon: Icons.group_add, label: 'PARTY INVITE', color: AppColors.purpleGlow, onTap: () {
-                Navigator.pop(context);
-                ref.read(webSocketServiceProvider).send('party_invite', {'targetId': member.userId});
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Party invite sent to ${member.username}'), backgroundColor: AppColors.purpleGlow));
-              }),
               _ActionButton(icon: Icons.card_giftcard, label: 'SEND GIFT', color: AppColors.gold, onTap: () {
+                final notifier = ref.read(familyProvider.notifier);
                 Navigator.pop(context);
-                _showGiftDialog(context, ref);
+                _showGiftDialog(context, (amt) => notifier.sendGift(member.userId, amt));
               }),
             ],
 
             _ActionButton(icon: Icons.person_outline, label: 'VIEW PROFILE', color: Colors.white, onTap: () {
               Navigator.pop(context);
-              // navigate
+              context.push('/public-profile', extra: member.toFriendModel());
             }),
 
             if (canManage && !isMe) ...[
@@ -136,10 +121,6 @@ class MemberActionSheet extends ConsumerWidget {
               const SizedBox(height: 12),
               Row(
                 children: [
-                  Expanded(child: _AdminButton(label: member.isMuted ? 'UNMUTE' : 'MUTE', icon: member.isMuted ? Icons.mic : Icons.mic_off, color: AppColors.white50, onTap: () {
-                    Navigator.pop(context);
-                    onMute?.call();
-                  })),
                   Expanded(child: _AdminButton(label: 'KICK', icon: Icons.person_remove, color: AppColors.crimsonRed, onTap: () {
                     Navigator.pop(context);
                     onKick?.call();
@@ -153,7 +134,7 @@ class MemberActionSheet extends ConsumerWidget {
     );
   }
 
-  void _showGiftDialog(BuildContext context, WidgetRef ref) {
+  void _showGiftDialog(BuildContext context, Future<bool> Function(int) onSendGift) {
     final ctrl = TextEditingController(text: '100');
     showDialog(
       context: context,
@@ -183,10 +164,11 @@ class MemberActionSheet extends ConsumerWidget {
             onPressed: () async {
               final amt = int.tryParse(ctrl.text) ?? 0;
               if (amt <= 0) return;
-              final success = await ref.read(familyProvider.notifier).sendGift(member.userId, amt);
+              final success = await onSendGift(amt);
               if (ctx.mounted) {
+                final messenger = ScaffoldMessenger.of(ctx);
                 Navigator.pop(ctx);
-                ScaffoldMessenger.of(context).showSnackBar(
+                messenger.showSnackBar(
                   SnackBar(
                     content: Text(success ? 'Gift sent!' : 'Failed to send gift. Check balance.'),
                     backgroundColor: success ? AppColors.cyan : AppColors.crimsonRed,
