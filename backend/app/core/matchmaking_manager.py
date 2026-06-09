@@ -23,7 +23,6 @@ class MatchmakingManager:
     def __init__(self):
         # Queue format: list of dicts {"user_id": str, "join_time": float, "mode": str}
         self.queues: Dict[str, List[Dict[str, Any]]] = {
-            "casual": [],
             "ranked": []
         }
         self.pending_matches: Dict[str, PendingMatch] = {}
@@ -44,9 +43,9 @@ class MatchmakingManager:
             self._loop_task.cancel()
             logger.info("Matchmaking engine stopped")
 
-    def join_queue(self, user_id: str, mode: str = "casual"):
+    def join_queue(self, user_id: str, mode: str = "ranked"):
         if mode not in self.queues:
-            mode = "casual"
+            mode = "ranked"
             
         # Check if already in queue
         if any(p["user_id"] == user_id for p in self.queues[mode]):

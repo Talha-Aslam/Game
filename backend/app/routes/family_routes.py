@@ -159,11 +159,6 @@ async def activate_boost_route(req: BoostRequest, user: dict = Depends(get_curre
     from app.services.family_service import activate_boost
     return await activate_boost(user["_id"], req.boost_type)
 
-@router.get("/rivalries")
-async def rivalries_route(user: dict = Depends(get_current_user)):
-    from app.services.family_service import get_rivalries
-    return await get_rivalries(user["_id"])
-
 @router.post("/transfer_ownership/{target_user_id}")
 async def transfer_ownership(target_user_id: str, user: dict = Depends(get_current_user)):
     from app.services.family_service import transfer_boss

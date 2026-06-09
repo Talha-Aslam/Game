@@ -81,20 +81,33 @@ _XP_PER_TIER = 1000
 @router.get("/rankings")
 async def get_rankings(user_id: str = Depends(get_current_user_id)):
     db = get_database()
-    # Fetch top 100 by MMR
+    # Ensure we use an aggregate to sort by the maximum of possible mmr fields if needed
+    # But usually, it's stored as 'mmr'. We will sort by 'mmr' natively, but handle fallback in python.
     cursor = db["users"].find().sort("mmr", -1).limit(100)
     top_players = await cursor.to_list(length=100)
     
     rankings = []
     for i, p in enumerate(top_players):
+        # Resilient MMR fetch
+        points = p.get("mmr") or p.get("MMR") or p.get("rank_points") or 0
+        
+        # Derive level from BP
+        level = p.get("battle_pass_tier", 1)
+        if level == 0: level = 1
+        
         rankings.append({
             "rank": i + 1,
             "username": p.get("username", "Unknown"),
             "avatarUrl": p.get("profile_picture", ""),
-            "level": p.get("battle_pass_tier", 1),
-            "mmr": p.get("mmr", 0),
+            "level": level,
+            "mmr": points,
             "is_me": str(p.get("_id")) == user_id
         })
+        
+    # Python-side re-sort just in case the db field wasn't purely "mmr"
+    rankings.sort(key=lambda x: x["mmr"], reverse=True)
+    for i, r in enumerate(rankings):
+        r["rank"] = i + 1
         
     return rankings
 
@@ -115,7 +128,7 @@ async def get_recent_matches(user_id: str = Depends(get_current_user_id)):
         results.append({
             "id": mid,
             "won": won,
-            "mode": random.choice(["Casual", "Ranked", "Family War"]),
+            "mode": "Ranked",
             "role": random.choice(["Mafia", "Doctor", "Detective", "Civilian"]),
             "timestamp": "2026-06-06T12:00:00Z",
             "xp_gained": 150 if won else 50

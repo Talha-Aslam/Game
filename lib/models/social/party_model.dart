@@ -74,7 +74,7 @@ class PartyModel {
   final List<PartyMember> members;
   final int maxSize;
   final PartyStatus status;
-  final String gameMode; // 'ranked' or 'casual'
+  final String gameMode; // 'ranked'
   final List<PartyChatMessage> chatMessages;
 
   const PartyModel({
@@ -83,7 +83,7 @@ class PartyModel {
     this.members = const [],
     this.maxSize = 8,
     this.status = PartyStatus.forming,
-    this.gameMode = 'casual',
+    this.gameMode = 'ranked',
     this.chatMessages = const [],
   });
 
@@ -141,7 +141,7 @@ class PartyInviteModel {
     required this.timestamp,
     this.currentPartySize = 1,
     this.maxPartySize = 8,
-    this.gameMode = 'casual',
+    this.gameMode = 'ranked',
   });
 
   bool get isExpired =>

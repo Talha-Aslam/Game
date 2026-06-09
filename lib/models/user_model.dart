@@ -1,3 +1,5 @@
+import 'rank_model.dart';
+
 /// Role specific statistics
 class RoleStats {
   final int mafiaWins;
@@ -207,10 +209,7 @@ class UserModel {
 
   double get winRate => totalGames > 0 ? (wins / totalGames * 100) : 0;
 
-  String get rankName {
-    const ranks = ['Bronze', 'Silver', 'Gold', 'Diamond', 'Syndicate Boss'];
-    return ranks[rankTier.clamp(0, ranks.length - 1)];
-  }
+  String get rankName => RankModel.fromTier(rankTier).name;
 
   UserModel copyWith({
     String? id,
@@ -245,6 +244,11 @@ class UserModel {
     RoleStats? roleStats,
     List<String>? matchHistory,
   }) {
+    int finalRankTier = rankTier ?? this.rankTier;
+    if (rankPoints != null && rankTier == null) {
+      finalRankTier = RankModel.fromPoints(rankPoints).tier;
+    }
+
     return UserModel(
       id: id ?? this.id,
       username: username ?? this.username,
@@ -253,7 +257,7 @@ class UserModel {
       premiumAvatarId: premiumAvatarId ?? this.premiumAvatarId,
       bio: bio ?? this.bio,
       equippedTitle: equippedTitle ?? this.equippedTitle,
-      rankTier: rankTier ?? this.rankTier,
+      rankTier: finalRankTier,
       rankPoints: rankPoints ?? this.rankPoints,
       influencePoints: influencePoints ?? this.influencePoints,
       syndicateCoins: syndicateCoins ?? this.syndicateCoins,
@@ -281,39 +285,33 @@ class UserModel {
   }
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
-    // Helper to map string rank from backend to rankTier int
-    int parseRankTier(dynamic rankVal) {
+    int parseRankTier(dynamic rankVal, int points) {
       if (rankVal is int) return rankVal;
+      final derived = RankModel.fromPoints(points).tier;
       if (rankVal is String) {
         final r = rankVal.toLowerCase();
-        if (r.contains('silver')) return 1;
-        if (r.contains('gold')) return 2;
-        if (r.contains('diamond')) return 3;
-        if (r.contains('boss') || r.contains('syndicate')) return 4;
+        if (r.contains('silver')) return derived < 1 ? 1 : derived;
+        if (r.contains('gold')) return derived < 2 ? 2 : derived;
+        if (r.contains('diamond')) return derived < 3 ? 3 : derived;
+        if (r.contains('boss') || r.contains('syndicate')) return derived < 4 ? 4 : derived;
       }
-      return 0; // Default Bronze
+      return derived;
     }
 
+    final points = json['mmr'] ?? json['rankPoints'] ?? 0;
     final friendsList = json['friends'] as List<dynamic>?;
-    final battlePassTier =
-        json['battle_pass_tier'] ?? json['battlePassTier'] ?? 0;
+    final battlePassTier = json['battle_pass_tier'] ?? json['battlePassTier'] ?? 0;
 
     return UserModel(
       id: json['id']?.toString() ?? json['_id']?.toString() ?? '',
       username: json['username']?.toString() ?? '',
       email: json['email']?.toString() ?? '',
-      avatarUrl:
-          json['profile_picture']?.toString() ??
-          json['avatarUrl']?.toString() ??
-          '',
-      premiumAvatarId:
-          json['premium_avatar']?.toString() ??
-          json['premiumAvatarId']?.toString(),
+      avatarUrl: json['profile_picture']?.toString() ?? json['avatarUrl']?.toString() ?? '',
+      premiumAvatarId: json['premium_avatar']?.toString() ?? json['premiumAvatarId']?.toString(),
       bio: json['bio']?.toString(),
-      equippedTitle:
-          json['title']?.toString() ?? json['equippedTitle']?.toString(),
-      rankTier: parseRankTier(json['rank'] ?? json['rankTier']),
-      rankPoints: json['mmr'] ?? json['rankPoints'] ?? 0,
+      equippedTitle: json['title']?.toString() ?? json['equippedTitle']?.toString(),
+      rankTier: parseRankTier(json['rank'] ?? json['rankTier'], points),
+      rankPoints: points,
       influencePoints: json['influence'] ?? json['influencePoints'] ?? 0,
       syndicateCoins: json['syndicate_coins'] ?? json['syndicateCoins'] ?? 0,
       totalGames: json['games_played'] ?? json['totalGames'] ?? 0,
@@ -322,46 +320,20 @@ class UserModel {
       familyId: json['family_id']?.toString() ?? json['familyId']?.toString(),
       familyName: json['familyName']?.toString(),
       familyRole: json['familyRole']?.toString(),
-      inventory: json['inventory'] != null 
-          ? InventoryModel.fromJson(json['inventory']) 
-          : const InventoryModel(),
-      equippedCosmetics: json['equipped_cosmetics'] != null 
-          ? EquippedCosmeticsModel.fromJson(json['equipped_cosmetics']) 
-          : (json['equippedCosmetics'] != null 
-              ? EquippedCosmeticsModel.fromJson(json['equippedCosmetics']) 
-              : const EquippedCosmeticsModel()),
-      hasBattlePass:
-          (battlePassTier as int) > 0 ||
-          (json['hasBattlePass'] as bool? ?? false),
+      inventory: json['inventory'] != null ? InventoryModel.fromJson(json['inventory']) : const InventoryModel(),
+      equippedCosmetics: json['equipped_cosmetics'] != null ? EquippedCosmeticsModel.fromJson(json['equipped_cosmetics']) : (json['equippedCosmetics'] != null ? EquippedCosmeticsModel.fromJson(json['equippedCosmetics']) : const EquippedCosmeticsModel()),
+      hasBattlePass: (battlePassTier as int) > 0 || (json['hasBattlePass'] as bool? ?? false),
       battlePassTier: battlePassTier,
       battlePassXP: json['battle_pass_xp'] ?? json['battlePassXP'] ?? 0,
-      hasPremiumPass:
-          json['has_premium_pass'] ?? json['hasPremiumPass'] ?? false,
-      claimedFreeTiers:
-          (json['claimed_free_tiers'] as List<dynamic>?)
-              ?.map((e) => e as int)
-              .toList() ??
-          (json['claimedFreeTiers'] as List<dynamic>?)
-              ?.map((e) => e as int)
-              .toList() ??
-          [],
-      claimedPremiumTiers:
-          (json['claimed_premium_tiers'] as List<dynamic>?)
-              ?.map((e) => e as int)
-              .toList() ??
-          (json['claimedPremiumTiers'] as List<dynamic>?)
-              ?.map((e) => e as int)
-              .toList() ??
-          [],
+      hasPremiumPass: json['has_premium_pass'] ?? json['hasPremiumPass'] ?? false,
+      claimedFreeTiers: (json['claimed_free_tiers'] as List<dynamic>?)?.map((e) => e as int).toList() ?? (json['claimedFreeTiers'] as List<dynamic>?)?.map((e) => e as int).toList() ?? [],
+      claimedPremiumTiers: (json['claimed_premium_tiers'] as List<dynamic>?)?.map((e) => e as int).toList() ?? (json['claimedPremiumTiers'] as List<dynamic>?)?.map((e) => e as int).toList() ?? [],
       popularityScore: json['popularity'] ?? json['popularityScore'] ?? 0,
       popularityRank: json['popularityRank']?.toString() ?? 'Rising Star',
       friendCount: friendsList?.length ?? json['friendCount'] ?? 0,
       onlineFriendCount: json['onlineFriendCount'] ?? 0,
-      roleStats: json['role_stats'] != null 
-          ? RoleStats.fromJson(json['role_stats']) 
-          : (json['roleStats'] != null ? RoleStats.fromJson(json['roleStats']) : const RoleStats()),
-      matchHistory: (json['match_history'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? 
-                    (json['matchHistory'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
+      roleStats: json['role_stats'] != null ? RoleStats.fromJson(json['role_stats']) : (json['roleStats'] != null ? RoleStats.fromJson(json['roleStats']) : const RoleStats()),
+      matchHistory: (json['match_history'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? (json['matchHistory'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
     );
   }
 
@@ -396,6 +368,6 @@ class UserModel {
     'friendCount': friendCount,
     'onlineFriendCount': onlineFriendCount,
     'roleStats': roleStats.toJson(),
-    'matchHistory': matchHistory,
+    'match_history': matchHistory,
   };
 }

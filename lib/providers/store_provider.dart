@@ -5,7 +5,7 @@ import '../services/store_api_service.dart';
 import 'auth_provider.dart';
 
 final storeItemsProvider = Provider<List<StoreItemModel>>((ref) {
-  return const [
+  return [
     StoreItemModel(id: 's1', name: 'Crimson Flame', description: 'A fiery card border', category: StoreCategory.borders, priceSyndicate: 500),
     StoreItemModel(id: 's2', name: 'Neon Circuit', description: 'Cyberpunk card style', category: StoreCategory.cardStyles, priceSyndicate: 750),
     StoreItemModel(id: 's3', name: 'Shatter FX', description: 'Glass shatter elimination', category: StoreCategory.eliminationEffects, priceSyndicate: 1000),
@@ -14,6 +14,20 @@ final storeItemsProvider = Provider<List<StoreItemModel>>((ref) {
     StoreItemModel(id: 's6', name: 'Syndicate Bundle', description: 'Premium elite bundle', category: StoreCategory.bundles, priceSyndicate: 2000, isLimited: true),
     StoreItemModel(id: 's7', name: 'Ice Aura', description: 'Frozen border effect', category: StoreCategory.borders, priceSyndicate: 600),
     StoreItemModel(id: 's8', name: 'Royal Gold', description: 'Gold plated card style', category: StoreCategory.cardStyles, priceSyndicate: 900),
+
+    // NEW PREMIUM CALLING CARDS
+    StoreItemModel(id: 'cc1', name: 'Neon Overdrive', description: 'High-tech synthwave style', category: StoreCategory.cardStyles, priceSyndicate: 1200),
+    StoreItemModel(id: 'cc2', name: 'Syndicate Executive', description: 'Carbon fiber elite style', category: StoreCategory.cardStyles, priceSyndicate: 1500),
+    StoreItemModel(id: 'cc3', name: 'Crimson Vendetta', description: 'Tactical hazard style', category: StoreCategory.cardStyles, priceSyndicate: 1100),
+    StoreItemModel(id: 'cc4', name: 'Cosmic Shadow', description: 'Interstellar nebula style', category: StoreCategory.cardStyles, priceSyndicate: 1300),
+    StoreItemModel(id: 'cc5', name: 'Toxic Underworld', description: 'Biohazard industrial style', category: StoreCategory.cardStyles, priceSyndicate: 1000),
+
+    // NEW PREMIUM ANIMATED BORDERS
+    StoreItemModel(id: 'b1', name: 'Neon Overdrive', description: 'Animated synthwave border', category: StoreCategory.borders, priceSyndicate: 800),
+    StoreItemModel(id: 'b2', name: 'Syndicate Boss', description: 'Pulsing gold VIP border', category: StoreCategory.borders, priceSyndicate: 1200),
+    StoreItemModel(id: 'b3', name: 'Crimson Vendetta', description: 'Heartbeat tactical border', category: StoreCategory.borders, priceSyndicate: 750),
+    StoreItemModel(id: 'b4', name: 'Cosmic Void', description: 'Nebula starlight border', category: StoreCategory.borders, priceSyndicate: 900),
+    StoreItemModel(id: 'b5', name: 'Radioactive Underworld', description: 'Glowing toxic border', category: StoreCategory.borders, priceSyndicate: 850),
   ];
 });
 

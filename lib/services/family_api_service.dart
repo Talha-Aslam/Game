@@ -109,11 +109,6 @@ class FamilyApiService {
     await _http.post('/family/treasury/boost', body: {'boost_type': boostType});
   }
 
-  Future<List<Map<String, dynamic>>> getRivalries() async {
-    final data = await _http.get('/family/rivalries');
-    return List<Map<String, dynamic>>.from(data ?? []);
-  }
-
   Future<void> transferOwnership(String targetUserId) async {
     await _http.post('/family/transfer_ownership/$targetUserId');
   }

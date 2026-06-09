@@ -16,8 +16,6 @@ enum AuditAction {
   treasuryDonation,
   treasurySpent,
   boostActivated,
-  warStarted,
-  warCompleted,
   familyCreated;
 
   String get displayName {
@@ -50,10 +48,6 @@ enum AuditAction {
         return 'Treasury Spent';
       case AuditAction.boostActivated:
         return 'Boost Activated';
-      case AuditAction.warStarted:
-        return 'War Started';
-      case AuditAction.warCompleted:
-        return 'War Completed';
       case AuditAction.familyCreated:
         return 'Family Created';
     }
@@ -89,10 +83,6 @@ enum AuditAction {
         return Icons.payments;
       case AuditAction.boostActivated:
         return Icons.bolt;
-      case AuditAction.warStarted:
-        return Icons.whatshot;
-      case AuditAction.warCompleted:
-        return Icons.flag;
       case AuditAction.familyCreated:
         return Icons.celebration;
     }
@@ -123,9 +113,6 @@ enum AuditAction {
       case AuditAction.treasurySpent:
       case AuditAction.boostActivated:
         return const Color(0xFFFFD700);
-      case AuditAction.warStarted:
-      case AuditAction.warCompleted:
-        return const Color(0xFFFF1744);
       case AuditAction.familyCreated:
         return const Color(0xFF9B59FF);
     }
@@ -184,10 +171,6 @@ class FamilyAuditEntry {
         return '$actorName spent ${details ?? "points"} from treasury';
       case AuditAction.boostActivated:
         return '$actorName activated ${details ?? "a boost"}';
-      case AuditAction.warStarted:
-        return '$actorName started a war against ${targetName ?? "rival"}';
-      case AuditAction.warCompleted:
-        return 'War against ${targetName ?? "rival"} completed';
       case AuditAction.familyCreated:
         return '$actorName created the family';
     }

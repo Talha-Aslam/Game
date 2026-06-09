@@ -1,7 +1,6 @@
 import 'dart:async';
 import '../models/family_model.dart';
 import '../models/family/family_treasury_model.dart';
-import '../models/family/family_war_model.dart';
 import '../models/family/family_achievement_model.dart';
 import '../models/family/family_application_model.dart';
 import '../models/family/family_audit_log_model.dart';
@@ -146,28 +145,6 @@ class FamilyService {
     }
   }
 
-  // ── Wars ──
-
-  Future<List<FamilyWarModel>> getWars() async {
-    try {
-      final data = await _api.getMyFamily();
-      if (data == null) return [];
-      final wars = List<Map<String, dynamic>>.from(data['wars'] ?? []);
-      return wars.map((w) => _warFromJson(w)).toList();
-    } catch (_) {
-      return [];
-    }
-  }
-
-  Future<List<RivalryRecord>> getRivalries() async {
-    try {
-      final data = await _api.getRivalries();
-      return data.map((r) => _rivalryFromJson(r)).toList();
-    } catch (_) {
-      return [];
-    }
-  }
-
   // ── Achievements ──
 
   Future<List<FamilyAchievement>> getAchievements() async {
@@ -227,10 +204,6 @@ class FamilyService {
       level: json['level'] ?? 1,
       currentXP: json['current_xp'] ?? 0,
       xpToNextLevel: json['xp_to_next_level'] ?? 1000,
-      totalWins: json['total_wins'] ?? 0,
-      totalLosses: json['total_losses'] ?? 0,
-      seasonPoints: json['season_points'] ?? 0,
-      globalRank: json['global_rank'] ?? 0,
       treasuryBalance: (json['treasury'] is Map)
           ? (json['treasury']['balance'] ?? 0)
           : (json['treasury_balance'] ?? 0),
@@ -238,8 +211,6 @@ class FamilyService {
       motdUpdatedAt: json['motd_updated_at'] != null
           ? DateTime.tryParse(json['motd_updated_at'])
           : null,
-      warWins: json['war_wins'] ?? 0,
-      warLosses: json['war_losses'] ?? 0,
       members: membersRaw.map((m) => _memberFromJson(m)).toList(),
       createdAt: DateTime.tryParse(json['created_at'] ?? '') ?? DateTime.now(),
       createdBy: json['created_by'] ?? '',
@@ -349,37 +320,6 @@ class FamilyService {
     );
   }
 
-  FamilyWarModel _warFromJson(Map<String, dynamic> json) {
-    return FamilyWarModel(
-      id: json['id'] ?? '',
-      challengerFamilyId: json['challenger_family_id'] ?? '',
-      challengerFamilyName: json['challenger_family_name'] ?? '',
-      challengerFamilyTag: json['challenger_family_tag'] ?? '',
-      defenderFamilyId: json['defender_family_id'] ?? '',
-      defenderFamilyName: json['defender_family_name'] ?? '',
-      defenderFamilyTag: json['defender_family_tag'] ?? '',
-      challengerScore: json['challenger_score'] ?? 0,
-      defenderScore: json['defender_score'] ?? 0,
-      status: _parseWarStatus(json['status'] ?? 'pending'),
-      createdAt: DateTime.tryParse(json['created_at'] ?? '') ?? DateTime.now(),
-    );
-  }
-
-  RivalryRecord _rivalryFromJson(Map<String, dynamic> json) {
-    return RivalryRecord(
-      rivalFamilyId: json['rival_family_id'] ?? '',
-      rivalFamilyName: json['rival_family_name'] ?? '',
-      rivalFamilyTag: json['rival_family_tag'] ?? '',
-      wins: json['wars_won'] ?? json['wins'] ?? 0,
-      losses: json['wars_lost'] ?? json['losses'] ?? 0,
-      lastMatchDate:
-          DateTime.tryParse(
-            json['last_match_date'] ?? json['started_at'] ?? '',
-          ) ??
-          DateTime.now(),
-    );
-  }
-
   FamilyAuditEntry _auditFromJson(Map<String, dynamic> json) {
     return FamilyAuditEntry(
       id: json['id'] ?? '',
@@ -448,21 +388,6 @@ class FamilyService {
     }
   }
 
-  WarStatus _parseWarStatus(String s) {
-    switch (s) {
-      case 'accepted':
-        return WarStatus.accepted;
-      case 'active':
-        return WarStatus.active;
-      case 'completed':
-        return WarStatus.completed;
-      case 'cancelled':
-        return WarStatus.cancelled;
-      default:
-        return WarStatus.pending;
-    }
-  }
-
   AuditAction _parseAuditAction(String s) {
     const map = {
       'familyCreated': AuditAction.familyCreated,
@@ -477,8 +402,6 @@ class FamilyService {
       'motdUpdated': AuditAction.motdUpdated,
       'boostActivated': AuditAction.boostActivated,
       'treasuryDonation': AuditAction.treasuryDonation,
-      'warStarted': AuditAction.warStarted,
-      'warCompleted': AuditAction.warCompleted,
     };
     return map[s] ?? AuditAction.settingsChanged;
   }

@@ -1,5 +1,7 @@
+import '../features/home/widgets/avatar_borders.dart';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:mafia_wars/models/rank_model.dart';
 import '../core/constants/app_constants.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_text_styles.dart';
@@ -62,7 +64,7 @@ class _PlayerCardState extends State<PlayerCard> with TickerProviderStateMixin {
 
   Color get _glowColor {
     if (!widget.player.isAlive) return Colors.transparent;
-    
+
     // Custom border colors
     final borderId = widget.player.equippedCosmetics['card_border']?.toString();
     if (borderId == 's1') return AppColors.crimsonRed;
@@ -77,7 +79,7 @@ class _PlayerCardState extends State<PlayerCard> with TickerProviderStateMixin {
 
   Color get _borderColor {
     if (!widget.player.isAlive) return AppColors.white10;
-    
+
     final borderId = widget.player.equippedCosmetics['card_border']?.toString();
     if (borderId == 's1') return AppColors.crimsonRed;
     if (borderId == 's7') return const Color(0xFF00B0FF);
@@ -96,7 +98,11 @@ class _PlayerCardState extends State<PlayerCard> with TickerProviderStateMixin {
     return GestureDetector(
       onTap: isAlive ? widget.onTap : null,
       child: AnimatedBuilder(
-        animation: Listenable.merge([_floatController, _pulseController, _speakController]),
+        animation: Listenable.merge([
+          _floatController,
+          _pulseController,
+          _speakController,
+        ]),
         builder: (context, child) {
           final floatOffset = sin(_floatController.value * pi) * 3;
           final pulseScale = widget.isSelected
@@ -135,8 +141,12 @@ class _PlayerCardState extends State<PlayerCard> with TickerProviderStateMixin {
             boxShadow: isAlive
                 ? [
                     BoxShadow(
-                      color: _glowColor.withValues(alpha: isSpeaking ? 0.6 : 0.4),
-                      blurRadius: isSpeaking ? 20 : (borderId != null ? 15 : 10),
+                      color: _glowColor.withValues(
+                        alpha: isSpeaking ? 0.6 : 0.4,
+                      ),
+                      blurRadius: isSpeaking
+                          ? 20
+                          : (borderId != null ? 15 : 10),
                       spreadRadius: isSpeaking ? 4 : (borderId != null ? 2 : 1),
                     ),
                   ]
@@ -165,35 +175,59 @@ class _PlayerCardState extends State<PlayerCard> with TickerProviderStateMixin {
                   },
                 ),
 
+
               // Main avatar circle
-              Container(
-                width: size,
-                height: size,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: _borderColor, 
-                    width: borderId != null ? 3.0 : 2.0
+              PremiumAvatarBorder(
+                borderId: borderId,
+                radius: size / 2,
+                child: Container(
+                  width: size,
+                  height: size,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: _borderColor,
+                      width: borderId != null ? 3.0 : 2.0,
+                    ),
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: isAlive
+                          ? [AppColors.surfaceLight, AppColors.surface]
+                          : [AppColors.darkGrey, const Color(0xFF1A1A1A)],
+                    ),
                   ),
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: isAlive
-                        ? [AppColors.surfaceLight, AppColors.surface]
-                        : [AppColors.darkGrey, const Color(0xFF1A1A1A)],
-                  ),
-                ),
-                child: ClipOval(
-                  child: ColorFiltered(
-                    colorFilter: isAlive
-                        ? const ColorFilter.mode(Colors.transparent, BlendMode.multiply)
-                        : const ColorFilter.matrix(<double>[
-                            0.2126, 0.7152, 0.0722, 0, 0,
-                            0.2126, 0.7152, 0.0722, 0, 0,
-                            0.2126, 0.7152, 0.0722, 0, 0,
-                            0, 0, 0, 0.5, 0,
-                          ]),
-                    child: _avatarContent(),
+                  child: ClipOval(
+                    child: ColorFiltered(
+                      colorFilter: isAlive
+                          ? const ColorFilter.mode(
+                              Colors.transparent,
+                              BlendMode.multiply,
+                            )
+                          : const ColorFilter.matrix(<double>[
+                              0.2126,
+                              0.7152,
+                              0.0722,
+                              0,
+                              0,
+                              0.2126,
+                              0.7152,
+                              0.0722,
+                              0,
+                              0,
+                              0.2126,
+                              0.7152,
+                              0.0722,
+                              0,
+                              0,
+                              0,
+                              0,
+                              0,
+                              0.5,
+                              0,
+                            ]),
+                      child: _avatarContent(),
+                    ),
                   ),
                 ),
               ),
@@ -234,7 +268,11 @@ class _PlayerCardState extends State<PlayerCard> with TickerProviderStateMixin {
                       color: AppColors.crimsonRed,
                       border: Border.all(color: AppColors.background, width: 2),
                     ),
-                    child: const Icon(Icons.mic_off, size: 10, color: Colors.white),
+                    child: const Icon(
+                      Icons.mic_off,
+                      size: 10,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
 
@@ -335,13 +373,6 @@ class _PlayerCardState extends State<PlayerCard> with TickerProviderStateMixin {
   }
 
   Color _rankColor(int tier) {
-    switch (tier) {
-      case 0: return const Color(0xFFCD7F32);
-      case 1: return const Color(0xFFC0C0C0);
-      case 2: return AppColors.gold;
-      case 3: return AppColors.cyan;
-      case 4: return AppColors.purpleNeon;
-      default: return AppColors.white30;
-    }
+    return RankModel.fromTier(tier).color;
   }
 }

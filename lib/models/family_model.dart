@@ -71,8 +71,6 @@ enum FamilyRole {
       this == FamilyRole.boss;
   bool get canEditSettings =>
       this == FamilyRole.boss || this == FamilyRole.underboss;
-  bool get canStartWar =>
-      this == FamilyRole.boss || this == FamilyRole.underboss;
   bool get canManageTreasury =>
       this == FamilyRole.boss;
   bool get canModerateChat =>
@@ -322,22 +320,12 @@ class FamilyModel {
   final int currentXP;
   final int xpToNextLevel;
 
-  // Stats
-  final int totalWins;
-  final int totalLosses;
-  final int seasonPoints;
-  final int globalRank;
-
   // Treasury
   final int treasuryBalance;
 
   // MOTD
   final String motd;
   final DateTime? motdUpdatedAt;
-
-  // War
-  final int warWins;
-  final int warLosses;
 
   // Metadata
   final DateTime createdAt;
@@ -359,25 +347,15 @@ class FamilyModel {
     this.level = 1,
     this.currentXP = 0,
     this.xpToNextLevel = 1000,
-    this.totalWins = 0,
-    this.totalLosses = 0,
-    this.seasonPoints = 0,
-    this.globalRank = 0,
     this.treasuryBalance = 0,
     this.motd = '',
     this.motdUpdatedAt,
-    this.warWins = 0,
-    this.warLosses = 0,
     required this.createdAt,
     this.createdBy = '',
   });
 
   int get memberCount => members.length;
   int get onlineCount => members.where((m) => m.isOnline).length;
-  double get winRate =>
-      (totalWins + totalLosses) > 0
-          ? totalWins / (totalWins + totalLosses) * 100
-          : 0;
 
   /// Max members based on family level
   int get levelMaxMembers {
@@ -403,15 +381,9 @@ class FamilyModel {
     int? level,
     int? currentXP,
     int? xpToNextLevel,
-    int? totalWins,
-    int? totalLosses,
-    int? seasonPoints,
-    int? globalRank,
     int? treasuryBalance,
     String? motd,
     DateTime? motdUpdatedAt,
-    int? warWins,
-    int? warLosses,
     DateTime? createdAt,
     String? createdBy,
   }) {
@@ -431,15 +403,9 @@ class FamilyModel {
       level: level ?? this.level,
       currentXP: currentXP ?? this.currentXP,
       xpToNextLevel: xpToNextLevel ?? this.xpToNextLevel,
-      totalWins: totalWins ?? this.totalWins,
-      totalLosses: totalLosses ?? this.totalLosses,
-      seasonPoints: seasonPoints ?? this.seasonPoints,
-      globalRank: globalRank ?? this.globalRank,
       treasuryBalance: treasuryBalance ?? this.treasuryBalance,
       motd: motd ?? this.motd,
       motdUpdatedAt: motdUpdatedAt ?? this.motdUpdatedAt,
-      warWins: warWins ?? this.warWins,
-      warLosses: warLosses ?? this.warLosses,
       createdAt: createdAt ?? this.createdAt,
       createdBy: createdBy ?? this.createdBy,
     );

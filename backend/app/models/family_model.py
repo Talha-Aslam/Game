@@ -51,24 +51,6 @@ class FamilyTreasuryDB(BaseModel):
     recent_donations: List[TreasuryDonationDB] = []
 
 
-class FamilyWarDB(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    challenger_family_id: str
-    challenger_family_name: str
-    challenger_family_tag: str
-    defender_family_id: str
-    defender_family_name: str
-    defender_family_tag: str
-    challenger_score: int = 0
-    defender_score: int = 0
-    status: str = "pending"  # pending, accepted, active, completed, cancelled
-    trophies_at_stake: int = 100
-    xp_reward: int = 500
-    created_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
-    started_at: Optional[str] = None
-    completed_at: Optional[str] = None
-
-
 class FamilyAuditEntryDB(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     action: str
@@ -129,9 +111,6 @@ class FamilyDB(BaseModel):
     treasury: FamilyTreasuryDB = Field(default_factory=FamilyTreasuryDB)
     motd: str = ""
     motd_updated_at: Optional[str] = None
-    war_wins: int = 0
-    war_losses: int = 0
-    wars: List[FamilyWarDB] = []
     audit_log: List[FamilyAuditEntryDB] = []
     chat_messages: List[FamilyChatMessageDB] = []
     applications: List[FamilyApplicationDB] = []

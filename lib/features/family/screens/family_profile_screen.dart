@@ -42,11 +42,8 @@ class FamilyProfileScreen extends ConsumerWidget {
           physics: const NeverScrollableScrollPhysics(),
           mainAxisSpacing: 8, crossAxisSpacing: 8, childAspectRatio: 1.2, children: [
             FamilyStatCard(label: 'Members', value: '${f.memberCount}', icon: Icons.people, color: AppColors.cyan),
-            FamilyStatCard(label: 'Wins', value: '${f.totalWins}', icon: Icons.emoji_events, color: AppColors.gold),
-            FamilyStatCard(label: 'Win Rate', value: '${f.winRate.toStringAsFixed(1)}%', icon: Icons.trending_up, color: AppColors.mintGreen),
-            FamilyStatCard(label: 'Wars Won', value: '${f.warWins}', icon: Icons.whatshot, color: AppColors.crimsonRed),
+            FamilyStatCard(label: 'Online', value: '${f.onlineCount}', icon: Icons.circle, color: AppColors.online),
             FamilyStatCard(label: 'Treasury', value: '${f.treasuryBalance}', icon: Icons.account_balance, color: AppColors.gold),
-            FamilyStatCard(label: 'Rank', value: '#${f.globalRank}', icon: Icons.leaderboard, color: AppColors.purpleGlow),
           ]),
         if (f.description.isNotEmpty) ...[
           const SizedBox(height: 16),

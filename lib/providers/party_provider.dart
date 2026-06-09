@@ -50,7 +50,7 @@ class PartyNotifier extends Notifier<PartyState> {
     state = state.copyWith(incomingInvites: invites, isLoading: false);
   }
 
-  Future<void> createParty({String gameMode = 'casual'}) async {
+  Future<void> createParty({String gameMode = 'ranked'}) async {
     final party = await _service.createParty(gameMode: gameMode);
     state = state.copyWith(currentParty: party);
   }

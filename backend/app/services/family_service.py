@@ -725,20 +725,6 @@ async def activate_boost(user_id: str, boost_type: str):
     return {"message": "Boost activated successfully"}
 
 
-async def get_rivalries(user_id: str):
-    db = get_database()
-    user = await db["users"].find_one({"_id": user_id})
-    family_id = user.get("family_id") if user else None
-    if not family_id:
-        return []
-        
-    family = await db["families"].find_one({"_id": family_id})
-    if not family:
-        return []
-        
-    return family.get("rivalries", [])
-
-
 def _rank_to_tier(rank_val) -> int:
     if isinstance(rank_val, int):
         return rank_val
