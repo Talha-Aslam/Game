@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:mafia_wars/models/rank_model.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../models/player_model.dart';
@@ -62,14 +63,16 @@ class _LobbyPlayerCardState extends State<LobbyPlayerCard>
 
   Color get _glowColor {
     if (!widget.player.isAlive) return Colors.transparent;
-    
+
     // Custom border colors from equipped cosmetics
     final borderId = widget.player.equippedCosmetics['card_border']?.toString();
     if (borderId == 's1') return AppColors.crimsonRed;
     if (borderId == 's7') return const Color(0xFF00B0FF);
     if (borderId == 's8') return AppColors.gold;
 
-    if (widget.player.isSpeaking) return widget.player.isMafia ? AppColors.purpleNeon : AppColors.gold;
+    if (widget.player.isSpeaking) {
+      return widget.player.isMafia ? AppColors.purpleNeon : AppColors.gold;
+    }
     if (widget.isSelected) return AppColors.gold;
     if (widget.isLocalPlayer) return AppColors.purpleNeon;
     return AppColors.white10;
@@ -78,7 +81,7 @@ class _LobbyPlayerCardState extends State<LobbyPlayerCard>
   Color get _borderColor {
     if (!widget.player.isAlive) return AppColors.white10;
     if (widget.isTied) return AppColors.crimsonRed;
-    
+
     final borderId = widget.player.equippedCosmetics['card_border']?.toString();
     if (borderId == 's1') return AppColors.crimsonRed;
     if (borderId == 's7') return const Color(0xFF00B0FF);
@@ -131,7 +134,10 @@ class _LobbyPlayerCardState extends State<LobbyPlayerCard>
                         clipBehavior: Clip.none,
                         children: [
                           // Outer voice glow ring or selection ring or premium glow
-                          if (isAlive && (isSpeaking || widget.isSelected || borderId != null))
+                          if (isAlive &&
+                              (isSpeaking ||
+                                  widget.isSelected ||
+                                  borderId != null))
                             Container(
                               width: s + 6,
                               height: s + 6,
@@ -140,10 +146,16 @@ class _LobbyPlayerCardState extends State<LobbyPlayerCard>
                                 boxShadow: [
                                   BoxShadow(
                                     color: _glowColor.withValues(
-                                      alpha: isSpeaking ? (0.25 + _voicePulse.value * 0.2) : 0.4,
+                                      alpha: isSpeaking
+                                          ? (0.25 + _voicePulse.value * 0.2)
+                                          : 0.4,
                                     ),
-                                    blurRadius: isSpeaking ? (12 + _voicePulse.value * 6) : (borderId != null ? 15 : 16),
-                                    spreadRadius: isSpeaking ? 1 : (borderId != null ? 2 : 2),
+                                    blurRadius: isSpeaking
+                                        ? (12 + _voicePulse.value * 6)
+                                        : (borderId != null ? 15 : 16),
+                                    spreadRadius: isSpeaking
+                                        ? 1
+                                        : (borderId != null ? 2 : 2),
                                   ),
                                 ],
                               ),
@@ -165,7 +177,9 @@ class _LobbyPlayerCardState extends State<LobbyPlayerCard>
                                         ),
                                   border: Border.all(
                                     color: _borderColor,
-                                    width: (isSpeaking || borderId != null) ? 1.5 : 1,
+                                    width: (isSpeaking || borderId != null)
+                                        ? 1.5
+                                        : 1,
                                   ),
                                   gradient: isAlive
                                       ? const LinearGradient(
@@ -267,10 +281,26 @@ class _LobbyPlayerCardState extends State<LobbyPlayerCard>
         colorFilter: isAlive
             ? const ColorFilter.mode(Colors.transparent, BlendMode.multiply)
             : const ColorFilter.matrix(<double>[
-                0.2126, 0.7152, 0.0722, 0, 0,
-                0.2126, 0.7152, 0.0722, 0, 0,
-                0.2126, 0.7152, 0.0722, 0, 0,
-                0, 0, 0, 0.4, 0,
+                0.2126,
+                0.7152,
+                0.0722,
+                0,
+                0,
+                0.2126,
+                0.7152,
+                0.0722,
+                0,
+                0,
+                0.2126,
+                0.7152,
+                0.0722,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0.4,
+                0,
               ]),
         child: ClipOval(
           child: Image.network(
@@ -364,34 +394,19 @@ class _VoiceBadge extends StatelessWidget {
 class _RankDot extends StatelessWidget {
   final int tier;
   const _RankDot({required this.tier});
-  Color get _color {
-    switch (tier) {
-      case 0:
-        return const Color(0xFFCD7F32);
-      case 1:
-        return const Color(0xFFC0C0C0);
-      case 2:
-        return AppColors.gold;
-      case 3:
-        return AppColors.cyan;
-      case 4:
-        return AppColors.purpleNeon;
-      default:
-        return AppColors.white30;
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
+    final rank = RankModel.fromTier(tier);
     return Container(
       width: 12,
       height: 12,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: AppColors.background,
-        border: Border.all(color: _color, width: 1),
+        border: Border.all(color: rank.color, width: 1),
       ),
-      child: Icon(Icons.shield, size: 7, color: _color),
+      child: Icon(Icons.shield, size: 7, color: rank.color),
     );
   }
 }

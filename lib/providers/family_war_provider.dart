@@ -1,8 +1,6 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../models/family/family_war_model.dart';
 import '../models/player_model.dart';
-import '../services/websocket_service.dart';
 import 'matchmaking_provider.dart';
 
 class FamilyWarState {
@@ -88,9 +86,11 @@ class FamilyWarNotifier extends Notifier<FamilyWarState> {
   }
 
   void createWarLobby(String? defenderFamilyId) {
-    ref.read(webSocketServiceProvider).send('create_war_lobby', {
-      if (defenderFamilyId != null) 'defender_family_id': defenderFamilyId
-    });
+    final payload = <String, dynamic>{};
+    if (defenderFamilyId != null) {
+      payload['defender_family_id'] = defenderFamilyId;
+    }
+    ref.read(webSocketServiceProvider).send('create_war_lobby', payload);
   }
 
   void joinWarLobby(String roomId, bool isDefender) {

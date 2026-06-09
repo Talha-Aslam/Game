@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/theme/app_gradients.dart';
 import '../../../providers/ranking_provider.dart';
 import '../../../widgets/neon_text.dart';
 import '../../../widgets/particle_field.dart';
+import '../../../widgets/rank_badge.dart';
 
 class LeaderboardScreen extends ConsumerWidget {
   const LeaderboardScreen({super.key});
@@ -87,10 +89,10 @@ class _RankingCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: player.isMe ? AppColors.gold.withValues(alpha: 0.1) : AppColors.white05,
+        color: player.isMe ? player.rankInfo.color.withValues(alpha: 0.1) : AppColors.white05,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: player.isMe ? AppColors.gold.withValues(alpha: 0.4) : AppColors.glassBorder,
+          color: player.isMe ? player.rankInfo.color.withValues(alpha: 0.4) : AppColors.glassBorder,
           width: player.isMe ? 1.5 : 1,
         ),
       ),
@@ -104,11 +106,21 @@ class _RankingCard extends StatelessWidget {
               : Text('#${player.rank}', style: AppTextStyles.labelMedium.copyWith(color: AppColors.white50)),
           ),
           // Avatar
-          CircleAvatar(
-            radius: 20,
-            backgroundColor: AppColors.purpleNeon.withValues(alpha: 0.2),
-            backgroundImage: player.avatarUrl.isNotEmpty ? NetworkImage(player.avatarUrl) : null,
-            child: player.avatarUrl.isEmpty ? const Icon(Icons.person, color: AppColors.purpleNeon, size: 20) : null,
+          Stack(
+            children: [
+              CircleAvatar(
+                radius: 20,
+                backgroundColor: player.rankInfo.color.withValues(alpha: 0.1),
+                backgroundImage: player.avatarUrl.isNotEmpty 
+                  ? NetworkImage(player.avatarUrl.startsWith('http') ? player.avatarUrl : '${AppConstants.apiBaseUrl}${player.avatarUrl}') 
+                  : null,
+                child: player.avatarUrl.isEmpty ? Icon(Icons.person, color: player.rankInfo.color, size: 20) : null,
+              ),
+              Positioned(
+                bottom: -2, right: -2,
+                child: RankBadge(tier: player.rankInfo.tier, size: 14, showLabel: false),
+              ),
+            ],
           ),
           const SizedBox(width: 12),
           // Name & Level
@@ -116,8 +128,8 @@ class _RankingCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(player.username, style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.w700)),
-                Text('Level ${player.level}', style: AppTextStyles.labelSmall.copyWith(color: AppColors.white30)),
+                Text(player.username, style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.w700, color: player.isMe ? player.rankInfo.color : Colors.white)),
+                Text('Level ${player.level} • ${player.rankInfo.name}', style: AppTextStyles.labelSmall.copyWith(color: AppColors.white30)),
               ],
             ),
           ),
@@ -125,7 +137,7 @@ class _RankingCard extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text('${player.mmr}', style: const TextStyle(color: AppColors.cyan, fontWeight: FontWeight.bold, fontSize: 16)),
+              Text('${player.mmr}', style: TextStyle(color: player.rankInfo.color, fontWeight: FontWeight.bold, fontSize: 16)),
               const Text('POINTS', style: TextStyle(color: AppColors.white30, fontSize: 8, letterSpacing: 1)),
             ],
           ),

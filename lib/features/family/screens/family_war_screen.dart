@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -185,7 +184,7 @@ class FamilyWarScreen extends ConsumerWidget {
                         child: GlassButton(
                           label: isHost ? 'START WAR' : 'WAITING...',
                           glowColor: isHost ? AppColors.crimsonRed : AppColors.white30,
-                          onPressed: isHost && warState.challengerRoster.length >= 1 
+                          onPressed: isHost && warState.challengerRoster.isNotEmpty 
                             ? () => ref.read(familyWarProvider.notifier).startWar()
                             : null,
                         ),

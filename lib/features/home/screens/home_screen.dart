@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mafia_wars/providers/custom_room_provider.dart';
+import 'package:mafia_wars/providers/ranking_provider.dart';
 import '../../../providers/family_war_provider.dart';
 import '../../../providers/notification_provider.dart';
 import '../../../core/theme/app_colors.dart';
@@ -68,13 +69,93 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               _showCongratulatoryDialog();
             }
             break;
-            
+
           case 'custom_room_invite':
             _showCustomRoomInviteDialog(msg.data);
+            break;
+
+          case 'family_war_invite_received':
+            _showFamilyWarInviteDialog(msg.data);
             break;
         }
       });
     });
+  }
+
+  void _showFamilyWarInviteDialog(Map<String, dynamic> data) {
+    showDialog(
+      context: context,
+      builder: (ctx) => BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: AlertDialog(
+          backgroundColor: Colors.black.withOpacity(0.85),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: BorderSide(
+              color: AppColors.crimsonRed.withValues(alpha: 0.3),
+            ),
+          ),
+          title: const Text(
+            'FAMILY WAR INVITE',
+            style: TextStyle(
+              color: AppColors.crimsonRed,
+              letterSpacing: 2,
+              fontSize: 18,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.security, color: AppColors.crimsonRed, size: 48),
+              const SizedBox(height: 16),
+              Text(
+                '${data['sender_name']} is calling for war!',
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: AppColors.white70, fontSize: 14),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                data['family_name'] ?? 'Your Family',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text(
+                'DECLINE',
+                style: TextStyle(color: AppColors.white30),
+              ),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.crimsonRed,
+              ),
+              onPressed: () {
+                Navigator.pop(ctx);
+                ref
+                    .read(familyWarProvider.notifier)
+                    .joinWarLobby(data['room_id'], false);
+                context.push('/family/war');
+              },
+              child: const Text(
+                'JOIN WAR LOBBY',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void _showCustomRoomInviteDialog(Map<String, dynamic> data) {
@@ -84,20 +165,48 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
         child: AlertDialog(
           backgroundColor: Colors.black.withValues(alpha: 0.85),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide(color: AppColors.cyan.withValues(alpha: 0.3))),
-          title: const Text('CUSTOM ROOM INVITE', style: TextStyle(color: AppColors.cyan, letterSpacing: 2, fontSize: 18, fontWeight: FontWeight.w900)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: BorderSide(color: AppColors.cyan.withValues(alpha: 0.3)),
+          ),
+          title: const Text(
+            'CUSTOM ROOM INVITE',
+            style: TextStyle(
+              color: AppColors.cyan,
+              letterSpacing: 2,
+              fontSize: 18,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               const Icon(Icons.sports_esports, color: AppColors.cyan, size: 48),
               const SizedBox(height: 16),
-              Text('${data['sender_name']} has invited you to a custom match.', textAlign: TextAlign.center, style: const TextStyle(color: AppColors.white70, fontSize: 14)),
+              Text(
+                '${data['sender_name']} has invited you to a custom match.',
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: AppColors.white70, fontSize: 14),
+              ),
               const SizedBox(height: 4),
-              Text('Room: ${data['room_id']?.split('_').last ?? "Unknown"}', style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+              Text(
+                'Room: ${data['room_id']?.split('_').last ?? "Unknown"}',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ],
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('DECLINE', style: TextStyle(color: AppColors.white30))),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text(
+                'DECLINE',
+                style: TextStyle(color: AppColors.white30),
+              ),
+            ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: AppColors.cyan),
               onPressed: () {
@@ -105,7 +214,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ref.read(customRoomProvider.notifier).joinRoom(data['room_id']);
                 context.push('/game/custom');
               },
-              child: const Text('JOIN ROOM', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              child: const Text(
+                'JOIN ROOM',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
           ],
         ),
@@ -454,6 +569,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             } else if (index == 2) {
               context.push('/store');
             } else if (index == 3) {
+              ref.invalidate(rankingsProvider);
               context.push('/rankings');
             }
           },
