@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -8,15 +9,99 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../core/theme/app_gradients.dart';
 import '../../../models/rank_model.dart';
 import '../../../models/social/friend_model.dart';
+import '../../home/widgets/avatar_borders.dart';
+import '../../../services/social_service.dart';
 
-class PublicProfileScreen extends ConsumerWidget {
+class PublicProfileScreen extends ConsumerStatefulWidget {
   final FriendModel friend;
 
   const PublicProfileScreen({super.key, required this.friend});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final rank = RankModel.fromTier(friend.rankTier);
+  ConsumerState<PublicProfileScreen> createState() => _PublicProfileScreenState();
+}
+
+class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
+  late FriendModel _profile;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _profile = widget.friend;
+    _fetchRealData();
+  }
+
+  Future<void> _fetchRealData() async {
+    final svc = SocialService();
+    final realProfile = await svc.getPublicProfile(_profile.id);
+    if (mounted && realProfile != null) {
+      setState(() {
+        _profile = realProfile;
+        _isLoading = false;
+      });
+    } else if (mounted) {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  void _copyId() {
+    Clipboard.setData(ClipboardData(text: _profile.id));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('ID copied to clipboard'),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  Widget _buildAvatar() {
+    final rank = RankModel.fromTier(_profile.rankTier);
+    final url = _profile.avatarUrl;
+    final resolvedUrl = url.startsWith('/') ? '${AppConstants.apiBaseUrl}$url' : url;
+    final borderId = _profile.equippedCosmetics?['card_border'] ?? _profile.equippedCosmetics?['cardBorder'];
+
+    Widget avatarContent;
+    if (resolvedUrl.isNotEmpty) {
+      avatarContent = Image.network(
+        resolvedUrl,
+        fit: BoxFit.cover,
+        errorBuilder: (ctx, err, stack) => _fallbackAvatar(),
+      );
+    } else {
+      avatarContent = _fallbackAvatar();
+    }
+
+    return PremiumAvatarBorder(
+      borderId: borderId,
+      radius: 50,
+      child: Container(
+        width: 100,
+        height: 100,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: AppColors.surfaceLight,
+          border: Border.all(color: AppColors.background, width: 2.5),
+        ),
+        child: ClipOval(child: avatarContent),
+      ),
+    );
+  }
+
+  Widget _fallbackAvatar() {
+    return Center(
+      child: Text(
+        _profile.username.isNotEmpty ? _profile.username[0].toUpperCase() : '?',
+        style: const TextStyle(fontSize: 40, color: AppColors.white50),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final rank = RankModel.fromTier(_profile.rankTier);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -76,30 +161,21 @@ class PublicProfileScreen extends ConsumerWidget {
                   ),
                 ),
                 Expanded(
-                  child: SingleChildScrollView(
+                  child: _isLoading 
+                    ? const Center(child: CircularProgressIndicator(color: AppColors.purpleNeon))
+                    : SingleChildScrollView(
                     padding: const EdgeInsets.all(16.0),
                     child: Column(
                       children: [
-                        // Avatar and basic info
-                        CircleAvatar(
-                          radius: 50,
-                          backgroundColor: AppColors.surfaceLight,
-                          backgroundImage: friend.avatarUrl.isNotEmpty
-                              ? NetworkImage('${AppConstants.apiBaseUrl}${friend.avatarUrl}')
-                              : null,
-                          child: friend.avatarUrl.isEmpty
-                              ? Text(
-                                  friend.username.isNotEmpty ? friend.username[0].toUpperCase() : '?',
-                                  style: const TextStyle(fontSize: 40, color: AppColors.white50),
-                                )
-                              : null,
-                        ),
+                        // Avatar
+                        _buildAvatar(),
                         const SizedBox(height: 16),
+                        
                         Text(
-                          friend.username,
+                          _profile.username,
                           style: AppTextStyles.headlineMedium,
                         ),
-                        if (friend.equippedTitle != null && friend.equippedTitle!.isNotEmpty) ...[
+                        if (_profile.equippedTitle != null && _profile.equippedTitle!.isNotEmpty) ...[
                           const SizedBox(height: 4),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -109,7 +185,7 @@ class PublicProfileScreen extends ConsumerWidget {
                               border: Border.all(color: AppColors.purpleNeon.withValues(alpha: 0.5)),
                             ),
                             child: Text(
-                              friend.equippedTitle!,
+                              _profile.equippedTitle!,
                               style: const TextStyle(
                                 color: AppColors.purpleNeon,
                                 fontSize: 12,
@@ -120,14 +196,38 @@ class PublicProfileScreen extends ConsumerWidget {
                           ),
                         ],
                         const SizedBox(height: 8),
-                        Text(
-                          'ID: ${friend.id.length >= 8 ? friend.id.substring(0, 8).toUpperCase() : friend.id.toUpperCase()}',
-                          style: const TextStyle(
-                            color: AppColors.white50,
-                            letterSpacing: 1.5,
-                            fontWeight: FontWeight.bold,
+                        
+                        // Copyable ID
+                        GestureDetector(
+                          onTap: _copyId,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'ID: ${_profile.id.length >= 8 ? _profile.id.substring(0, 8).toUpperCase() : _profile.id.toUpperCase()}',
+                                style: const TextStyle(
+                                  color: AppColors.white50,
+                                  letterSpacing: 1.5,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              const Icon(Icons.copy, size: 14, color: AppColors.cyan),
+                            ],
                           ),
                         ),
+                        
+                        if (_profile.familyTag != null && _profile.familyTag!.isNotEmpty) ...[
+                          const SizedBox(height: 12),
+                          Text(
+                            '[${_profile.familyTag}] ${_profile.familyName ?? ""}',
+                            style: const TextStyle(
+                              color: AppColors.gold,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+
                         const SizedBox(height: 24),
                         
                         // Rank and Popularity Card
@@ -144,7 +244,7 @@ class PublicProfileScreen extends ConsumerWidget {
                             Expanded(
                               child: _buildStatBox(
                                 title: 'Popularity',
-                                value: friend.popularityScore.toString(),
+                                value: _profile.popularityScore.toString(),
                                 color: AppColors.gold,
                               ),
                             ),
@@ -176,15 +276,15 @@ class PublicProfileScreen extends ConsumerWidget {
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceAround,
                             children: [
-                              _buildMiniStat('Games', '${friend.gamesPlayed}'),
+                              _buildMiniStat('Games', '${_profile.gamesPlayed}'),
                               Container(height: 30, width: 1, color: AppColors.white10),
-                              _buildMiniStat('Win Rate', '${friend.winRate.toStringAsFixed(1)}%'),
+                              _buildMiniStat('Win Rate', '${_profile.winRate.toStringAsFixed(1)}%'),
                             ],
                           ),
                         ),
                         const SizedBox(height: 24),
 
-                        // Role Stats (Since FriendModel doesn't have RoleStats, we just show a placeholder or basic info)
+                        // Role Stats
                         const Align(
                           alignment: Alignment.centerLeft,
                           child: Text(
@@ -243,6 +343,7 @@ class PublicProfileScreen extends ConsumerWidget {
               fontSize: 18,
               fontWeight: FontWeight.bold,
             ),
+            textAlign: TextAlign.center,
           ),
         ],
       ),

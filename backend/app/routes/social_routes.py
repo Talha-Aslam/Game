@@ -4,13 +4,18 @@ from app.services.social_service import (
     get_friends_list, get_friend_requests, send_friend_request,
     accept_friend_request, reject_friend_request, remove_friend,
     search_users, get_leaderboard, get_private_chat_history,
-    mark_messages_read
+    mark_messages_read, get_public_profile
 )
 from pydantic import BaseModel
 from typing import Optional
 
 
 router = APIRouter(prefix="/social", tags=["Social"])
+
+
+@router.get("/profile/{target_id}")
+async def fetch_public_profile(target_id: str, user: dict = Depends(get_current_user)):
+    return await get_public_profile(target_id)
 
 
 @router.get("/friends")

@@ -4,6 +4,7 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../models/social/friend_model.dart';
 import '../../../widgets/rank_badge.dart';
+import '../../home/widgets/avatar_borders.dart';
 import 'online_status_indicator.dart';
 import 'popularity_badge_widget.dart';
 
@@ -84,29 +85,40 @@ class FriendCardWidget extends StatelessWidget {
   }
 
   Widget _buildAvatar() {
+    final borderId = friend.equippedCosmetics?['card_border'] ?? friend.equippedCosmetics?['cardBorder'];
+
     return Stack(
       children: [
-        Container(
-          width: 48,
-          height: 48,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: AppColors.surfaceLight,
-            border: Border.all(
-              color: friend.isOnline
-                  ? AppColors.online.withValues(alpha: 0.5)
-                  : AppColors.glassBorder,
-              width: 2,
+        Padding(
+          padding: const EdgeInsets.all(4.0), // Padding to fit the glowing border
+          child: PremiumAvatarBorder(
+            borderId: borderId,
+            radius: 24,
+            child: Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.surfaceLight,
+                border: Border.all(
+                  color: friend.isOnline
+                      ? AppColors.online.withValues(alpha: 0.5)
+                      : AppColors.glassBorder,
+                  width: 2,
+                ),
+              ),
+              child: ClipOval(
+                child: friend.avatarUrl.isNotEmpty
+                    ? Image.network(
+                        friend.avatarUrl.startsWith('/') 
+                            ? '${AppConstants.apiBaseUrl}${friend.avatarUrl}'
+                            : friend.avatarUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => _buildFallbackAvatar(),
+                      )
+                    : _buildFallbackAvatar(),
+              ),
             ),
-          ),
-          child: ClipOval(
-            child: friend.avatarUrl.isNotEmpty
-                ? Image.network(
-                    '${AppConstants.apiBaseUrl}${friend.avatarUrl}',
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => _buildFallbackAvatar(),
-                  )
-                : _buildFallbackAvatar(),
           ),
         ),
         Positioned(

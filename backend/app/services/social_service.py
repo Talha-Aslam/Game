@@ -179,8 +179,44 @@ async def search_users(query: str, current_user_id: str):
             "rankTier": _rank_to_tier(u.get("rank", "Bronze")),
             "popularityScore": u.get("popularity", 0),
             "onlineStatus": "offline",
+            "equippedCosmetics": u.get("equipped_cosmetics", {})
         })
     return results
+
+async def get_public_profile(user_id: str):
+    db = get_database()
+    u = await db["users"].find_one({"_id": user_id})
+    if not u:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    fam_tag = None
+    fam_name = None
+    if u.get("family_id"):
+        fam = await db["families"].find_one({"_id": u["family_id"]})
+        if fam:
+            fam_tag = fam.get("tag")
+            fam_name = fam.get("name")
+            
+    games = u.get("games_played", 0)
+    wins = u.get("wins", 0)
+    win_rate = (wins / games * 100) if games > 0 else 0.0
+
+    return {
+        "id": u["_id"],
+        "username": u.get("username", ""),
+        "avatarUrl": u.get("profile_picture", ""),
+        "rankTier": _rank_to_tier(u.get("rank", "Bronze")),
+        "equippedTitle": u.get("title", ""),
+        "familyTag": fam_tag,
+        "familyName": fam_name,
+        "popularityScore": u.get("popularity", 0),
+        "popularityRank": "Rising Star", # placeholder for now
+        "onlineStatus": "online" if u["_id"] in manager.active_connections else "offline",
+        "currentActivity": "idle",
+        "gamesPlayed": games,
+        "winRate": win_rate,
+        "equippedCosmetics": u.get("equipped_cosmetics", {})
+    }
 
 
 # ══════════════════════════════════════════════════════
