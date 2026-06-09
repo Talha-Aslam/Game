@@ -135,17 +135,67 @@ async def websocket_lobby(websocket: WebSocket, token: str = Query(...)):
                             }, room.players)
                             
                 # --- FAMILY WAR ---
+                elif action == "create_war_lobby":
+                    from app.core.family_war_manager import family_war_manager
+                    from app.config.database import get_database
+                    db = get_database()
+                    user = await db["users"].find_one({"_id": user_id})
+                    family_id = user.get("family_id")
+                    if family_id:
+                        defender_id = payload.get("defender_family_id")
+                        room = await family_war_manager.create_war_lobby(user_id, family_id, defender_id)
+                        payload_data = await family_war_manager.get_war_payload(room.room_id)
+                        await manager.send_personal_message({
+                            "event": "family_war_update",
+                            "data": payload_data
+                        }, user_id)
+                        
+                elif action == "join_war_lobby":
+                    from app.core.family_war_manager import family_war_manager
+                    room_id = payload.get("room_id")
+                    is_defender = payload.get("is_defender", False)
+                    room = family_war_manager.join_war_lobby(user_id, room_id, is_defender)
+                    if room:
+                        payload_data = await family_war_manager.get_war_payload(room.room_id)
+                        await manager.broadcast_to_users({
+                            "event": "family_war_update",
+                            "data": payload_data
+                        }, room.get_all_players())
+                    else:
+                        await manager.send_personal_message({"event": "error", "message": "Failed to join war lobby"}, user_id)
+                        
+                elif action == "leave_war_lobby":
+                    from app.core.family_war_manager import family_war_manager
+                    room_id = family_war_manager.user_to_war.get(user_id)
+                    if room_id:
+                        room = family_war_manager.active_wars.get(room_id)
+                        family_war_manager.leave_war_lobby(user_id)
+                        if room:
+                            payload_data = await family_war_manager.get_war_payload(room_id)
+                            if payload_data:
+                                await manager.broadcast_to_users({
+                                    "event": "family_war_update",
+                                    "data": payload_data
+                                }, room.get_all_players())
+                                
                 elif action == "start_family_war":
-                    # Broadcast to all online family members
+                    from app.core.family_war_manager import family_war_manager
+                    room_id = payload.get("room_id")
+                    await family_war_manager.start_war(user_id, room_id)
+                    
+                elif action == "invite_family_to_war":
+                    from app.core.family_war_manager import family_war_manager
+                    room_id = payload.get("room_id")
                     from app.services.family_service import get_family
                     family = await get_family(user_id)
                     if family:
                         member_ids = [m["user_id"] for m in family.get("members", []) if m["user_id"] != user_id]
                         await manager.broadcast_to_users({
-                            "event": "family_war_invite",
+                            "event": "family_war_invite_received",
                             "data": {
-                                "sender_name": user_id,
-                                "family_name": family.get("name")
+                                "sender_name": user_id, # Should be real name, maybe fix later
+                                "family_name": family.get("name"),
+                                "room_id": room_id
                             }
                         }, member_ids)
 

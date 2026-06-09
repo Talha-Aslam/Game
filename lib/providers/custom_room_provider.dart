@@ -8,12 +8,14 @@ class CustomRoomState {
   final String? creatorId;
   final List<PlayerModel> players;
   final bool isStarted;
+  final bool wasKicked;
 
   CustomRoomState({
     this.roomId,
     this.creatorId,
     this.players = const [],
     this.isStarted = false,
+    this.wasKicked = false,
   });
 
   CustomRoomState copyWith({
@@ -21,12 +23,14 @@ class CustomRoomState {
     String? creatorId,
     List<PlayerModel>? players,
     bool? isStarted,
+    bool? wasKicked,
   }) {
     return CustomRoomState(
       roomId: roomId ?? this.roomId,
       creatorId: creatorId ?? this.creatorId,
       players: players ?? this.players,
       isStarted: isStarted ?? this.isStarted,
+      wasKicked: wasKicked ?? this.wasKicked,
     );
   }
 }
@@ -60,7 +64,10 @@ class CustomRoomNotifier extends Notifier<CustomRoomState> {
           creatorId: data['creator_id'],
           players: players,
           isStarted: data['is_started'] ?? false,
+          wasKicked: false,
         );
+      } else if (msg.event == 'kicked_from_custom') {
+        state = CustomRoomState(wasKicked: true); // Reset room state and set kicked flag
       }
     });
 
