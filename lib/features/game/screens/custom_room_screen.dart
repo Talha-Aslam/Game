@@ -68,15 +68,20 @@ class CustomRoomScreen extends ConsumerWidget {
                           color: AppColors.white70,
                         ),
                       ),
-                      const SizedBox(width: 16),
+                      const SizedBox(width: 12),
                       const Expanded(
-                        child: NeonText(
-                          text: 'CUSTOM ROOM',
-                          fontSize: 22,
-                          color: AppColors.cyan,
-                          glowRadius: 15,
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: NeonText(
+                            text: 'CUSTOM ROOM',
+                            fontSize: 20,
+                            color: AppColors.cyan,
+                            glowRadius: 15,
+                          ),
                         ),
                       ),
+                      SizedBox(width: 10),
                       if (roomState.roomId != null)
                         GestureDetector(
                           onTap: () {
@@ -110,7 +115,11 @@ class CustomRoomScreen extends ConsumerWidget {
                                   ),
                                 ),
                                 const SizedBox(width: 4),
-                                const Icon(Icons.copy, color: AppColors.cyan, size: 12),
+                                const Icon(
+                                  Icons.copy,
+                                  color: AppColors.cyan,
+                                  size: 12,
+                                ),
                               ],
                             ),
                           ),
@@ -122,27 +131,30 @@ class CustomRoomScreen extends ConsumerWidget {
                 Expanded(
                   child: GridView.builder(
                     padding: const EdgeInsets.all(20),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 3,
-                      mainAxisSpacing: 20,
-                      crossAxisSpacing: 20,
-                      childAspectRatio: 0.8,
-                    ),
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 3,
+                          mainAxisSpacing: 20,
+                          crossAxisSpacing: 20,
+                          childAspectRatio: 0.8,
+                        ),
                     itemCount: 15,
                     itemBuilder: (context, index) {
                       if (index < roomState.players.length) {
                         final player = roomState.players[index];
                         final isMe = player.id == user?.id;
                         final isPlayerHost = roomState.creatorId == player.id;
-                        
+
                         return LobbyPlayerCard(
                           player: player,
                           size: 60,
                           isLocalPlayer: isMe,
                           isHost: isPlayerHost,
-                          onTap: (isHost && !isMe) ? () {
-                            _showKickSheet(context, ref, player);
-                          } : null,
+                          onTap: (isHost && !isMe)
+                              ? () {
+                                  _showKickSheet(context, ref, player);
+                                }
+                              : null,
                         );
                       }
                       return _EmptySlot(index: index + 1);
@@ -193,7 +205,7 @@ class CustomRoomScreen extends ConsumerWidget {
   }
 
   void _showKickSheet(BuildContext context, WidgetRef ref, PlayerModel target) {
-     showModalBottomSheet(
+    showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) => BackdropFilter(
@@ -203,20 +215,32 @@ class CustomRoomScreen extends ConsumerWidget {
           decoration: BoxDecoration(
             color: Colors.black.withValues(alpha: 0.85),
             borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-            border: Border.all(color: AppColors.crimsonRed.withValues(alpha: 0.3)),
+            border: Border.all(
+              color: AppColors.crimsonRed.withValues(alpha: 0.3),
+            ),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('REMOVE PLAYER?', style: AppTextStyles.headlineSmall.copyWith(color: AppColors.crimsonRed)),
+              Text(
+                'REMOVE PLAYER?',
+                style: AppTextStyles.headlineSmall.copyWith(
+                  color: AppColors.crimsonRed,
+                ),
+              ),
               const SizedBox(height: 16),
-              Text('Do you want to kick ${target.name} from the room?', style: const TextStyle(color: Colors.white)),
+              Text(
+                'Do you want to kick ${target.name} from the room?',
+                style: const TextStyle(color: Colors.white),
+              ),
               const SizedBox(height: 24),
               GlassButton(
                 label: 'KICK PLAYER',
                 glowColor: AppColors.crimsonRed,
                 onPressed: () {
-                  ref.read(webSocketServiceProvider).send('kick_custom', {'target_id': target.id});
+                  ref.read(webSocketServiceProvider).send('kick_custom', {
+                    'target_id': target.id,
+                  });
                   Navigator.pop(context);
                 },
               ),
@@ -251,14 +275,18 @@ class _InviteSheetState extends ConsumerState<_InviteSheet> {
       final http = HttpService();
       final res = await http.get('/social/online-global');
       if (res is List) {
-        _globalPlayers = res.map((e) => PlayerModel(
-          id: e['id'] ?? '',
-          name: e['username'] ?? 'Unknown',
-          avatarUrl: e['avatarUrl'] ?? '',
-        )).toList();
+        _globalPlayers = res
+            .map(
+              (e) => PlayerModel(
+                id: e['id'] ?? '',
+                name: e['username'] ?? 'Unknown',
+                avatarUrl: e['avatarUrl'] ?? '',
+              ),
+            )
+            .toList();
       }
     } catch (e) {
-       // Ignore
+      // Ignore
     } finally {
       if (mounted) setState(() => _isLoadingGlobal = false);
     }
@@ -268,11 +296,15 @@ class _InviteSheetState extends ConsumerState<_InviteSheet> {
   Widget build(BuildContext context) {
     final friendsState = ref.watch(friendsProvider);
     final roomState = ref.watch(customRoomProvider);
-    
+
     // Filter out people already in room
     final inRoomIds = roomState.players.map((p) => p.id).toSet();
-    final availableFriends = friendsState.onlineFriends.where((f) => !inRoomIds.contains(f.id)).toList();
-    final availableGlobal = _globalPlayers.where((p) => !inRoomIds.contains(p.id)).toList();
+    final availableFriends = friendsState.onlineFriends
+        .where((f) => !inRoomIds.contains(f.id))
+        .toList();
+    final availableGlobal = _globalPlayers
+        .where((p) => !inRoomIds.contains(p.id))
+        .toList();
 
     return Container(
       height: MediaQuery.of(context).size.height * 0.7,
@@ -378,9 +410,7 @@ class _InviteSheetState extends ConsumerState<_InviteSheet> {
                                         'room_id': roomId,
                                       },
                                     );
-                                    ScaffoldMessenger.of(
-                                      context,
-                                    ).showSnackBar(
+                                    ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
                                         content: Text(
                                           'Invite sent to ${friend.username}',
@@ -402,85 +432,97 @@ class _InviteSheetState extends ConsumerState<_InviteSheet> {
                           },
                         ),
                   // Global Tab
-                  _isLoadingGlobal 
-                    ? const Center(child: CircularProgressIndicator(color: AppColors.gold))
-                    : ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: availableGlobal.length,
-                    itemBuilder: (ctx, i) {
-                      final player = availableGlobal[i];
-                      return ListTile(
-                        leading: ClipOval(
-                          child: CircleAvatar(
-                            backgroundImage: player.avatarUrl.isNotEmpty
-                                ? NetworkImage(player.avatarUrl)
-                                : null,
-                            backgroundColor: AppColors.gold.withValues(
-                              alpha: 0.2,
-                            ),
-                            child: player.avatarUrl.isEmpty 
-                                ? Text(
-                              player.name[0].toUpperCase(),
-                              style: const TextStyle(color: AppColors.gold),
-                            ) : null,
+                  _isLoadingGlobal
+                      ? const Center(
+                          child: CircularProgressIndicator(
+                            color: AppColors.gold,
                           ),
-                        ),
-                        title: Text(
-                          player.name,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        subtitle: const Text(
-                          'In Lobby',
-                          style: TextStyle(
-                            color: AppColors.white30,
-                            fontSize: 10,
-                          ),
-                        ),
-                        trailing: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.gold.withValues(
-                              alpha: 0.1,
-                            ),
-                            foregroundColor: AppColors.gold,
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              side: BorderSide(
-                                color: AppColors.gold.withValues(alpha: 0.5),
-                              ),
-                            ),
-                          ),
-                          onPressed: () {
-                            final roomId = roomState.roomId;
-                            if (roomId != null) {
-                              ref.read(webSocketServiceProvider).send(
-                                'invite_custom',
-                                {'target_id': player.id, 'room_id': roomId},
-                              );
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    'Invite sent to ${player.name}',
+                        )
+                      : ListView.builder(
+                          padding: const EdgeInsets.all(16),
+                          itemCount: availableGlobal.length,
+                          itemBuilder: (ctx, i) {
+                            final player = availableGlobal[i];
+                            return ListTile(
+                              leading: ClipOval(
+                                child: CircleAvatar(
+                                  backgroundImage: player.avatarUrl.isNotEmpty
+                                      ? NetworkImage(player.avatarUrl)
+                                      : null,
+                                  backgroundColor: AppColors.gold.withValues(
+                                    alpha: 0.2,
                                   ),
-                                  backgroundColor: AppColors.gold,
+                                  child: player.avatarUrl.isEmpty
+                                      ? Text(
+                                          player.name[0].toUpperCase(),
+                                          style: const TextStyle(
+                                            color: AppColors.gold,
+                                          ),
+                                        )
+                                      : null,
                                 ),
-                              );
-                            }
+                              ),
+                              title: Text(
+                                player.name,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              subtitle: const Text(
+                                'In Lobby',
+                                style: TextStyle(
+                                  color: AppColors.white30,
+                                  fontSize: 10,
+                                ),
+                              ),
+                              trailing: ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.gold.withValues(
+                                    alpha: 0.1,
+                                  ),
+                                  foregroundColor: AppColors.gold,
+                                  elevation: 0,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    side: BorderSide(
+                                      color: AppColors.gold.withValues(
+                                        alpha: 0.5,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                onPressed: () {
+                                  final roomId = roomState.roomId;
+                                  if (roomId != null) {
+                                    ref.read(webSocketServiceProvider).send(
+                                      'invite_custom',
+                                      {
+                                        'target_id': player.id,
+                                        'room_id': roomId,
+                                      },
+                                    );
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          'Invite sent to ${player.name}',
+                                        ),
+                                        backgroundColor: AppColors.gold,
+                                      ),
+                                    );
+                                  }
+                                },
+                                child: const Text(
+                                  'INVITE',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                              ),
+                            );
                           },
-                          child: const Text(
-                            'INVITE',
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
                         ),
-                      );
-                    },
-                  ),
                 ],
               ),
             ),

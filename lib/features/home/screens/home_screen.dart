@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mafia_wars/providers/custom_room_provider.dart';
 import 'package:mafia_wars/providers/ranking_provider.dart';
-import '../../../providers/family_war_provider.dart';
 import '../../../providers/notification_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_gradients.dart';
@@ -73,89 +72,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           case 'custom_room_invite':
             _showCustomRoomInviteDialog(msg.data);
             break;
-
-          case 'family_war_invite_received':
-            _showFamilyWarInviteDialog(msg.data);
-            break;
         }
       });
     });
-  }
-
-  void _showFamilyWarInviteDialog(Map<String, dynamic> data) {
-    showDialog(
-      context: context,
-      builder: (ctx) => BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-        child: AlertDialog(
-          backgroundColor: Colors.black.withOpacity(0.85),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-            side: BorderSide(
-              color: AppColors.crimsonRed.withValues(alpha: 0.3),
-            ),
-          ),
-          title: const Text(
-            'FAMILY WAR INVITE',
-            style: TextStyle(
-              color: AppColors.crimsonRed,
-              letterSpacing: 2,
-              fontSize: 18,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.security, color: AppColors.crimsonRed, size: 48),
-              const SizedBox(height: 16),
-              Text(
-                '${data['sender_name']} is calling for war!',
-                textAlign: TextAlign.center,
-                style: const TextStyle(color: AppColors.white70, fontSize: 14),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                data['family_name'] ?? 'Your Family',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text(
-                'DECLINE',
-                style: TextStyle(color: AppColors.white30),
-              ),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.crimsonRed,
-              ),
-              onPressed: () {
-                Navigator.pop(ctx);
-                ref
-                    .read(familyWarProvider.notifier)
-                    .joinWarLobby(data['room_id'], false);
-                context.push('/family/war');
-              },
-              child: const Text(
-                'JOIN WAR LOBBY',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   void _showCustomRoomInviteDialog(Map<String, dynamic> data) {
@@ -231,14 +150,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   void _handlePlay() {
     switch (_selectedMode) {
       case 0: // Ranked
-      case 1: // Casual
         context.push('/matchmaking');
         break;
-      case 2: // Family War
-        ref.read(familyWarProvider.notifier).createWarLobby(null);
-        context.push('/family/war');
-        break;
-      case 3: // Custom
+      case 1: // Custom
         _showCustomRoomEntrySheet();
         break;
     }
@@ -570,7 +484,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               context.push('/store');
             } else if (index == 3) {
               ref.invalidate(rankingsProvider);
-              context.push('/rankings');
+              context.push('/leaderboard');
             }
           },
         ),

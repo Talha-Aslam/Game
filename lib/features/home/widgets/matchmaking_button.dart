@@ -18,17 +18,13 @@ class _MatchmakingButtonState extends State<MatchmakingButton>
   late AnimationController _ring;
   int _selectedMode = 0;
 
-  static const _modes = ['RANKED', 'CASUAL', 'FAMILY WAR', 'CUSTOM'];
+  static const _modes = ['RANKED', 'CUSTOM'];
   static const _modeIcons = [
     Icons.military_tech,
-    Icons.sports_esports,
-    Icons.whatshot,
     Icons.tune,
   ];
   static const _modeColors = [
     AppColors.gold,
-    AppColors.cyan,
-    AppColors.crimsonRed,
     AppColors.purpleGlow,
   ];
 

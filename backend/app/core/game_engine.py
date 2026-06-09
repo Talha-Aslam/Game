@@ -47,7 +47,7 @@ class Player(BaseModel):
 class Room:
     def __init__(self, room_id: str, player_ids: List[str], room_type: str = "Standard"):
         self.room_id = room_id
-        self.room_type = room_type # Standard, FamilyWar, Custom
+        self.room_type = room_type # Standard, Custom
         self.players: Dict[str, Player] = {}
         # Will be populated with Player objects after fetching from DB
         
@@ -116,11 +116,20 @@ class GameEngine:
                 )
             else:
                 user_data = user_dict.get(pid, {})
+                points = user_data.get("mmr") or user_data.get("MMR") or user_data.get("rank_points") or 0
+                
+                # Derive tier from points, mirroring frontend logic
+                tier = 0
+                if points >= 5001: tier = 4
+                elif points >= 3501: tier = 3
+                elif points >= 2001: tier = 2
+                elif points >= 1001: tier = 1
+                
                 room.players[pid] = Player(
                     user_id=pid,
                     is_bot=False,
                     name=user_data.get("username", f"Player_{pid[:4]}"),
-                    rankTier=1, # Could map from MMR
+                    rankTier=tier,
                     familyTag=None, # Could fetch from family DB
                     avatarIndex=random.randint(0, 9), # Could map from premium_avatar
                     avatar_url=user_data.get("profile_picture", ""),

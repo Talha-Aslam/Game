@@ -1,3 +1,4 @@
+import '../features/home/widgets/avatar_borders.dart';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:mafia_wars/models/rank_model.dart';
@@ -174,54 +175,59 @@ class _PlayerCardState extends State<PlayerCard> with TickerProviderStateMixin {
                   },
                 ),
 
+
               // Main avatar circle
-              Container(
-                width: size,
-                height: size,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: _borderColor,
-                    width: borderId != null ? 3.0 : 2.0,
+              PremiumAvatarBorder(
+                borderId: borderId,
+                radius: size / 2,
+                child: Container(
+                  width: size,
+                  height: size,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: _borderColor,
+                      width: borderId != null ? 3.0 : 2.0,
+                    ),
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: isAlive
+                          ? [AppColors.surfaceLight, AppColors.surface]
+                          : [AppColors.darkGrey, const Color(0xFF1A1A1A)],
+                    ),
                   ),
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: isAlive
-                        ? [AppColors.surfaceLight, AppColors.surface]
-                        : [AppColors.darkGrey, const Color(0xFF1A1A1A)],
-                  ),
-                ),
-                child: ClipOval(
-                  child: ColorFiltered(
-                    colorFilter: isAlive
-                        ? const ColorFilter.mode(
-                            Colors.transparent,
-                            BlendMode.multiply,
-                          )
-                        : const ColorFilter.matrix(<double>[
-                            0.2126,
-                            0.7152,
-                            0.0722,
-                            0,
-                            0,
-                            0.2126,
-                            0.7152,
-                            0.0722,
-                            0,
-                            0,
-                            0.2126,
-                            0.7152,
-                            0.0722,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0.5,
-                            0,
-                          ]),
-                    child: _avatarContent(),
+                  child: ClipOval(
+                    child: ColorFiltered(
+                      colorFilter: isAlive
+                          ? const ColorFilter.mode(
+                              Colors.transparent,
+                              BlendMode.multiply,
+                            )
+                          : const ColorFilter.matrix(<double>[
+                              0.2126,
+                              0.7152,
+                              0.0722,
+                              0,
+                              0,
+                              0.2126,
+                              0.7152,
+                              0.0722,
+                              0,
+                              0,
+                              0.2126,
+                              0.7152,
+                              0.0722,
+                              0,
+                              0,
+                              0,
+                              0,
+                              0,
+                              0.5,
+                              0,
+                            ]),
+                      child: _avatarContent(),
+                    ),
                   ),
                 ),
               ),

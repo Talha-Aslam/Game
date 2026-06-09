@@ -28,7 +28,7 @@ async def websocket_matchmaking(websocket: WebSocket, user_id: str):
             event = payload.get("event")
             
             if event == "join_queue":
-                game_mode = payload.get("game_mode", "casual")
+                game_mode = payload.get("game_mode", "ranked")
                 await matchmaking_service.add_to_queue(user_id, game_mode, player)
             
             elif event == "leave_queue":

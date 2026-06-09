@@ -19,7 +19,7 @@ class PartyService {
 
   // ── Party Management ──
 
-  Future<PartyModel> createParty({String gameMode = 'casual'}) async {
+  Future<PartyModel> createParty({String gameMode = 'ranked'}) async {
     await Future.delayed(const Duration(milliseconds: 300));
     _currentParty = PartyModel(
       id: 'party_${DateTime.now().millisecondsSinceEpoch}',

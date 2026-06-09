@@ -37,7 +37,7 @@ class RankingModel {
 
 final rankingsProvider = FutureProvider<List<RankingModel>>((ref) async {
   final http = HttpService();
-  final response = await http.get('/rankings');
+  final response = await http.get('/user/rankings');
   if (response is List) {
     return response.map((e) => RankingModel.fromJson(e)).toList();
   }

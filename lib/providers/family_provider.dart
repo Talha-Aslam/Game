@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/family_model.dart';
 import '../models/family/family_treasury_model.dart';
-import '../models/family/family_war_model.dart';
 import '../models/family/family_achievement_model.dart';
 import '../models/family/family_application_model.dart';
 import '../models/family/family_audit_log_model.dart';
@@ -24,8 +23,6 @@ class FamilyHubState {
   final FamilyModel? family;
   final FamilyTreasury treasury;
   final List<FamilyApplication> applications;
-  final List<FamilyWarModel> wars;
-  final List<RivalryRecord> rivalries;
   final List<FamilyAchievement> achievements;
   final List<FamilyAuditEntry> auditLog;
   final List<FamilyChatMessage> chatMessages;
@@ -38,8 +35,6 @@ class FamilyHubState {
     this.family,
     this.treasury = const FamilyTreasury(),
     this.applications = const [],
-    this.wars = const [],
-    this.rivalries = const [],
     this.achievements = const [],
     this.auditLog = const [],
     this.chatMessages = const [],
@@ -58,8 +53,6 @@ class FamilyHubState {
     FamilyModel? family,
     FamilyTreasury? treasury,
     List<FamilyApplication>? applications,
-    List<FamilyWarModel>? wars,
-    List<RivalryRecord>? rivalries,
     List<FamilyAchievement>? achievements,
     List<FamilyAuditEntry>? auditLog,
     List<FamilyChatMessage>? chatMessages,
@@ -73,8 +66,6 @@ class FamilyHubState {
       family: clearFamily ? null : (family ?? this.family),
       treasury: treasury ?? this.treasury,
       applications: applications ?? this.applications,
-      wars: wars ?? this.wars,
-      rivalries: rivalries ?? this.rivalries,
       achievements: achievements ?? this.achievements,
       auditLog: auditLog ?? this.auditLog,
       chatMessages: chatMessages ?? this.chatMessages,
@@ -188,8 +179,6 @@ class FamilyHubNotifier extends Notifier<FamilyHubState> {
       final family = await _svc.getCurrentFamily();
       final treasury = await _svc.getTreasury();
       final apps = await _svc.getApplications();
-      final wars = await _svc.getWars();
-      final rivals = await _svc.getRivalries();
       final achievements = await _svc.getAchievements();
       final audit = await _svc.getAuditLog();
       final messages = await _chat.getMessages();
@@ -197,8 +186,6 @@ class FamilyHubNotifier extends Notifier<FamilyHubState> {
         family: family,
         treasury: treasury,
         applications: apps,
-        wars: wars,
-        rivalries: rivals,
         achievements: achievements,
         auditLog: audit,
         chatMessages: messages,

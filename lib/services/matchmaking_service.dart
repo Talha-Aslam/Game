@@ -117,7 +117,7 @@ class MatchmakingService {
     });
 
     _wsService.connectLobby().then((_) {
-       _wsService.send("join_queue", {"mode": ranked ? "ranked" : "casual"});
+       _wsService.send("join_queue", {"mode": "ranked"});
     });
   }
 

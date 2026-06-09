@@ -11,7 +11,6 @@ BOUNTY_POOL = [
     {"action_type": "win_match", "description": "Win 1 Match", "total": 1, "xp": 100, "icon": "trophy"},
     {"action_type": "survive_night", "description": "Survive 2 Nights", "total": 2, "xp": 80, "icon": "shield"},
     {"action_type": "vote_mafia", "description": "Vote out Mafia", "total": 1, "xp": 120, "icon": "target"},
-    {"action_type": "play_casual", "description": "Play 3 Casual Matches", "total": 3, "xp": 150, "icon": "gamepad"},
     {"action_type": "doctor_save", "description": "Successfully save someone as Doctor", "total": 1, "xp": 150, "icon": "medical_services"}
 ]
 

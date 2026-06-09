@@ -14,7 +14,6 @@ import '../../features/family/screens/family_create_screen.dart';
 import '../../features/family/screens/family_search_screen.dart';
 import '../../features/family/screens/family_profile_screen.dart';
 import '../../features/family/screens/family_chat_screen.dart';
-import '../../features/family/screens/family_war_screen.dart';
 import '../../features/family/screens/family_audit_log_screen.dart';
 import '../../features/family/screens/family_settings_screen.dart';
 import '../../features/family/screens/spectate_match_screen.dart';
@@ -71,7 +70,6 @@ class AppRouter {
         path: '/family/chat',
         builder: (c, s) => const FamilyChatScreen(),
       ),
-      GoRoute(path: '/family/war', builder: (c, s) => const FamilyWarScreen()),
       GoRoute(
         path: '/family/audit',
         builder: (c, s) => const FamilyAuditLogScreen(),

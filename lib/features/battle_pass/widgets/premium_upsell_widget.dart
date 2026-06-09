@@ -74,8 +74,8 @@ class _PlanCardState extends State<_PlanCard> with SingleTickerProviderStateMixi
         ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
-            Text(widget.title, style: TextStyle(color: widget.color, fontSize: 13, fontWeight: FontWeight.w800, letterSpacing: 1)),
-            const Spacer(),
+            Expanded(child: Text(widget.title, style: TextStyle(color: widget.color, fontSize: 13, fontWeight: FontWeight.w800, letterSpacing: 1), overflow: TextOverflow.ellipsis)),
+            const SizedBox(width: 8),
             if (widget.isHighlighted) Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(borderRadius: BorderRadius.circular(4),
@@ -88,7 +88,7 @@ class _PlanCardState extends State<_PlanCard> with SingleTickerProviderStateMixi
             child: Row(children: [
               Icon(Icons.check, color: widget.color, size: 14),
               const SizedBox(width: 6),
-              Text(f, style: AppTextStyles.labelSmall.copyWith(color: AppColors.white70)),
+              Expanded(child: Text(f, style: AppTextStyles.labelSmall.copyWith(color: AppColors.white70))),
             ]),
           )),
           const SizedBox(height: 12),

@@ -1,3 +1,4 @@
+import '../../home/widgets/avatar_borders.dart';
 import 'dart:math';
 import 'dart:ui';
 import 'package:flutter/material.dart';
@@ -161,57 +162,59 @@ class _LobbyPlayerCardState extends State<LobbyPlayerCard>
                               ),
                             ),
 
-                          // Glass avatar circle
-                          ClipOval(
-                            child: BackdropFilter(
-                              filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                              child: Container(
-                                width: s,
-                                height: s,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: isAlive
-                                      ? AppColors.white05
-                                      : AppColors.darkGrey.withValues(
-                                          alpha: 0.3,
-                                        ),
-                                  border: Border.all(
-                                    color: _borderColor,
-                                    width: (isSpeaking || borderId != null)
-                                        ? 1.5
-                                        : 1,
-                                  ),
-                                  gradient: isAlive
-                                      ? const LinearGradient(
-                                          begin: Alignment.topLeft,
-                                          end: Alignment.bottomRight,
-                                          colors: [
-                                            AppColors.glassBackground,
-                                            AppColors.glassBackgroundDark,
-                                          ],
-                                        )
-                                      : null,
-                                ),
-                                child: Stack(
-                                  children: [
-                                    // Avatar Image or Letter Fallback
-                                    _avatarContent(s, isAlive),
+                                                    // Glass avatar circle
+                                                    PremiumAvatarBorder(
+                                                      borderId: borderId,
+                                                      radius: s / 2,
+                                                      child: ClipOval(
+                                                        child: BackdropFilter(
+                                                          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                                                          child: Container(
+                                                            width: s,
+                                                            height: s,
+                                                            decoration: BoxDecoration(
+                                                              shape: BoxShape.circle,
+                                                              color: isAlive
+                                                                  ? AppColors.white05
+                                                                  : AppColors.darkGrey.withValues(
+                                                                      alpha: 0.3,
+                                                                    ),
+                                                              border: Border.all(
+                                                                color: _borderColor,
+                                                                width: (isSpeaking || borderId != null) ? 1.5 : 1,
+                                                              ),
+                                                              gradient: isAlive
+                                                                  ? const LinearGradient(
+                                                                      begin: Alignment.topLeft,
+                                                                      end: Alignment.bottomRight,
+                                                                      colors: [
+                                                                        AppColors.glassBackground,
+                                                                        AppColors.glassBackgroundDark,
+                                                                      ],
+                                                                    )
+                                                                  : null,
+                                                            ),
+                                                            child: Stack(
+                                                              children: [
+                                                                // Avatar Image or Letter Fallback
+                                                                _avatarContent(s, isAlive),
 
-                                    // Eliminated X
-                                    if (!isAlive)
-                                      Center(
-                                        child: Icon(
-                                          Icons.close,
-                                          color: AppColors.crimsonRed
-                                              .withValues(alpha: 0.5),
-                                          size: s * 0.35,
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
+                                                                // Eliminated X
+                                                                if (!isAlive)
+                                                                  Center(
+                                                                    child: Icon(
+                                                                      Icons.close,
+                                                                      color: AppColors.crimsonRed
+                                                                          .withValues(alpha: 0.5),
+                                                                      size: s * 0.35,
+                                                                    ),
+                                                                  ),
+                                                              ],
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ),
 
                           // Voice badge — compact
                           if (isAlive)

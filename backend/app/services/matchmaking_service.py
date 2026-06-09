@@ -6,7 +6,6 @@ from app.schemas.match_schema import LobbySchema, MatchPlayer
 
 # In-memory queue pools
 queue_pools: Dict[str, List[Dict[str, Any]]] = {
-    "casual": [],
     "ranked": []
 }
 

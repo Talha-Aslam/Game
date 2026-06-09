@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
-import '../../../models/family/family_war_model.dart';
 import '../../../core/theme/app_gradients.dart';
 import '../../../providers/family_provider.dart';
 import '../../../providers/social_provider.dart';
@@ -21,8 +20,6 @@ import '../widgets/member_action_sheet.dart';
 import '../widgets/family_invite_card.dart';
 import '../widgets/treasury_widget.dart';
 import '../widgets/treasury_boost_card.dart';
-import '../widgets/war_lobby_card.dart';
-import '../widgets/rivalry_history_card.dart';
 import '../widgets/family_achievement_card.dart';
 import '../../../models/family/family_treasury_model.dart';
 import 'package:mafia_wars/providers/matchmaking_provider.dart';
@@ -41,7 +38,7 @@ class _FamilyScreenState extends ConsumerState<FamilyScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 7, vsync: this);
+    _tabController = TabController(length: 5, vsync: this);
     
     _tabController.addListener(() {
       if (_tabController.index == 3) { // 3 is the Chat tab
@@ -408,7 +405,6 @@ class _FamilyScreenState extends ConsumerState<FamilyScreen>
                       _RequestsTab(state: state, ref: ref),
                       _ChatTab(),
                       _TreasuryTab(),
-                      _WarsTab(state: state),
                       _AchievementsTab(state: state),
                     ],
                   ),
@@ -428,11 +424,6 @@ class _FamilyScreenState extends ConsumerState<FamilyScreen>
       ('Requests', Icons.person_add, state.applications.length),
       ('Chat', Icons.chat, null),
       ('Treasury', Icons.account_balance, null),
-      (
-        'Wars',
-        Icons.whatshot,
-        state.wars.where((w) => w.status == WarStatus.pending).length,
-      ),
       ('Achieve', Icons.emoji_events, null),
     ];
     return Container(
@@ -535,12 +526,12 @@ class _OverviewTab extends ConsumerWidget {
           const SizedBox(height: 16),
           // Stats grid
           GridView.count(
-            crossAxisCount: 3,
+            crossAxisCount: 2,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             mainAxisSpacing: 8,
             crossAxisSpacing: 8,
-            childAspectRatio: 1.2,
+            childAspectRatio: 2.0,
             children: [
               FamilyStatCard(
                 label: 'Members',
@@ -553,30 +544,6 @@ class _OverviewTab extends ConsumerWidget {
                 value: '${f.onlineCount}',
                 icon: Icons.circle,
                 color: AppColors.online,
-              ),
-              FamilyStatCard(
-                label: 'Wins',
-                value: '${f.totalWins}',
-                icon: Icons.emoji_events,
-                color: AppColors.gold,
-              ),
-              FamilyStatCard(
-                label: 'Win Rate',
-                value: '${f.winRate.toStringAsFixed(1)}%',
-                icon: Icons.trending_up,
-                color: AppColors.mintGreen,
-              ),
-              FamilyStatCard(
-                label: 'Wars Won',
-                value: '${f.warWins}',
-                icon: Icons.whatshot,
-                color: AppColors.crimsonRed,
-              ),
-              FamilyStatCard(
-                label: 'Rank',
-                value: '#${f.globalRank}',
-                icon: Icons.leaderboard,
-                color: AppColors.purpleGlow,
               ),
             ],
           ),
@@ -1185,53 +1152,6 @@ class _TreasuryTab extends ConsumerWidget {
               style: TextStyle(color: AppColors.gold),
             ),
           ),
-        ],
-      ),
-    );
-  }
-}
-
-// ═══════════════════════════════════════════════════════════
-//  WARS TAB
-// ═══════════════════════════════════════════════════════════
-class _WarsTab extends StatelessWidget {
-  final FamilyHubState state;
-  const _WarsTab({required this.state});
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (state.wars.isNotEmpty) ...[
-            Text(
-              'SYNDICATE WARS',
-              style: TextStyle(
-                color: AppColors.white30,
-                fontSize: 10,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 1.5,
-              ),
-            ),
-            const SizedBox(height: 8),
-            ...state.wars.map((w) => WarLobbyCard(war: w)),
-          ],
-          if (state.rivalries.isNotEmpty) ...[
-            const SizedBox(height: 16),
-            Text(
-              'RIVALRIES',
-              style: TextStyle(
-                color: AppColors.white30,
-                fontSize: 10,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 1.5,
-              ),
-            ),
-            const SizedBox(height: 8),
-            ...state.rivalries.map((r) => RivalryHistoryCard(rivalry: r)),
-          ],
         ],
       ),
     );

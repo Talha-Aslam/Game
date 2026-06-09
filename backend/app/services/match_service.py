@@ -102,7 +102,7 @@ async def resolve_match_results(players: List[Any], winner_faction: str) -> None
                 update_query["$inc"]["mmr"] = -user_doc.get("mmr", 0) # Only deduct what they have
                 
             history_entry = {
-                "game_mode": "casual", # default for now
+                "game_mode": "ranked",
                 "role": p.role,
                 "won": is_winner,
                 "mmr_change": mmr_change
@@ -122,7 +122,6 @@ async def resolve_match_results(players: List[Any], winner_faction: str) -> None
                 actions["win_match"] = 1
             if p.is_alive:
                 actions["survive_night"] = 1
-            actions["play_casual"] = 1
             
             await update_bounty_progress(p.user_id, actions)
             
