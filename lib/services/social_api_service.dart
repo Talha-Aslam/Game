@@ -11,6 +11,11 @@ class SocialApiService {
     return List<Map<String, dynamic>>.from(data ?? []);
   }
 
+  Future<Map<String, dynamic>?> getPublicProfile(String targetId) async {
+    final data = await _http.get('/social/profile/$targetId');
+    return data;
+  }
+
   // ── Friend Requests ──
 
   Future<List<Map<String, dynamic>>> getFriendRequests() async {

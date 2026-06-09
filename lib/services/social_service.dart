@@ -108,6 +108,18 @@ class SocialService {
     }
   }
 
+  // ── Public Profile ──
+
+  Future<FriendModel?> getPublicProfile(String targetId) async {
+    try {
+      final data = await _api.getPublicProfile(targetId);
+      if (data == null) return null;
+      return _friendFromJson(data);
+    } catch (_) {
+      return null;
+    }
+  }
+
   // ── Remove Friend ──
 
   Future<void> removeFriend(String friendId) async {
@@ -132,6 +144,7 @@ class SocialService {
       unreadCount: json['unreadCount'] ?? json['unread_count'] ?? 0,
       gamesPlayed: json['gamesPlayed'] ?? json['games_played'] ?? 0,
       winRate: (json['winRate'] ?? json['win_rate'] ?? 0).toDouble(),
+      equippedCosmetics: json['equippedCosmetics'] ?? json['equipped_cosmetics'],
     );
   }
 

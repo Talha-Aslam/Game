@@ -75,6 +75,8 @@ class FriendModel {
 
   final int gamesPlayed;
   final double winRate;
+  
+  final Map<String, dynamic>? equippedCosmetics;
 
   const FriendModel({
     required this.id,
@@ -94,6 +96,7 @@ class FriendModel {
     this.unreadCount = 0,
     this.gamesPlayed = 0,
     this.winRate = 0.0,
+    this.equippedCosmetics,
   });
 
   bool get isOnline => onlineStatus != OnlineStatus.offline;
@@ -137,6 +140,7 @@ class FriendModel {
     bool? isBlocked,
     int? gamesPlayed,
     double? winRate,
+    Map<String, dynamic>? equippedCosmetics,
   }) {
     return FriendModel(
       id: id ?? this.id,
@@ -155,6 +159,7 @@ class FriendModel {
       isBlocked: isBlocked ?? this.isBlocked,
       gamesPlayed: gamesPlayed ?? this.gamesPlayed,
       winRate: winRate ?? this.winRate,
+      equippedCosmetics: equippedCosmetics ?? this.equippedCosmetics,
     );
   }
 }
