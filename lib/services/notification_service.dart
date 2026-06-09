@@ -76,14 +76,16 @@ class NotificationService {
           body = '';
       }
 
-      addNotification(SocialNotification(
-        id: 'notif_${DateTime.now().millisecondsSinceEpoch}',
-        type: type,
-        title: title,
-        body: body,
-        fromUsername: name,
-        timestamp: DateTime.now(),
-      ));
+      addNotification(
+        SocialNotification(
+          id: 'notif_${DateTime.now().millisecondsSinceEpoch}',
+          type: type,
+          title: title,
+          body: body,
+          fromUsername: name,
+          timestamp: DateTime.now(),
+        ),
+      );
     });
   }
 
@@ -96,14 +98,6 @@ class NotificationService {
         body: 'Join the city now.',
         fromUsername: 'ShadowKing',
         timestamp: DateTime.now().subtract(const Duration(minutes: 5)),
-      ),
-      SocialNotification(
-        id: 'notif_2',
-        type: SocialNotificationType.partyInvite,
-        title: 'Party Invite',
-        body: 'NightViper invited you to a Ranked match.',
-        fromUsername: 'NightViper',
-        timestamp: DateTime.now().subtract(const Duration(minutes: 12)),
       ),
       SocialNotification(
         id: 'notif_3',

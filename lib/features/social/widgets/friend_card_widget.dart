@@ -219,25 +219,28 @@ class FriendCardWidget extends StatelessWidget {
             spacing: 6,
             runSpacing: 6,
             children: [
-              _ActionChip(
-                icon: Icons.sports_esports,
-                label: 'Invite',
-                color: AppColors.cyan,
-                onTap: onInvite,
-              ),
-              _ActionChip(
-                icon: Icons.chat_bubble_outline,
-                label: 'Msg',
-                color: AppColors.purpleGlow,
-                onTap: onMessage,
-                showRedDot: hasUnreadMessages,
-              ),
-              _ActionChip(
-                icon: Icons.card_giftcard,
-                label: 'Gift',
-                color: AppColors.gold,
-                onTap: onSendPopularity,
-              ),
+              if (onInvite != null)
+                _ActionChip(
+                  icon: Icons.sports_esports,
+                  label: 'Invite',
+                  color: AppColors.cyan,
+                  onTap: onInvite,
+                ),
+              if (onMessage != null)
+                _ActionChip(
+                  icon: Icons.chat_bubble_outline,
+                  label: 'Msg',
+                  color: AppColors.purpleGlow,
+                  onTap: onMessage,
+                  showRedDot: hasUnreadMessages,
+                ),
+              if (onSendPopularity != null)
+                _ActionChip(
+                  icon: Icons.card_giftcard,
+                  label: 'Gift',
+                  color: AppColors.gold,
+                  onTap: onSendPopularity,
+                ),
               if (onRemove != null)
                 _ActionChip(
                   icon: Icons.person_remove,

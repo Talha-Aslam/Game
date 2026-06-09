@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'social/friend_model.dart';
 
 // ══════════════════════════════════════════════════════════════════
 //  FAMILY ROLES & PERMISSIONS
@@ -126,7 +127,6 @@ enum MemberActivity {
   offline,
   inMatch,
   inVoiceChat,
-  inParty,
   spectating,
   idle;
 
@@ -140,8 +140,6 @@ enum MemberActivity {
         return 'In Match';
       case MemberActivity.inVoiceChat:
         return 'In Voice Chat';
-      case MemberActivity.inParty:
-        return 'In Party';
       case MemberActivity.spectating:
         return 'Spectating';
       case MemberActivity.idle:
@@ -159,8 +157,6 @@ enum MemberActivity {
         return const Color(0xFFFF1744);
       case MemberActivity.inVoiceChat:
         return const Color(0xFF00E5FF);
-      case MemberActivity.inParty:
-        return const Color(0xFF448AFF);
       case MemberActivity.spectating:
         return const Color(0xFFFFD700);
       case MemberActivity.idle:
@@ -254,6 +250,21 @@ class FamilyMember {
   String get rankName {
     const ranks = ['Bronze', 'Silver', 'Gold', 'Diamond', 'Syndicate Boss'];
     return ranks[rankTier.clamp(0, ranks.length - 1)];
+  }
+
+  FriendModel toFriendModel() {
+    return FriendModel(
+      id: userId,
+      username: username,
+      avatarUrl: avatarUrl,
+      rankTier: rankTier,
+      popularityScore: popularityScore,
+      gamesPlayed: totalGames,
+      winRate: winRate,
+      onlineStatus: activity == MemberActivity.offline
+          ? OnlineStatus.offline
+          : OnlineStatus.online,
+    );
   }
 
   FamilyMember copyWith({

@@ -22,8 +22,6 @@ class SocialNotificationCard extends StatelessWidget {
         return AppColors.online;
       case SocialNotificationType.friendRequest:
         return AppColors.cyan;
-      case SocialNotificationType.partyInvite:
-        return AppColors.cyan;
       case SocialNotificationType.familyInvite:
         return AppColors.purpleNeon;
       case SocialNotificationType.letsPlay:
@@ -43,8 +41,6 @@ class SocialNotificationCard extends StatelessWidget {
         return Icons.circle;
       case SocialNotificationType.friendRequest:
         return Icons.person_add;
-      case SocialNotificationType.partyInvite:
-        return Icons.groups;
       case SocialNotificationType.familyInvite:
         return Icons.shield;
       case SocialNotificationType.letsPlay:
@@ -94,9 +90,7 @@ class SocialNotificationCard extends StatelessWidget {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: _typeColor.withValues(alpha: 0.12),
-                  border: Border.all(
-                    color: _typeColor.withValues(alpha: 0.3),
-                  ),
+                  border: Border.all(color: _typeColor.withValues(alpha: 0.3)),
                 ),
                 child: Icon(_typeIcon, color: _typeColor, size: 18),
               ),

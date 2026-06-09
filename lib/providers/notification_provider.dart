@@ -86,13 +86,6 @@ class NotificationNotifier extends Notifier<NotificationState> {
         ref.read(authProvider.notifier).checkAuth();
         
         state = state.copyWith(unseenGifts: state.unseenGifts + 1);
-      } else if (msg.event == 'party_invite') {
-        final senderName = msg.data['senderName'] ?? 'A friend';
-        _showAmazingSnackbar(
-          'Party Invite',
-          '$senderName has invited you to a party!',
-        );
-        state = state.copyWith(unseenInvites: state.unseenInvites + 1);
       } else if (msg.event == 'family_invite') {
         final data = msg.data;
         final senderName = data['senderName'] ?? 'A friend';

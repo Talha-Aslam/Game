@@ -5,7 +5,6 @@ import 'package:mafia_wars/providers/auth_provider.dart';
 import 'package:mafia_wars/services/user_api_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../models/social/friend_model.dart';
-import '../../../providers/party_provider.dart';
 import '../../../providers/social_provider.dart';
 import '../../../providers/notification_provider.dart';
 import 'friend_card_widget.dart';
@@ -22,16 +21,6 @@ class SharedFriendHelper {
     return FriendCardWidget(
       friend: friend,
       hasUnreadMessages: unreadCount > 0,
-      onInvite: () {
-        ref.read(partyProvider.notifier).inviteFriend(friend);
-        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Party Invite sent to ${friend.username}!'),
-            backgroundColor: AppColors.purpleNeon,
-          ),
-        );
-      },
       onMessage: () {
         ref.read(notificationProvider.notifier).markMessagesRead(friend.id);
         ref.read(socialServiceProvider).markMessagesRead(friend.id);
@@ -183,14 +172,16 @@ class SharedFriendHelper {
           await ref
               .read(userApiServiceProvider)
               .giftPopularity(friend.id, amount);
-              
+
           final currentUser = ref.read(authProvider).user;
           if (currentUser != null) {
-            ref.read(authProvider.notifier).updateUserLocal(
-              currentUser.copyWith(
-                influencePoints: currentUser.influencePoints - amount,
-              ),
-            );
+            ref
+                .read(authProvider.notifier)
+                .updateUserLocal(
+                  currentUser.copyWith(
+                    influencePoints: currentUser.influencePoints - amount,
+                  ),
+                );
           }
 
           messenger.hideCurrentSnackBar();

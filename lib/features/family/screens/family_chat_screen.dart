@@ -543,59 +543,6 @@ class _VoiceLoungePanelState extends ConsumerState<_VoiceLoungePanel>
                                             ),
                                           ),
                                         ),
-                                      if (isBoss && !isLocal)
-                                        Positioned(
-                                          top: 0,
-                                          right: 0,
-                                          child: GestureDetector(
-                                            onTap: () {
-                                              final targetUser = family!.members
-                                                  .firstWhere(
-                                                    (m) =>
-                                                        m.userId.hashCode
-                                                            .abs() ==
-                                                        uid,
-                                                    orElse: () =>
-                                                        family.members.first,
-                                                  );
-                                              ref
-                                                  .read(webSocketServiceProvider)
-                                                  .sendMuteRequest(
-                                                    targetUser.userId,
-                                                  );
-
-                                              ScaffoldMessenger.of(
-                                                context,
-                                              ).showSnackBar(
-                                                SnackBar(
-                                                  content: Text(
-                                                    'Sent mute command to ${targetUser.username}',
-                                                  ),
-                                                  duration: const Duration(
-                                                    seconds: 1,
-                                                  ),
-                                                ),
-                                              );
-                                            },
-                                            child: Container(
-                                              padding: const EdgeInsets.all(4),
-                                              decoration: BoxDecoration(
-                                                shape: BoxShape.circle,
-                                                color: AppColors.crimsonRed
-                                                    .withValues(alpha: 0.9),
-                                                border: Border.all(
-                                                  color: AppColors.background,
-                                                  width: 1.5,
-                                                ),
-                                              ),
-                                              child: const Icon(
-                                                Icons.mic_off,
-                                                color: Colors.white,
-                                                size: 12,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
                                     ],
                                   ),
                                   const SizedBox(height: 8),

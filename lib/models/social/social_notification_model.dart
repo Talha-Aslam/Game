@@ -2,7 +2,6 @@
 enum SocialNotificationType {
   friendOnline,
   friendRequest,
-  partyInvite,
   familyInvite,
   letsPlay,
   giftReceived,
@@ -15,8 +14,6 @@ enum SocialNotificationType {
         return 'Friend Online';
       case SocialNotificationType.friendRequest:
         return 'Friend Request';
-      case SocialNotificationType.partyInvite:
-        return 'Party Invite';
       case SocialNotificationType.familyInvite:
         return 'Family Invite';
       case SocialNotificationType.letsPlay:

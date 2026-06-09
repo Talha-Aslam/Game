@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../providers/social_provider.dart';
 import '../../widgets/friend_card_widget.dart';
@@ -75,7 +76,7 @@ class RecentPlayersTab extends ConsumerWidget {
                   ),
                 );
               },
-              onViewProfile: () {},
+              onViewProfile: () => context.push('/public-profile', extra: player),
             ),
           ],
         );

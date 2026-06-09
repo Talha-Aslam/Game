@@ -190,20 +190,12 @@ class WebSocketService {
     }
   }
 
-  void sendPartyInvite(String targetId) {
-    send('party_invite', {'targetId': targetId});
-  }
-
   void sendFamilyInvite(String targetId, String familyId, String familyName) {
     send('family_invite', {
       'targetId': targetId,
       'familyId': familyId,
       'familyName': familyName,
     });
-  }
-
-  void sendMuteRequest(String targetId) {
-    send('voice_mute_request', {'targetId': targetId});
   }
 
   void dispose() {

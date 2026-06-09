@@ -5,14 +5,12 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/theme/app_gradients.dart';
 import '../../../providers/social_provider.dart';
-import '../../../providers/party_provider.dart';
 import '../../../widgets/particle_field.dart';
 import 'tabs/online_friends_tab.dart';
 import 'tabs/all_friends_tab.dart';
 import 'tabs/friend_requests_tab.dart';
 import 'tabs/recent_players_tab.dart';
 import 'tabs/recent_matches_tab.dart';
-import 'tabs/party_invites_tab.dart';
 import 'tabs/family_invites_tab.dart';
 
 class FriendsHubScreen extends ConsumerStatefulWidget {
@@ -32,7 +30,6 @@ class _FriendsHubScreenState extends ConsumerState<FriendsHubScreen>
     _TabItem(icon: Icons.person_add, label: 'Requests'),
     _TabItem(icon: Icons.history, label: 'Players'),
     _TabItem(icon: Icons.emoji_events, label: 'Matches'),
-    _TabItem(icon: Icons.groups, label: 'Party'),
     _TabItem(icon: Icons.shield, label: 'Family'),
   ];
 
@@ -51,10 +48,8 @@ class _FriendsHubScreenState extends ConsumerState<FriendsHubScreen>
   @override
   Widget build(BuildContext context) {
     final friendsState = ref.watch(friendsProvider);
-    final partyState = ref.watch(partyProvider);
     final onlineCount = friendsState.onlineCount;
     final requestCount = friendsState.pendingIncomingCount;
-    final partyInviteCount = partyState.inviteCount;
 
     return Scaffold(
       body: Stack(
@@ -100,7 +95,7 @@ class _FriendsHubScreenState extends ConsumerState<FriendsHubScreen>
                 ),
                 const SizedBox(height: 16),
                 // Tab bar
-                _buildTabBar(onlineCount, requestCount, partyInviteCount),
+                _buildTabBar(onlineCount, requestCount),
                 // Tab content
                 Expanded(
                   child: TabBarView(
@@ -111,7 +106,6 @@ class _FriendsHubScreenState extends ConsumerState<FriendsHubScreen>
                       FriendRequestsTab(),
                       RecentPlayersTab(),
                       RecentMatchesTab(),
-                      PartyInvitesTab(),
                       FamilyInvitesTab(),
                     ],
                   ),
@@ -124,7 +118,7 @@ class _FriendsHubScreenState extends ConsumerState<FriendsHubScreen>
     );
   }
 
-  Widget _buildTabBar(int onlineCount, int requestCount, int partyCount) {
+  Widget _buildTabBar(int onlineCount, int requestCount) {
     return Container(
       height: 42,
       margin: const EdgeInsets.symmetric(horizontal: 12),
@@ -160,7 +154,6 @@ class _FriendsHubScreenState extends ConsumerState<FriendsHubScreen>
           int? badge;
           if (i == 0 && onlineCount > 0) badge = onlineCount;
           if (i == 2 && requestCount > 0) badge = requestCount;
-          if (i == 4 && partyCount > 0) badge = partyCount;
 
           return Tab(
             height: 34,

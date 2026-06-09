@@ -14,17 +14,20 @@ class FamilyStatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12), color: AppColors.white05,
         border: Border.all(color: color.withValues(alpha: 0.15)),
       ),
-      child: Column(children: [
-        Icon(icon, color: color, size: 18),
-        const SizedBox(height: 4),
-        Text(value, style: AppTextStyles.labelLarge.copyWith(color: color)),
-        Text(label, style: AppTextStyles.labelSmall),
-      ]),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, color: color, size: 16),
+          const SizedBox(height: 2),
+          Flexible(child: FittedBox(fit: BoxFit.scaleDown, child: Text(value, style: AppTextStyles.labelLarge.copyWith(color: color)))),
+          Flexible(child: FittedBox(fit: BoxFit.scaleDown, child: Text(label, style: AppTextStyles.labelSmall))),
+        ]
+      ),
     );
   }
 }

@@ -167,22 +167,6 @@ async def websocket_lobby(websocket: WebSocket, token: str = Query(...)):
                             "event": "private_message",
                             "data": msg
                         }, user_id)
-                        
-                elif action == "party_invite":
-                    target_id = payload.get("targetId")
-                    if target_id:
-                        from app.config.database import get_database
-                        db = get_database()
-                        sender = await db["users"].find_one({"_id": user_id})
-                        sender_name = sender.get("username", "A friend") if sender else "A friend"
-                        
-                        await manager.send_personal_message({
-                            "event": "party_invite",
-                            "data": {
-                                "senderId": user_id,
-                                "senderName": sender_name
-                            }
-                        }, target_id)
 
                 elif action == "family_invite":
                     target_id = payload.get("targetId")
@@ -203,27 +187,6 @@ async def websocket_lobby(websocket: WebSocket, token: str = Query(...)):
                                 "familyName": family_name or "their family"
                             }
                         }, target_id)
-
-                elif action == "voice_mute_request":
-                    target_id = payload.get("targetId")
-                    if target_id:
-                        from app.config.database import get_database
-                        db = get_database()
-                        user = await db["users"].find_one({"_id": user_id})
-                        family_id = user.get("family_id")
-                        if family_id:
-                            family = await db["families"].find_one({"_id": family_id})
-                            if family:
-                                # Check if sender is boss or underboss
-                                members = family.get("members", [])
-                                sender_member = next((m for m in members if m["user_id"] == user_id), None)
-                                target_member = next((m for m in members if m["user_id"] == target_id), None)
-                                
-                                if sender_member and target_member and sender_member["role"] in ["boss", "underboss"]:
-                                    await manager.send_personal_message({
-                                        "event": "voice_muted",
-                                        "data": {"mutedBy": sender_member["username"]}
-                                    }, target_id)
 
                     
             except json.JSONDecodeError:
