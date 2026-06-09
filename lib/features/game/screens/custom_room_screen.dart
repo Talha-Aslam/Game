@@ -30,6 +30,15 @@ class CustomRoomScreen extends ConsumerWidget {
       if (next.isStarted && next.roomId != null) {
         ref.read(gameProvider.notifier).connectToGame(next.roomId!);
         context.go('/game');
+      } else if (next.wasKicked) {
+        context.go('/home');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('You have been kicked from the custom room.'),
+            backgroundColor: AppColors.crimsonRed,
+            duration: Duration(seconds: 3),
+          ),
+        );
       }
     });
 

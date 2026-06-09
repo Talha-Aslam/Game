@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mafia_wars/providers/custom_room_provider.dart';
+import '../../../providers/family_war_provider.dart';
 import '../../../providers/notification_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_gradients.dart';
@@ -119,6 +120,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         context.push('/matchmaking');
         break;
       case 2: // Family War
+        ref.read(familyWarProvider.notifier).createWarLobby(null);
         context.push('/family/war');
         break;
       case 3: // Custom
