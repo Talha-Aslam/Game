@@ -109,7 +109,6 @@ class VoiceService {
     );
     await _engine.setClientRole(role: ClientRoleType.clientRoleBroadcaster);
     await _engine.enableAudio();
-    await _engine.setEnableSpeakerphone(true);
 
     _isInitialized = true;
   }
@@ -138,6 +137,7 @@ class VoiceService {
       await _engine.enableLocalAudio(true);
       await _engine.muteLocalAudioStream(false);
       await _engine.muteAllRemoteAudioStreams(false);
+      await _engine.setEnableSpeakerphone(true);
       
       debugPrint("VoiceService: Joined $channelName as $userId");
     } catch (e) {

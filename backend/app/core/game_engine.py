@@ -58,6 +58,7 @@ class Room:
         self.state = "lobby"
         self.day_number = 0
         self.task: Optional[asyncio.Task] = None
+        self.time_remaining = 0  # Added for state sync
         
         # Night actions
         self.night_actions = {
@@ -193,6 +194,59 @@ class GameEngine:
         elif action_type == "leave_lobby":
             # For now just disconnect them from voice? Or ignore, let ws handle disconnect
             pass
+            
+        elif action_type == "sync_state":
+            # The client requested a full state sync (e.g. after a momentary disconnect)
+            # We reconstruct the current game phase based on room.state
+            phase_map = {
+                "lobby": "lobby",
+                "roleAssignment": "roleAssignment",
+                "night": "night",
+                "night_mafia": "night",
+                "night_doctor": "night",
+                "night_detective": "night",
+                "morningReveal": "morningReveal",
+                "day": "day",
+                "voting": "voting",
+                "runoff": "runoff",
+                "elimination": "elimination",
+                "result": "result"
+            }
+            
+            sub_phase_map = {
+                "night_mafia": "mafiaActing",
+                "night_doctor": "doctorActing",
+                "night_detective": "detectiveActing"
+            }
+            
+            payload = {
+                "players": [p.to_dict() for p in room.players.values()],
+                "localPlayerId": user_id,
+                "phase": phase_map.get(room.state, "lobby"),
+                "votes": room.votes,
+                "tiedPlayers": room.tied_players
+            }
+            
+            if room.state in sub_phase_map:
+                payload["nightSubPhase"] = sub_phase_map[room.state]
+                
+            asyncio.create_task(
+                ws_manager.send_personal_message({
+                    "event": "lobby_update",
+                    "data": payload
+                }, user_id)
+            )
+            
+            # Re-issue voice token so reconnected players can rejoin voice chat
+            if player.status == "eliminated":
+                asyncio.create_task(self._send_voice_channel(room, [player], f"{room.room_id}_graveyard", "join_graveyard_voice"))
+            else:
+                channel = f"{room.room_id}_main"
+                event = "join_main_voice"
+                if room.state == "night_mafia" and player.role == "mafia":
+                    channel = f"{room.room_id}_mafia"
+                    event = "join_mafia_voice"
+                asyncio.create_task(self._send_voice_channel(room, [player], channel, event))
 
     async def _send_voice_channel(self, room: Room, players: List[Player], channel_name: str, event: str = "join_main_voice"):
         from app.services.agora_service import generate_rtc_token_with_account
@@ -311,6 +365,7 @@ class GameEngine:
                 await room.broadcast({"event": "mafia_channel", "data": {"open": True}})
                 
                 for remaining in range(20, 0, -1):
+                    room.time_remaining = remaining
                     await room.broadcast({"event": "timer_tick", "data": {"remaining": remaining}})
                     await asyncio.sleep(1)
                 
@@ -335,6 +390,7 @@ class GameEngine:
                     }
                 })
                 for remaining in range(10, 0, -1):
+                    room.time_remaining = remaining
                     await room.broadcast({"event": "timer_tick", "data": {"remaining": remaining}})
                     await asyncio.sleep(1)
                 
@@ -352,6 +408,7 @@ class GameEngine:
                     }
                 })
                 for remaining in range(10, 0, -1):
+                    room.time_remaining = remaining
                     await room.broadcast({"event": "timer_tick", "data": {"remaining": remaining}})
                     await asyncio.sleep(1)
                 
