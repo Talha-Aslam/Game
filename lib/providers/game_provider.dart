@@ -182,24 +182,42 @@ class GameNotifier extends Notifier<GameStateModel> {
       if (data.containsKey('phase')) {
          try {
            final phaseStr = data['phase'] as String;
-           // Map backend states to frontend GamePhase if needed, simple match here
            newPhase = GamePhase.values.firstWhere(
              (e) => e.name == phaseStr,
              orElse: () => GamePhase.lobby,
            );
          } catch (_) {}
       }
-      
+
+      NightSubPhase? newSubPhase = state.nightSubPhase;
+      if (data.containsKey('nightSubPhase')) {
+         try {
+           final subStr = data['nightSubPhase'] as String;
+           newSubPhase = NightSubPhase.values.firstWhere(
+             (e) => e.name == subStr,
+             orElse: () => state.nightSubPhase ?? NightSubPhase.mafiaActing,
+           );
+         } catch (_) {}
+      }
+
       state = state.copyWith(
         players: players,
-        phase: newPhase ?? state.phase, // keep current phase if not provided
+        phase: newPhase ?? state.phase,
+        nightSubPhase: newSubPhase,
       );
-    }
-    if (data.containsKey('localPlayerId')) {
+      }
+      if (data.containsKey('localPlayerId')) {
       state = state.copyWith(
         localPlayerId: data['localPlayerId'] as String?,
       );
-    }
+      }
+      // Critical: Restore time_remaining if sent, so timers don't vanish visually
+      if (data.containsKey('time_remaining')) {
+      state = state.copyWith(
+        timeRemaining: data['time_remaining'] as int? ?? state.timeRemaining,
+      );
+      }
+      _evaluateHardwareMute();
   }
 
   void _handleLobbyCountdown(Map<String, dynamic> data) {
