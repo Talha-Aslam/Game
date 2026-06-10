@@ -58,7 +58,6 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
   }
 
   Widget _buildAvatar() {
-    final rank = RankModel.fromTier(_profile.rankTier);
     final url = _profile.avatarUrl;
     final resolvedUrl = url.startsWith('/') ? '${AppConstants.apiBaseUrl}$url' : url;
     final borderId = _profile.equippedCosmetics?['card_border'] ?? _profile.equippedCosmetics?['cardBorder'];

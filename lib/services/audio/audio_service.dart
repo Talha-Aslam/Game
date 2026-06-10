@@ -41,6 +41,22 @@ class AudioService {
     if (_initialized) return;
     _initialized = true;
 
+    // Configure AudioContext to allow mixing (crucial for Agora compatibility)
+    AudioPlayer.global.setAudioContext(AudioContext(
+      android: const AudioContextAndroid(
+        audioFocus: AndroidAudioFocus.gainTransientMayDuck,
+        contentType: AndroidContentType.music,
+        usageType: AndroidUsageType.media,
+      ),
+      iOS: AudioContextIOS(
+        category: AVAudioSessionCategory.playback,
+        options: {
+          AVAudioSessionOptions.mixWithOthers,
+          AVAudioSessionOptions.duckOthers,
+        },
+      ),
+    ));
+
     // Configure narrator player
     _narrator.setReleaseMode(ReleaseMode.stop);
     _narrator.setVolume(AudioVolumes.narratorFull);
