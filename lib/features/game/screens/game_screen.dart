@@ -215,14 +215,9 @@ class _GameScreenState extends ConsumerState<GameScreen>
                                 builder: (context) {
                                   final isForcedMuted =
                                       phase == GamePhase.roleAssignment ||
-                                      (phase.isNight &&
+                                      (phase == GamePhase.night &&
                                           !(localPlayer?.isMafia == true &&
-                                              gameState.mafiaChannelOpen) &&
-                                          !(localPlayer?.role ==
-                                                  GameRole.detective &&
-                                              gameState.nightSubPhase ==
-                                                  NightSubPhase
-                                                      .detectiveActing));
+                                              gameState.mafiaChannelOpen));
                                   final effectivelyMuted =
                                       localPlayer?.voiceState ==
                                           VoiceState.muted ||
