@@ -25,25 +25,47 @@ class VoiceService {
   Future<void> initAgora() async {
     if (_isInitialized) return;
 
-    await [Permission.microphone].request();
+    final permissions = [
+      Permission.microphone,
+      if (defaultTargetPlatform == TargetPlatform.android) ...[
+        Permission.bluetoothConnect,
+        Permission.bluetoothScan,
+      ],
+    ];
+    
+    final statuses = await permissions.request();
+    if (statuses[Permission.microphone] != PermissionStatus.granted) {
+      debugPrint("VoiceService: Microphone permission NOT granted.");
+    }
 
     _engine = createAgoraRtcEngine();
-    await _engine.initialize(RtcEngineContext(appId: appId));
+    await _engine.initialize(RtcEngineContext(
+      appId: appId,
+      channelProfile: ChannelProfileType.channelProfileLiveBroadcasting,
+      audioScenario: AudioScenarioType.audioScenarioGameStreaming,
+    ));
+
+    // Enable OpenSL for better Android audio performance
+    await _engine.setParameters('{"che.audio.opensl":true}');
 
     _engine.registerEventHandler(
       RtcEngineEventHandler(
         onJoinChannelSuccess: (RtcConnection connection, int elapsed) {
-          // print("Joined channel: ${connection.channelId}");
+          debugPrint("VoiceService: Successfully joined channel ${connection.channelId} as UID ${connection.localUid}");
         },
         onUserJoined: (RtcConnection connection, int remoteUid, int elapsed) async {
+          debugPrint("VoiceService: Remote user $remoteUid joined");
           if (!_currentUsers.contains(remoteUid)) {
             _currentUsers.add(remoteUid);
             try {
               final userInfo = await _engine.getUserInfoByUid(remoteUid);
               if (userInfo.userAccount != null) {
                 _uidToAccount[remoteUid] = userInfo.userAccount!;
+                debugPrint("VoiceService: Mapped $remoteUid to account ${userInfo.userAccount}");
               }
-            } catch (_) {}
+            } catch (e) {
+              debugPrint("VoiceService: Failed to get user info for $remoteUid: $e");
+            }
             _channelUsersController.add(List.from(_currentUsers));
           }
         },
@@ -87,6 +109,7 @@ class VoiceService {
     );
     await _engine.setClientRole(role: ClientRoleType.clientRoleBroadcaster);
     await _engine.enableAudio();
+    await _engine.setEnableSpeakerphone(true);
 
     _isInitialized = true;
   }

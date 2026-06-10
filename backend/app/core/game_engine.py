@@ -204,7 +204,8 @@ class GameEngine:
                         "event": event,
                         "data": {
                             "channel": channel_name,
-                            "token": token
+                            "token": token,
+                            "userId": p.user_id
                         }
                     }, p.user_id)
                 except Exception as e:

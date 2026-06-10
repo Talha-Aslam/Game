@@ -18,6 +18,7 @@ final voiceServiceProvider = Provider<VoiceService>((ref) {
 class GameNotifier extends Notifier<GameStateModel> {
   StreamSubscription? _sub;
   StreamSubscription? _statusSub;
+  StreamSubscription? _speakerSub;
 
   /// Quick accessor to the singleton AudioService
   AudioService get _audio => AudioService.instance;
@@ -26,11 +27,41 @@ class GameNotifier extends Notifier<GameStateModel> {
   GameStateModel build() {
     final ws = ref.watch(webSocketServiceProvider);
     _listen(ws);
+    _listenToVoice();
+
     ref.onDispose(() {
       _sub?.cancel();
       _statusSub?.cancel();
+      _speakerSub?.cancel();
     });
     return const GameStateModel(gameId: '');
+  }
+
+  void _listenToVoice() {
+    _speakerSub?.cancel();
+    final voice = ref.read(voiceServiceProvider);
+    
+    _speakerSub = voice.activeSpeakers.listen((uids) {
+      final uidMap = voice.uidMap;
+      final speakingAccounts = uids.map((id) => uidMap[id]).whereType<String>().toSet();
+      
+      // Update local state for who is speaking
+      final updatedPlayers = state.players.map((p) {
+        final isSpeaking = speakingAccounts.contains(p.id);
+        
+        // If someone just started speaking, or just stopped
+        if (isSpeaking && p.voiceState != VoiceState.speaking) {
+          return p.copyWith(voiceState: VoiceState.speaking);
+        } else if (!isSpeaking && p.voiceState == VoiceState.speaking) {
+          // Revert to idle (or muted if they were already muted, but Agora volume info 
+          // usually doesn't include muted users anyway)
+          return p.copyWith(voiceState: VoiceState.idle);
+        }
+        return p;
+      }).toList();
+      
+      state = state.copyWith(players: updatedPlayers);
+    });
   }
 
   void _listen(WebSocketService ws) {
@@ -102,11 +133,11 @@ class GameNotifier extends Notifier<GameStateModel> {
   void _handleVoiceSwitch(WsMessage msg) async {
     final channel = msg.data['channel'] as String?;
     final token = msg.data['token'] as String?;
-    final localPlayerId = state.localPlayerId;
+    final userId = msg.data['userId'] as String? ?? state.localPlayerId;
     
-    if (channel != null && token != null && localPlayerId != null) {
+    if (channel != null && token != null && userId != null) {
       final voice = ref.read(voiceServiceProvider);
-      await voice.switchChannel(token, channel, localPlayerId);
+      await voice.switchChannel(token, channel, userId);
       
       // Keep state updated on which room we're actually in
       if (msg.event == 'join_mafia_voice') {
@@ -114,7 +145,23 @@ class GameNotifier extends Notifier<GameStateModel> {
       } else {
         state = state.copyWith(mafiaChannelOpen: false);
       }
+      _evaluateHardwareMute();
     }
+  }
+
+  void _evaluateHardwareMute() {
+    final phase = state.phase;
+    final lp = state.localPlayer;
+    if (lp == null) return;
+
+    final isForcedMuted = (phase == GamePhase.night &&
+        !(lp.isMafia && state.mafiaChannelOpen));
+        
+    final isManuallyMuted = lp.voiceState == VoiceState.muted;
+    
+    final shouldBeMuted = isForcedMuted || isManuallyMuted || lp.status == PlayerStatus.eliminated;
+    
+    ref.read(voiceServiceProvider).muteMicrophone(shouldBeMuted);
   }
 
   // ══════════════════════════════════════════════════════════════════════
