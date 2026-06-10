@@ -502,12 +502,19 @@ class GameNotifier extends Notifier<GameStateModel> {
   void toggleMute() {
     final lp = state.localPlayer;
     if (lp == null) return;
-    final newVoice = lp.voiceState == VoiceState.muted ? VoiceState.idle : VoiceState.muted;
+    
+    final isCurrentlyMuted = lp.voiceState == VoiceState.muted;
+    final newVoice = isCurrentlyMuted ? VoiceState.idle : VoiceState.muted;
+    
+    // 1. Update UI state
     final updated = state.players.map((p) {
       if (p.id == lp.id) return p.copyWith(voiceState: newVoice);
       return p;
     }).toList();
     state = state.copyWith(players: updated);
+
+    // 2. Actually mute/unmute the hardware via Agora
+    ref.read(voiceServiceProvider).muteMicrophone(!isCurrentlyMuted);
   }
 
   /// Send emoji (broadcast to other players)

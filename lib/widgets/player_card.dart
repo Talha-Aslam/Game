@@ -65,13 +65,14 @@ class _PlayerCardState extends State<PlayerCard> with TickerProviderStateMixin {
   Color get _glowColor {
     if (!widget.player.isAlive) return Colors.transparent;
 
+    if (widget.isSelected) return AppColors.gold;
+
     // Custom border colors
     final borderId = widget.player.equippedCosmetics['card_border']?.toString();
     if (borderId == 's1') return AppColors.crimsonRed;
     if (borderId == 's7') return const Color(0xFF00B0FF);
     if (borderId == 's8') return AppColors.gold;
 
-    if (widget.isSelected) return AppColors.gold;
     if (widget.player.isSpeaking) return AppColors.cyan;
     if (widget.isLocalPlayer) return AppColors.purpleNeon;
     return AppColors.white10;
@@ -80,12 +81,13 @@ class _PlayerCardState extends State<PlayerCard> with TickerProviderStateMixin {
   Color get _borderColor {
     if (!widget.player.isAlive) return AppColors.white10;
 
+    if (widget.isSelected) return AppColors.gold;
+
     final borderId = widget.player.equippedCosmetics['card_border']?.toString();
     if (borderId == 's1') return AppColors.crimsonRed;
     if (borderId == 's7') return const Color(0xFF00B0FF);
     if (borderId == 's8') return AppColors.gold;
 
-    if (widget.isSelected) return AppColors.gold;
     if (widget.player.isSpeaking) return AppColors.cyan;
     return AppColors.glassBorder;
   }
