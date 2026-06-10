@@ -15,7 +15,7 @@ def generate_rtc_token_with_account(channel_name: str, account: str, role: int =
     current_timestamp = int(time.time())
     privilege_expired_ts = current_timestamp + expire_time_in_seconds
 
-    return RtcTokenBuilder.buildTokenWithUserAccount(
+    return RtcTokenBuilder.buildTokenWithAccount(
         AGORA_APP_ID, 
         AGORA_APP_CERTIFICATE, 
         channel_name, 
