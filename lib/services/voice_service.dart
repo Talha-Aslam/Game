@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -97,16 +98,28 @@ class VoiceService {
   ) async {
     if (!_isInitialized) await initAgora();
 
-    await _engine.joinChannelWithUserAccount(
-      token: token,
-      channelId: channelName,
-      userAccount: userId,
-      options: const ChannelMediaOptions(
-        clientRoleType: ClientRoleType.clientRoleBroadcaster,
-        autoSubscribeAudio: true,
-        publishMicrophoneTrack: true,
-      ),
-    );
+    try {
+      await _engine.joinChannelWithUserAccount(
+        token: token,
+        channelId: channelName,
+        userAccount: userId,
+        options: const ChannelMediaOptions(
+          clientRoleType: ClientRoleType.clientRoleBroadcaster,
+          autoSubscribeAudio: true,
+          publishMicrophoneTrack: true,
+          enableAudioRecordingOrPlayout: true,
+        ),
+      );
+      
+      // Explicitly ensure local audio is enabled and unmuted after join
+      await _engine.enableLocalAudio(true);
+      await _engine.muteLocalAudioStream(false);
+      await _engine.muteAllRemoteAudioStreams(false);
+      
+      debugPrint("VoiceService: Joined $channelName as $userId");
+    } catch (e) {
+      debugPrint("VoiceService: Failed to join $channelName: $e");
+    }
   }
 
   Future<void> leaveChannel() async {
