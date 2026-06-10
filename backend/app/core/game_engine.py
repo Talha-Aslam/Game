@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import random
+import secrets
 import uuid
 from typing import Dict, List, Optional
 from pydantic import BaseModel
@@ -8,6 +9,9 @@ from app.core.websocket_manager import manager as ws_manager
 from app.config.database import get_database
 
 logger = logging.getLogger(__name__)
+
+# Use SystemRandom for better "proper" randomness
+sys_random = secrets.SystemRandom()
 
 # Names to use for bots
 BOT_NAMES = ['ShadowKing', 'NightViper', 'IronFist', 'GhostWalker', 'RedPhantom', 'DarkOracle', 'SilverBlade', 'CrimsonEye', 'SilentWolf', 'BloodRaven']
@@ -110,9 +114,9 @@ class GameEngine:
                     user_id=pid,
                     is_bot=True,
                     name=f"{bot_name} (Bot)",
-                    rankTier=random.randint(1, 5),
-                    familyTag=random.choice(["[BOTS]", "[AI]", None]),
-                    avatarIndex=random.randint(0, 9)
+                    rankTier=sys_random.randint(1, 5),
+                    familyTag=sys_random.choice(["[BOTS]", "[AI]", None]),
+                    avatarIndex=sys_random.randint(0, 9)
                 )
             else:
                 user_data = user_dict.get(pid, {})
@@ -131,7 +135,7 @@ class GameEngine:
                     name=user_data.get("username", f"Player_{pid[:4]}"),
                     rankTier=tier,
                     familyTag=None, # Could fetch from family DB
-                    avatarIndex=random.randint(0, 9), # Could map from premium_avatar
+                    avatarIndex=sys_random.randint(0, 9), # Could map from premium_avatar
                     avatar_url=user_data.get("profile_picture", ""),
                     equipped_cosmetics=user_data.get("equipped_cosmetics", {})
                 )
@@ -516,7 +520,7 @@ class GameEngine:
 
     def _assign_roles(self, room: Room):
         players = list(room.players.values())
-        random.shuffle(players)
+        sys_random.shuffle(players)
         
         # 8 player setup: 2 Mafia, 1 Doctor, 1 Detective, 4 Civilians
         roles = ["mafia", "mafia", "doctor", "detective", "civilian", "civilian", "civilian", "civilian"]
@@ -540,15 +544,15 @@ class GameEngine:
         if role == "mafia" and not room.night_actions["mafia_target"]:
             # Mafia bot attacks a random civilian
             if alive_civs:
-                room.night_actions["mafia_target"] = random.choice(alive_civs)
+                room.night_actions["mafia_target"] = sys_random.choice(alive_civs)
         elif role == "doctor" and not room.night_actions["doctor_target"]:
             # Doctor heals a random alive player
-            room.night_actions["doctor_target"] = random.choice(alive_ids)
+            room.night_actions["doctor_target"] = sys_random.choice(alive_ids)
         elif role == "detective" and not room.night_actions["detective_target"]:
             # Detective investigates a random alive non-detective
             targets = [pid for pid in alive_ids if room.players[pid].role != "detective"]
             if targets:
-                room.night_actions["detective_target"] = random.choice(targets)
+                room.night_actions["detective_target"] = sys_random.choice(targets)
 
     def _process_bot_votes(self, room: Room, only_from_tied=False):
         alive_players = room.get_alive_players()
@@ -558,11 +562,11 @@ class GameEngine:
         
         for p in alive_players:
             if p.is_bot and p.user_id not in room.votes:
-                if random.random() > 0.3 and possible_targets:
+                if sys_random.random() > 0.3 and possible_targets:
                     # Don't vote for self
                     others = [t for t in possible_targets if t != p.user_id]
                     if others:
-                        room.votes[p.user_id] = random.choice(others)
+                        room.votes[p.user_id] = sys_random.choice(others)
                     else:
                         room.votes[p.user_id] = "skip"
                 else:
@@ -619,7 +623,7 @@ class GameEngine:
         if winner:
             # Send game result
             alive = room.get_alive_players()
-            mvp_id = alive[0].user_id if alive else room.players.keys()[0]
+            mvp_id = alive[0].user_id if alive else list(room.players.keys())[0]
             
             await room.broadcast({
                 "event": "game_result",

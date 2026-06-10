@@ -65,6 +65,8 @@ class _LobbyPlayerCardState extends State<LobbyPlayerCard>
   Color get _glowColor {
     if (!widget.player.isAlive) return Colors.transparent;
 
+    if (widget.isSelected) return AppColors.gold;
+
     // Custom border colors from equipped cosmetics
     final borderId = widget.player.equippedCosmetics['card_border']?.toString();
     if (borderId == 's1') return AppColors.crimsonRed;
@@ -74,7 +76,6 @@ class _LobbyPlayerCardState extends State<LobbyPlayerCard>
     if (widget.player.isSpeaking) {
       return widget.player.isMafia ? AppColors.purpleNeon : AppColors.gold;
     }
-    if (widget.isSelected) return AppColors.gold;
     if (widget.isLocalPlayer) return AppColors.purpleNeon;
     return AppColors.white10;
   }
@@ -83,12 +84,13 @@ class _LobbyPlayerCardState extends State<LobbyPlayerCard>
     if (!widget.player.isAlive) return AppColors.white10;
     if (widget.isTied) return AppColors.crimsonRed;
 
+    if (widget.isSelected) return AppColors.gold;
+
     final borderId = widget.player.equippedCosmetics['card_border']?.toString();
     if (borderId == 's1') return AppColors.crimsonRed;
     if (borderId == 's7') return const Color(0xFF00B0FF);
     if (borderId == 's8') return AppColors.gold;
 
-    if (widget.isSelected) return AppColors.gold;
     if (widget.player.isSpeaking) return _glowColor;
     if (widget.isLocalPlayer) {
       return AppColors.purpleNeon.withValues(alpha: 0.6);
