@@ -256,7 +256,7 @@ class GameEngine:
             await room.broadcast({"event": "show_begins", "data": {}})
             await asyncio.sleep(2)
             
-            # Assign Roles
+            # Assign Roles (Now Dynamic)
             self._assign_roles(room)
             room.state = "roleAssignment"
             
@@ -304,7 +304,8 @@ class GameEngine:
                 
                 # Move Mafia to private channel
                 mafia_players = [p for p in room.players.values() if p.is_alive and p.role == "mafia"]
-                await self._send_voice_channel(room, mafia_players, f"{room.room_id}_mafia", "join_mafia_voice")
+                if mafia_players:
+                    await self._send_voice_channel(room, mafia_players, f"{room.room_id}_mafia", "join_mafia_voice")
                 
                 await room.broadcast({"event": "mafia_channel", "data": {"open": True}})
                 
@@ -315,7 +316,8 @@ class GameEngine:
                 await room.broadcast({"event": "mafia_channel", "data": {"open": False}})
                 
                 # Move Mafia back to main
-                await self._send_voice_channel(room, mafia_players, f"{room.room_id}_main", "join_main_voice")
+                if mafia_players:
+                    await self._send_voice_channel(room, mafia_players, f"{room.room_id}_main", "join_main_voice")
 
                 # Bot fallback
                 if not room.night_actions["mafia_target"]:
@@ -414,9 +416,7 @@ class GameEngine:
                 # 4. DAY DISCUSSION
                 room.state = "day"
                 
-                # Sync everyone back to main (living)
-                living_players = [p for p in room.players.values() if p.is_alive]
-                await self._send_voice_channel(room, living_players, f"{room.room_id}_main", "join_main_voice")
+                # No redundant voice join here — players are already in main (except graveyard)
                 
                 await room.broadcast({
                     "event": "phase_change", 
@@ -522,14 +522,32 @@ class GameEngine:
         players = list(room.players.values())
         sys_random.shuffle(players)
         
-        # 8 player setup: 2 Mafia, 1 Doctor, 1 Detective, 4 Civilians
-        roles = ["mafia", "mafia", "doctor", "detective", "civilian", "civilian", "civilian", "civilian"]
+        num_players = len(players)
+        # AAA Standard Scaling:
+        # 4-6 players: 1 Mafia
+        # 7-9 players: 2 Mafia
+        # 10+ players: 3 Mafia
+        if num_players <= 6:
+            mafia_count = 1
+        elif num_players <= 9:
+            mafia_count = 2
+        else:
+            mafia_count = 3
+            
+        roles = []
+        for _ in range(mafia_count): roles.append("mafia")
+        roles.append("doctor")
+        roles.append("detective")
+        
+        # Fill rest with civilians
+        while len(roles) < num_players:
+            roles.append("civilian")
+            
+        # Truncate if too few players (edge case)
+        roles = roles[:num_players]
         
         for i, p in enumerate(players):
-            if i < len(roles):
-                p.role = roles[i]
-            else:
-                p.role = "civilian"
+            p.role = roles[i]
 
     def _process_bot_night_action(self, room: Room, role: str):
         alive_civs = [p.user_id for p in room.get_alive_players() if p.role != "mafia"]
