@@ -51,16 +51,14 @@ class BattlePassNotifier extends Notifier<BattlePassModel> {
   Future<void> claimFreeReward(int tier) async {
     final success = await _api.claimTier(tier, false);
     if (success) {
-      await ref.read(authServiceProvider).fetchProfile();
-      ref.invalidate(authProvider);
+      await _syncProfile();
     }
   }
 
   Future<void> claimPremiumReward(int tier) async {
     final success = await _api.claimTier(tier, true);
     if (success) {
-      await ref.read(authServiceProvider).fetchProfile();
-      ref.invalidate(authProvider);
+      await _syncProfile();
     }
   }
 
@@ -71,16 +69,14 @@ class BattlePassNotifier extends Notifier<BattlePassModel> {
   Future<void> purchasePremium() async {
     final success = await _api.buyPremiumPass();
     if (success) {
-      await ref.read(authServiceProvider).fetchProfile();
-      ref.invalidate(authProvider);
+      await _syncProfile();
     }
   }
 
   Future<void> purchasePremiumPlus() async {
     final success = await _api.buyPremiumPass(isPremiumPlus: true);
     if (success) {
-      await ref.read(authServiceProvider).fetchProfile();
-      ref.invalidate(authProvider);
+      await _syncProfile();
     }
   }
 
@@ -88,8 +84,15 @@ class BattlePassNotifier extends Notifier<BattlePassModel> {
   Future<void> purchaseTiers(int count) async {
     final success = await _api.purchaseTiers(count);
     if (success) {
-      await ref.read(authServiceProvider).fetchProfile();
-      ref.invalidate(authProvider);
+      await _syncProfile();
+    }
+  }
+
+  Future<void> _syncProfile() async {
+    final authService = ref.read(authServiceProvider);
+    final user = await authService.fetchProfile();
+    if (user != null) {
+      ref.read(authProvider.notifier).updateUserLocal(user);
     }
   }
 
