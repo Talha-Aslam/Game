@@ -163,8 +163,10 @@ async def purchase_tiers(user_id: str, count: int) -> dict:
     result = await users_collection.update_one(
         {"_id": user_id},
         {
+            "$set": {
+                "battle_pass_tier": new_tier, # Use $set to be perfectly deterministic
+            },
             "$inc": {
-                "battle_pass_tier": actual_purchased,
                 "influence": -actual_cost
             }
         }
