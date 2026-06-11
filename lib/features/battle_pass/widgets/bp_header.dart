@@ -342,26 +342,65 @@ class _PremiumButtonState extends State<_PremiumButton>
   }
 }
 
-class _PremiumBadge extends StatelessWidget {
+class _PremiumBadge extends StatefulWidget {
   final bool isPlus;
   const _PremiumBadge({this.isPlus = false});
   @override
+  State<_PremiumBadge> createState() => _PremiumBadgeState();
+}
+
+class _PremiumBadgeState extends State<_PremiumBadge> with SingleTickerProviderStateMixin {
+  late AnimationController _glow;
+  @override
+  void initState() {
+    super.initState();
+    _glow = AnimationController(duration: const Duration(milliseconds: 1500), vsync: this);
+    if (widget.isPlus) _glow.repeat(reverse: true);
+  }
+  
+  @override
+  void didUpdateWidget(_PremiumBadge oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isPlus && !_glow.isAnimating) _glow.repeat(reverse: true);
+    if (!widget.isPlus && _glow.isAnimating) _glow.stop();
+  }
+
+  @override
+  void dispose() { _glow.dispose(); super.dispose(); }
+
+  @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
-        color: AppColors.gold.withValues(alpha: 0.12),
-        border: Border.all(color: AppColors.gold.withValues(alpha: 0.3)),
-      ),
-      child: Text(
-        isPlus ? '⭐ PREMIUM+' : '⭐ PREMIUM',
-        style: const TextStyle(
-          color: AppColors.gold,
-          fontSize: 10,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
+    return AnimatedBuilder(
+      animation: _glow,
+      builder: (_, _) {
+        final g = _glow.value;
+        final baseColor = widget.isPlus ? AppColors.purpleGlow : AppColors.gold;
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            color: baseColor.withValues(alpha: 0.12 + (widget.isPlus ? g * 0.08 : 0)),
+            border: Border.all(color: baseColor.withValues(alpha: 0.3 + (widget.isPlus ? g * 0.4 : 0)), width: widget.isPlus ? 1.5 : 1),
+            boxShadow: widget.isPlus ? [BoxShadow(color: baseColor.withValues(alpha: 0.2 + g * 0.3), blurRadius: 8 + g * 4)] : null,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(widget.isPlus ? Icons.diamond : Icons.star, color: baseColor, size: 10),
+              const SizedBox(width: 4),
+              Text(
+                widget.isPlus ? 'PREMIUM+' : 'PREMIUM',
+                style: TextStyle(
+                  color: baseColor,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ],
+          ),
+        );
+      }
     );
   }
 }

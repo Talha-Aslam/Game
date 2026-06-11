@@ -66,7 +66,23 @@ class _TierPurchaseDialogState extends State<TierPurchaseDialog> {
             )),
             Text('$_maxPurchasable', style: const TextStyle(color: AppColors.white30, fontSize: 10)),
           ]),
-          Text('$_count tiers', style: TextStyle(color: AppColors.cyan, fontSize: 14, fontWeight: FontWeight.w700)),
+          
+          // Quick Select Buttons
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _QuickSelectBtn(1, _count, (v) => setState(() => _count = v.clamp(1, _maxPurchasable))),
+              const SizedBox(width: 8),
+              _QuickSelectBtn(5, _count, (v) => setState(() => _count = v.clamp(1, _maxPurchasable)), maxAllowed: _maxPurchasable),
+              const SizedBox(width: 8),
+              _QuickSelectBtn(10, _count, (v) => setState(() => _count = v.clamp(1, _maxPurchasable)), maxAllowed: _maxPurchasable),
+              const SizedBox(width: 8),
+              _QuickSelectBtn(_maxPurchasable, _count, (v) => setState(() => _count = v), label: 'ALL'),
+            ],
+          ),
+          
+          const SizedBox(height: 16),
+          Text('$_count tiers', style: const TextStyle(color: AppColors.cyan, fontSize: 14, fontWeight: FontWeight.w700)),
           const SizedBox(height: 16),
           // Cost + Purchase
           GestureDetector(
@@ -102,5 +118,43 @@ class _TierNum extends StatelessWidget {
       const SizedBox(height: 4),
       Text(label, style: const TextStyle(color: AppColors.white30, fontSize: 9)),
     ]);
+  }
+}
+
+class _QuickSelectBtn extends StatelessWidget {
+  final int value;
+  final int currentValue;
+  final Function(int) onTap;
+  final int? maxAllowed;
+  final String? label;
+
+  const _QuickSelectBtn(this.value, this.currentValue, this.onTap, {this.maxAllowed, this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    if (maxAllowed != null && value > maxAllowed!) return const SizedBox.shrink();
+    
+    final isSelected = value == currentValue;
+    final color = isSelected ? AppColors.cyan : AppColors.white30;
+    
+    return GestureDetector(
+      onTap: () => onTap(value),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(8),
+          color: isSelected ? color.withValues(alpha: 0.2) : AppColors.white05,
+          border: Border.all(color: isSelected ? color : AppColors.glassBorder),
+        ),
+        child: Text(
+          label ?? '+$value',
+          style: TextStyle(
+            color: isSelected ? Colors.white : color,
+            fontSize: 10,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ),
+    );
   }
 }
