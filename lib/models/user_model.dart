@@ -164,6 +164,7 @@ class UserModel {
   final int battlePassTier;
   final int battlePassXP;
   final bool hasPremiumPass;
+  final bool hasPremiumPlus;
   final List<int> claimedFreeTiers;
   final List<int> claimedPremiumTiers;
   final int popularityScore;
@@ -197,6 +198,7 @@ class UserModel {
     this.battlePassTier = 0,
     this.battlePassXP = 0,
     this.hasPremiumPass = false,
+    this.hasPremiumPlus = false,
     this.claimedFreeTiers = const [],
     this.claimedPremiumTiers = const [],
     this.popularityScore = 0,
@@ -235,6 +237,7 @@ class UserModel {
     int? battlePassTier,
     int? battlePassXP,
     bool? hasPremiumPass,
+    bool? hasPremiumPlus,
     List<int>? claimedFreeTiers,
     List<int>? claimedPremiumTiers,
     int? popularityScore,
@@ -273,6 +276,7 @@ class UserModel {
       battlePassTier: battlePassTier ?? this.battlePassTier,
       battlePassXP: battlePassXP ?? this.battlePassXP,
       hasPremiumPass: hasPremiumPass ?? this.hasPremiumPass,
+      hasPremiumPlus: hasPremiumPlus ?? this.hasPremiumPlus,
       claimedFreeTiers: claimedFreeTiers ?? this.claimedFreeTiers,
       claimedPremiumTiers: claimedPremiumTiers ?? this.claimedPremiumTiers,
       popularityScore: popularityScore ?? this.popularityScore,
@@ -326,6 +330,7 @@ class UserModel {
       battlePassTier: battlePassTier,
       battlePassXP: json['battle_pass_xp'] ?? json['battlePassXP'] ?? 0,
       hasPremiumPass: json['has_premium_pass'] ?? json['hasPremiumPass'] ?? false,
+      hasPremiumPlus: json['has_premium_plus'] ?? json['hasPremiumPlus'] ?? false,
       claimedFreeTiers: (json['claimed_free_tiers'] as List<dynamic>?)?.map((e) => e as int).toList() ?? (json['claimedFreeTiers'] as List<dynamic>?)?.map((e) => e as int).toList() ?? [],
       claimedPremiumTiers: (json['claimed_premium_tiers'] as List<dynamic>?)?.map((e) => e as int).toList() ?? (json['claimedPremiumTiers'] as List<dynamic>?)?.map((e) => e as int).toList() ?? [],
       popularityScore: json['popularity'] ?? json['popularityScore'] ?? 0,

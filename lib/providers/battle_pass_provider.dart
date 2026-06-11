@@ -17,6 +17,7 @@ class BattlePassNotifier extends Notifier<BattlePassModel> {
         currentTier: user.battlePassTier,
         currentXP: user.battlePassXP,
         isPremium: user.hasPremiumPass,
+        isPremiumPlus: user.hasPremiumPlus,
       );
 
       final updatedTiers = baseModel.tiers.map((t) {
