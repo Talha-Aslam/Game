@@ -30,7 +30,20 @@ class BattlePassNotifier extends Notifier<BattlePassModel> {
       baseModel = baseModel.copyWith(tiers: updatedTiers);
     }
     
+    // Fetch season info asynchronously
+    _fetchSeasonInfo();
+    
     return baseModel;
+  }
+
+  Future<void> _fetchSeasonInfo() async {
+    final info = await _api.getSeasonInfo();
+    if (info != null) {
+      final endStr = info['season_end_date'] as String?;
+      if (endStr != null) {
+        state = state.copyWith(seasonEndDate: DateTime.parse(endStr));
+      }
+    }
   }
 
   // ── Claim ──
@@ -63,13 +76,20 @@ class BattlePassNotifier extends Notifier<BattlePassModel> {
   }
 
   Future<void> purchasePremiumPlus() async {
-    // Left as future work (need another endpoint or param)
-    await purchasePremium();
+    final success = await _api.buyPremiumPass(isPremiumPlus: true);
+    if (success) {
+      await ref.read(authServiceProvider).fetchProfile();
+      ref.invalidate(authProvider);
+    }
   }
 
   // ── Tier Purchase ──
   Future<void> purchaseTiers(int count) async {
-    // Left as future work
+    final success = await _api.purchaseTiers(count);
+    if (success) {
+      await ref.read(authServiceProvider).fetchProfile();
+      ref.invalidate(authProvider);
+    }
   }
 
   // ── XP ──

@@ -152,8 +152,9 @@ async def get_lobby_profile(user_id: str = Depends(get_current_user_id)):
             break
 
     bp_xp = user.get("battle_pass_xp", 0)
-    bp_tier = user.get("battle_pass_tier", 0)
-    current_xp = bp_xp % _XP_PER_TIER
+    bp_tier = user.get("battle_pass_tier", 1)
+    
+    threshold = 1000 + (bp_tier * 50)
 
     # Equipped cosmetics sub-doc (may be empty)
     cosmetics = user.get("equipped_cosmetics", {}) or {}
@@ -166,8 +167,8 @@ async def get_lobby_profile(user_id: str = Depends(get_current_user_id)):
         equipped_banner_url=banner_url,
         current_rank_title=_RANK_NAMES[rank_tier],
         rank_tier=rank_tier,
-        current_xp=current_xp,
-        next_level_xp=_XP_PER_TIER,
+        current_xp=bp_xp,
+        next_level_xp=threshold,
         equipped_title=user.get("title", "Shadow Boss") or "Shadow Boss",
         battle_pass_tier=bp_tier,
     )

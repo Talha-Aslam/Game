@@ -104,7 +104,7 @@ class BattlePassScreen extends ConsumerWidget {
     } else {
       ref.read(battlePassProvider.notifier).claimFreeReward(tierNum);
     }
-    RewardClaimAnimation.play(context, rarity: reward.rarity);
+    RewardClaimAnimation.play(context, reward: reward);
   }
 
   void _showPremiumSheet(BuildContext context, WidgetRef ref, BattlePassModel bp) {
