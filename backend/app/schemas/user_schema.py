@@ -18,8 +18,8 @@ class UserResponse(BaseModel):
     syndicate_coins: int
     battle_pass_tier: int
     battle_pass_xp: int
-    has_premium_pass: bool
-    has_premium_plus: bool
+    has_premium_pass: bool = False
+    has_premium_plus: bool = False
     claimed_free_tiers: List[int]
     claimed_premium_tiers: List[int]
     wins: int
