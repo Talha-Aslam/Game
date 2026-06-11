@@ -37,61 +37,77 @@ class _RewardTrackWidgetState extends State<RewardTrackWidget> {
   @override
   Widget build(BuildContext context) {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      // Track labels
-      Padding(padding: const EdgeInsets.symmetric(horizontal: 16), child: Row(children: [
-        Container(width: 6, height: 6, decoration: const BoxDecoration(
-          shape: BoxShape.circle, color: AppColors.cyan)),
-        const SizedBox(width: 6),
-        const Text('FREE', style: TextStyle(color: AppColors.white30, fontSize: 9, fontWeight: FontWeight.w700, letterSpacing: 1)),
-        const SizedBox(width: 20),
-        Container(width: 6, height: 6, decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: const LinearGradient(colors: [AppColors.gold, Color(0xFFFF8F00)]))),
-        const SizedBox(width: 6),
-        const Text('PREMIUM', style: TextStyle(color: AppColors.gold, fontSize: 9, fontWeight: FontWeight.w700, letterSpacing: 1)),
-      ])),
-      const SizedBox(height: 8),
-      // Tracks
-      SizedBox(
-        height: 200,
-        child: ListView.builder(
-          controller: _scrollController,
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          itemCount: widget.bp.tiers.length,
-          itemBuilder: (_, i) {
-            final tier = widget.bp.tiers[i];
-            final isCurrentTier = tier.tier == widget.bp.currentTier;
-            return SizedBox(
-              width: 80,
-              child: Column(children: [
-                // Free track (top)
-                RewardNodeWidget(
-                  reward: tier.freeReward, tier: tier.tier,
-                  claimState: tier.freeClaimState(),
-                  onTap: () => widget.onTapReward?.call(tier, false),
-                  onClaim: () => widget.onClaimReward?.call(tier.tier, false),
-                ),
-                // Progress connector
-                _ProgressLine(
-                  isCompleted: tier.isUnlocked,
-                  isCurrent: isCurrentTier,
-                  progress: isCurrentTier ? widget.bp.progress : 0,
-                ),
-                // Premium track (bottom)
-                if (tier.premiumReward != null)
-                  RewardNodeWidget(
-                    reward: tier.premiumReward!, tier: tier.tier,
-                    claimState: tier.premiumClaimState(widget.bp.isPremium),
-                    isPremiumTrack: true,
-                    onTap: () => widget.onTapReward?.call(tier, true),
-                    onClaim: () => widget.onClaimReward?.call(tier.tier, true),
-                  )
-                else
-                  const SizedBox(height: 84),
-              ]),
-            );
-          },
+      // Tracks with side labels
+      Expanded(
+        child: Row(
+          children: [
+            // Left fixed labels
+            Container(
+              width: 50,
+              padding: const EdgeInsets.only(left: 8, bottom: 8),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const SizedBox(height: 30),
+                  RotatedBox(
+                    quarterTurns: 3,
+                    child: const Text('FREE', style: TextStyle(color: AppColors.cyan, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 2)),
+                  ),
+                  const Spacer(),
+                  RotatedBox(
+                    quarterTurns: 3,
+                    child: const Text('PREMIUM', style: TextStyle(color: AppColors.gold, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 2)),
+                  ),
+                  const SizedBox(height: 30),
+                ],
+              ),
+            ),
+            // Horizontal list
+            Expanded(
+              child: ListView.builder(
+                controller: _scrollController,
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                itemCount: widget.bp.tiers.length,
+                itemBuilder: (_, i) {
+                  final tier = widget.bp.tiers[i];
+                  final isCurrentTier = tier.tier == widget.bp.currentTier;
+                  return SizedBox(
+                    width: 80,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        // Free track (top)
+                        RewardNodeWidget(
+                          reward: tier.freeReward, tier: tier.tier,
+                          claimState: tier.freeClaimState(),
+                          onTap: () => widget.onTapReward?.call(tier, false),
+                          onClaim: () => widget.onClaimReward?.call(tier.tier, false),
+                        ),
+                        // Progress connector
+                        _ProgressLine(
+                          isCompleted: tier.isUnlocked,
+                          isCurrent: isCurrentTier,
+                          progress: isCurrentTier ? widget.bp.progress : 0,
+                        ),
+                        // Premium track (bottom)
+                        if (tier.premiumReward != null)
+                          RewardNodeWidget(
+                            reward: tier.premiumReward!, tier: tier.tier,
+                            claimState: tier.premiumClaimState(widget.bp.isPremium),
+                            isPremiumTrack: true,
+                            onTap: () => widget.onTapReward?.call(tier, true),
+                            onClaim: () => widget.onClaimReward?.call(tier.tier, true),
+                          )
+                        else
+                          const SizedBox(height: 84),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
         ),
       ),
     ]);

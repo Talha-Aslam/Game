@@ -93,12 +93,13 @@ async def claim_bounty_reward(user_id: str, bounty_id: str):
     bounty_found["status"] = "claimed"
     xp_reward = bounty_found.get("xp", 100)
     
-    # Give Battle Pass XP
-    new_bp_xp = user.get("battle_pass_xp", 0) + xp_reward
-    
     await users_collection.update_one(
         {"_id": user_id},
-        {"$set": {"daily_bounties": bounties, "battle_pass_xp": new_bp_xp}}
+        {"$set": {"daily_bounties": bounties}}
     )
+    
+    # Give Battle Pass XP using safe leveling
+    from app.services.battle_pass_service import add_bp_xp
+    await add_bp_xp(user_id, xp_reward)
     
     return await get_user_by_id(user_id)

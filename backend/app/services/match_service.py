@@ -90,8 +90,7 @@ async def resolve_match_results(players: List[Any], winner_faction: str) -> None
                 "losses": 0 if is_winner else 1,
                 "mmr": mmr_change,
                 "syndicate_coins": coins_reward,
-                "influence": influence_reward,
-                "battle_pass_xp": bp_xp_reward
+                "influence": influence_reward
             }
         }
         
@@ -113,6 +112,11 @@ async def resolve_match_results(players: List[Any], winner_faction: str) -> None
                 {"_id": p.user_id},
                 update_query
             )
+            
+            # Apply BP XP safely with leveling
+            from app.services.battle_pass_service import add_bp_xp
+            await add_bp_xp(p.user_id, bp_xp_reward)
+            
             logger.info(f"Updated match stats for user {p.user_id}: Winner={is_winner}")
             
             # Update bounties
