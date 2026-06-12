@@ -34,23 +34,35 @@ class _DailyBountyPanelState extends ConsumerState<DailyBountyPanel>
 
   IconData _getIcon(String iconName) {
     switch (iconName) {
-      case 'trophy': return Icons.emoji_events;
-      case 'shield': return Icons.shield;
-      case 'target': return Icons.my_location;
-      case 'gamepad': return Icons.gamepad;
-      case 'medical_services': return Icons.medical_services;
-      default: return Icons.task_alt;
+      case 'trophy':
+        return Icons.emoji_events;
+      case 'shield':
+        return Icons.shield;
+      case 'target':
+        return Icons.my_location;
+      case 'gamepad':
+        return Icons.gamepad;
+      case 'medical_services':
+        return Icons.medical_services;
+      default:
+        return Icons.task_alt;
     }
   }
 
   Color _getColor(String iconName) {
     switch (iconName) {
-      case 'trophy': return AppColors.gold;
-      case 'shield': return AppColors.purpleGlow;
-      case 'target': return AppColors.crimsonRed;
-      case 'gamepad': return AppColors.cyan;
-      case 'medical_services': return Colors.greenAccent;
-      default: return AppColors.white70;
+      case 'trophy':
+        return AppColors.gold;
+      case 'shield':
+        return AppColors.purpleGlow;
+      case 'target':
+        return AppColors.crimsonRed;
+      case 'gamepad':
+        return AppColors.cyan;
+      case 'medical_services':
+        return Colors.greenAccent;
+      default:
+        return AppColors.white70;
     }
   }
 
@@ -68,55 +80,97 @@ class _DailyBountyPanelState extends ConsumerState<DailyBountyPanel>
           builder: (_, _) {
             return GestureDetector(
               onTap: () => setState(() => _expanded = !_expanded),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeOut,
-                    padding: EdgeInsets.all(_expanded ? 10 : 8),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      color: AppColors.white05,
-                      border: Border.all(
-                        color: completedCount > 0
-                            ? AppColors.gold.withValues(
-                                alpha: 0.25 + _pulse.value * 0.1,
-                              )
-                            : AppColors.glassBorder,
-                        width: 0.5,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  ClipPath(
+                    clipper: ShapeBorderClipper(
+                      shape: BeveledRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
                       ),
                     ),
-                    child: AnimatedCrossFade(
-                      duration: const Duration(milliseconds: 300),
-                      crossFadeState: _expanded
-                          ? CrossFadeState.showSecond
-                          : CrossFadeState.showFirst,
-                      sizeCurve: Curves.easeOut,
-                      firstCurve: Curves.easeOut,
-                      secondCurve: Curves.easeIn,
-                      alignment: Alignment.topCenter,
-                      firstChild: SizedBox(
-                        width: 26,
-                        height: 38,
-                        child: Center(
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: _buildCollapsed(completedCount),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeOut,
+                        padding: EdgeInsets.all(_expanded ? 12 : 10),
+                        decoration: ShapeDecoration(
+                          color: const Color(0xFF2A0845).withValues(alpha: 0.6),
+                          shape: BeveledRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            side: BorderSide(
+                              color: completedCount > 0
+                                  ? AppColors.gold.withValues(
+                                      alpha: 0.6 + _pulse.value * 0.4,
+                                    )
+                                  : AppColors.gold.withValues(alpha: 0.3),
+                              width: 1.5,
+                            ),
                           ),
                         ),
-                      ),
-                      secondChild: SizedBox(
-                        width: 260,
-                        child: SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: SizedBox(width: 260, child: _buildExpanded(bounties)),
+                        child: AnimatedCrossFade(
+                          duration: const Duration(milliseconds: 300),
+                          crossFadeState: _expanded
+                              ? CrossFadeState.showSecond
+                              : CrossFadeState.showFirst,
+                          sizeCurve: Curves.easeOut,
+                          firstCurve: Curves.easeOut,
+                          secondCurve: Curves.easeIn,
+                          alignment: Alignment.topCenter,
+                          firstChild: SizedBox(
+                            width: 28,
+                            height: 28,
+                            child: Center(
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: _buildCollapsed(completedCount),
+                              ),
+                            ),
+                          ),
+                          secondChild: SizedBox(
+                            width: 260,
+                            child: SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: SizedBox(
+                                width: 260,
+                                child: _buildExpanded(bounties),
+                              ),
+                            ),
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
+                  // Top Flare
+                  Positioned(
+                    top: -1,
+                    left: 0,
+                    right: 0,
+                    child: Center(child: _buildFlare(_pulse.value)),
+                  ),
+                  // Bottom Flare
+                  Positioned(
+                    bottom: -1,
+                    left: 0,
+                    right: 0,
+                    child: Center(child: _buildFlare(_pulse.value)),
+                  ),
+                  // Left Flare
+                  Positioned(
+                    top: 0,
+                    bottom: 0,
+                    left: -1,
+                    child: Center(child: _buildFlare(_pulse.value)),
+                  ),
+                  // Right Flare
+                  Positioned(
+                    top: 0,
+                    bottom: 0,
+                    right: -1,
+                    child: Center(child: _buildFlare(_pulse.value)),
+                  ),
+                ],
               ),
             );
           },
@@ -124,6 +178,26 @@ class _DailyBountyPanelState extends ConsumerState<DailyBountyPanel>
       },
       loading: () => const SizedBox.shrink(),
       error: (error, stack) => const SizedBox.shrink(),
+    );
+  }
+
+  Widget _buildFlare(double pulse) {
+    return Transform.rotate(
+      angle: 3.14159 / 4,
+      child: Container(
+        width: 4,
+        height: 4,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFFD500F9), // Glowing purple/magenta
+              blurRadius: 6 + (pulse * 6),
+              spreadRadius: 1 + (pulse * 3),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -210,10 +284,14 @@ class _DailyBountyPanelState extends ConsumerState<DailyBountyPanel>
                       child: Text(
                         m.description,
                         style: TextStyle(
-                          color: isCompleted ? AppColors.gold : AppColors.white70,
+                          color: isCompleted
+                              ? AppColors.gold
+                              : AppColors.white70,
                           fontSize: 9,
                           fontWeight: FontWeight.w600,
-                          decoration: isClaimed ? TextDecoration.lineThrough : null,
+                          decoration: isClaimed
+                              ? TextDecoration.lineThrough
+                              : null,
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -224,16 +302,30 @@ class _DailyBountyPanelState extends ConsumerState<DailyBountyPanel>
                           ref.read(bountiesProvider.notifier).claimBounty(m.id);
                         },
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
                             color: AppColors.gold,
                             borderRadius: BorderRadius.circular(4),
                           ),
-                          child: const Text('CLAIM', style: TextStyle(color: Colors.black, fontSize: 8, fontWeight: FontWeight.bold)),
+                          child: const Text(
+                            'CLAIM',
+                            style: TextStyle(
+                              color: Colors.black,
+                              fontSize: 8,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ),
                       )
                     else if (isClaimed)
-                      const Icon(Icons.check_circle, color: AppColors.white30, size: 12)
+                      const Icon(
+                        Icons.check_circle,
+                        color: AppColors.white30,
+                        size: 12,
+                      ),
                   ],
                 ),
                 if (!isClaimed) ...[
@@ -271,7 +363,9 @@ class _DailyBountyPanelState extends ConsumerState<DailyBountyPanel>
                       Text(
                         '+${m.xp}XP',
                         style: TextStyle(
-                          color: isCompleted ? AppColors.gold : AppColors.white30,
+                          color: isCompleted
+                              ? AppColors.gold
+                              : AppColors.white30,
                           fontSize: 7,
                           fontWeight: FontWeight.w600,
                         ),

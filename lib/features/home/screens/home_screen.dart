@@ -6,7 +6,6 @@ import 'package:mafia_wars/providers/custom_room_provider.dart';
 import 'package:mafia_wars/providers/ranking_provider.dart';
 import '../../../providers/notification_provider.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_gradients.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../widgets/glass_button.dart';
 import '../../../providers/family_provider.dart';
@@ -461,6 +460,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
+  Widget _buildFlare() {
+    return Transform.rotate(
+      angle: 3.14159 / 4,
+      child: Container(
+        width: 2,
+        height: 2,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(color: Color(0xFFD500F9), blurRadius: 6, spreadRadius: 1),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(authProvider).user;
@@ -492,10 +507,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ),
       body: Stack(
         children: [
-          // ── Background gradient ──
-          Container(
-            decoration: const BoxDecoration(
-              gradient: AppGradients.backgroundGradient,
+          // ── Background image ──
+          Positioned.fill(
+            child: Image.asset(
+              'assets/images/home_background.png',
+              fit: BoxFit.cover,
             ),
           ),
 
@@ -556,28 +572,70 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       // ── Settings gear (far right) ──
                       GestureDetector(
                         onTap: () => context.push('/settings'),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(10),
-                          child: BackdropFilter(
-                            filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-                            child: Container(
-                              width: 32,
-                              height: 32,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(10),
-                                color: AppColors.white05,
-                                border: Border.all(
-                                  color: AppColors.glassBorder,
-                                  width: 0.5,
+                        child: Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            ClipPath(
+                              clipper: ShapeBorderClipper(
+                                shape: BeveledRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
                                 ),
                               ),
-                              child: const Icon(
-                                Icons.settings,
-                                color: AppColors.white50,
-                                size: 16,
+                              child: BackdropFilter(
+                                filter: ImageFilter.blur(
+                                  sigmaX: 12,
+                                  sigmaY: 12,
+                                ),
+                                child: Container(
+                                  width: 34,
+                                  height: 34,
+                                  decoration: ShapeDecoration(
+                                    color: const Color(
+                                      0xFF2A0845,
+                                    ).withValues(alpha: 0.6),
+                                    shape: BeveledRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                      side: BorderSide(
+                                        color: AppColors.gold.withValues(
+                                          alpha: 0.4,
+                                        ),
+                                        width: 1.5,
+                                      ),
+                                    ),
+                                  ),
+                                  child: const Icon(
+                                    Icons.settings,
+                                    color: AppColors.gold,
+                                    size: 18,
+                                  ),
+                                ),
                               ),
                             ),
-                          ),
+                            Positioned(
+                              top: -1,
+                              left: 0,
+                              right: 0,
+                              child: Center(child: _buildFlare()),
+                            ),
+                            Positioned(
+                              bottom: -1,
+                              left: 0,
+                              right: 0,
+                              child: Center(child: _buildFlare()),
+                            ),
+                            Positioned(
+                              top: 0,
+                              bottom: 0,
+                              left: -1,
+                              child: Center(child: _buildFlare()),
+                            ),
+                            Positioned(
+                              top: 0,
+                              bottom: 0,
+                              right: -1,
+                              child: Center(child: _buildFlare()),
+                            ),
+                          ],
                         ),
                       ),
                     ],
@@ -659,7 +717,11 @@ class _CurrencyPill extends StatelessWidget {
     return GestureDetector(
       onTap: () {
         final isSC = color == AppColors.gold;
-        PurchaseDialog.show(context, currentBalance: int.tryParse(value) ?? 0, isSyndicateCoins: isSC);
+        PurchaseDialog.show(
+          context,
+          currentBalance: int.tryParse(value) ?? 0,
+          isSyndicateCoins: isSC,
+        );
       },
       child: ClipRRect(
         borderRadius: BorderRadius.circular(10),

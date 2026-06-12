@@ -1,8 +1,9 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_colors.dart';
 
-/// Premium glassmorphism bottom navigation bar with frosted blur
+/// Premium bottom navigation bar matching MAFIA AT CITY theme
 class BottomNavBarGlass extends StatefulWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
@@ -40,28 +41,14 @@ class _BottomNavBarGlassState extends State<BottomNavBarGlass>
 
   static const _tabs = [
     (
-      icon: Icons.people_outline,
-      activeIcon: Icons.people,
+      iconPath: 'assets/images/icons/navbar_icons/friends.png',
       label: 'Friends',
-      color: AppColors.cyan,
     ),
+    (iconPath: 'assets/images/icons/navbar_icons/family.png', label: 'Family'),
+    (iconPath: 'assets/images/icons/navbar_icons/store.png', label: 'Store'),
     (
-      icon: Icons.shield_outlined,
-      activeIcon: Icons.shield,
-      label: 'Family',
-      color: AppColors.purpleGlow,
-    ),
-    (
-      icon: Icons.storefront_outlined,
-      activeIcon: Icons.storefront,
-      label: 'Store',
-      color: AppColors.gold,
-    ),
-    (
-      icon: Icons.leaderboard_outlined,
-      activeIcon: Icons.leaderboard,
+      iconPath: 'assets/images/icons/navbar_icons/ranking.png',
       label: 'Rankings',
-      color: AppColors.mintGreen,
     ),
   ];
 
@@ -71,40 +58,63 @@ class _BottomNavBarGlassState extends State<BottomNavBarGlass>
       animation: _glow,
       builder: (_, _) {
         return Container(
-          margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(22),
+          margin: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+          height: 75,
+          decoration: ShapeDecoration(
+            shape: BeveledRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
+            shadows: [
+              BoxShadow(
+                color: AppColors.gold.withValues(alpha: 0.15),
+                blurRadius: 15,
+                spreadRadius: 1,
+              ),
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.8),
+                blurRadius: 20,
+                offset: const Offset(0, 5),
+              ),
+            ],
+          ),
+          child: ClipPath(
+            clipper: ShapeBorderClipper(
+              shape: BeveledRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+            ),
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
               child: Container(
-                height: 64,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(22),
-                  color: AppColors.white05,
-                  border: Border.all(color: AppColors.glassBorder, width: 0.5),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.2),
-                      blurRadius: 20,
-                      offset: const Offset(0, -4),
+                decoration: ShapeDecoration(
+                  color: const Color.fromARGB(
+                    118,
+                    42,
+                    8,
+                    69,
+                  ).withValues(alpha: 0.1), // Purplish transparent glass
+                  shape: BeveledRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    side: BorderSide(
+                      color: AppColors.gold.withValues(alpha: 0.8),
+                      width: 0.8,
                     ),
-                  ],
+                  ),
                 ),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: List.generate(_tabs.length, (i) {
                     final bool isFriendsTab = _tabs[i].label == 'Friends';
-                    return _NavTab(
-                      icon: _tabs[i].icon,
-                      activeIcon: _tabs[i].activeIcon,
-                      label: _tabs[i].label,
-                      color: _tabs[i].color,
-                      isActive: widget.currentIndex == i,
-                      glowValue: _glow.value,
-                      badgeCount: isFriendsTab
-                          ? widget.friendsNotificationCount
-                          : 0,
-                      onTap: () => widget.onTap(i),
+                    return Expanded(
+                      child: _NavTab(
+                        iconPath: _tabs[i].iconPath,
+                        label: _tabs[i].label,
+                        isActive: widget.currentIndex == i,
+                        glowValue: _glow.value,
+                        hasBadge:
+                            isFriendsTab && widget.friendsNotificationCount > 0,
+                        onTap: () => widget.onTap(i),
+                      ),
                     );
                   }),
                 ),
@@ -118,106 +128,125 @@ class _BottomNavBarGlassState extends State<BottomNavBarGlass>
 }
 
 class _NavTab extends StatelessWidget {
-  final IconData icon, activeIcon;
+  final String iconPath;
   final String label;
-  final Color color;
   final bool isActive;
   final double glowValue;
-  final int badgeCount;
+  final bool hasBadge;
   final VoidCallback onTap;
 
   const _NavTab({
-    required this.icon,
-    required this.activeIcon,
+    required this.iconPath,
     required this.label,
-    required this.color,
     required this.isActive,
     required this.glowValue,
-    this.badgeCount = 0,
+    this.hasBadge = false,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
+    final color = isActive
+        ? AppColors.gold
+        : AppColors.gold.withValues(alpha: 0.6);
+
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(14),
-          color: isActive ? color.withValues(alpha: 0.1) : Colors.transparent,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Stack(
               clipBehavior: Clip.none,
               children: [
+                if (isActive)
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    transform: Matrix4.identity()
+                      ..scaleByDouble(1.1, 1.1, 1.0, 1.0),
+                    transformAlignment: Alignment.center,
+                    child: ImageFiltered(
+                      imageFilter: ImageFilter.blur(sigmaX: 4, sigmaY: 4),
+                      child: Image.asset(
+                        iconPath,
+                        width: 28,
+                        height: 28,
+                        color: AppColors.gold.withValues(
+                          alpha: 0.5 + glowValue * 0.3,
+                        ),
+                      ),
+                    ),
+                  ),
                 AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
                   transform: Matrix4.identity()
                     ..scaleByDouble(
-                      isActive ? 1.15 : 1.0,
-                      isActive ? 1.15 : 1.0,
+                      isActive ? 1.1 : 1.0,
+                      isActive ? 1.1 : 1.0,
                       1.0,
                       1.0,
                     ),
                   transformAlignment: Alignment.center,
-                  child: Icon(
-                    isActive ? activeIcon : icon,
-                    color: isActive ? color : AppColors.white30,
-                    size: 22,
-                    shadows: isActive
-                        ? [
-                            Shadow(
-                              color: color.withValues(
-                                alpha: 0.4 + glowValue * 0.2,
-                              ),
-                              blurRadius: 10,
-                            ),
-                          ]
-                        : null,
+                  child: Image.asset(
+                    iconPath,
+                    width: 28,
+                    height: 28,
+                    color: color,
                   ),
                 ),
-                if (badgeCount > 0)
+                if (hasBadge)
                   Positioned(
-                    top: -2,
-                    right: -4,
+                    top: -6,
+                    right: -8,
                     child: Container(
-                      padding: const EdgeInsets.all(3),
+                      padding: const EdgeInsets.all(4),
                       decoration: const BoxDecoration(
-                        color: Colors.redAccent,
+                        color: Color(0xFF8A2BE2), // Purple badge
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.redAccent,
-                            blurRadius: 6,
-                            spreadRadius: 1,
+                            color: Color(0xFF8A2BE2),
+                            blurRadius: 8,
+                            spreadRadius: 2,
                           ),
                         ],
                       ),
-                      child: Text(
-                        badgeCount > 9 ? '9+' : badgeCount.toString(),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 8,
-                          fontWeight: FontWeight.bold,
-                          height: 1.0,
-                        ),
+                      child: const Icon(
+                        Icons.priority_high,
+                        color: Colors.white,
+                        size: 12,
+                        weight: 900,
                       ),
                     ),
                   ),
               ],
             ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: TextStyle(
-                color: isActive ? color : AppColors.white30,
-                fontSize: 9,
-                fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+            const SizedBox(height: 6),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                label.toUpperCase(),
+                maxLines: 1,
+                style: GoogleFonts.cinzel(
+                  color: color,
+                  fontSize: 11,
+                  fontWeight: isActive ? FontWeight.w800 : FontWeight.w600,
+                  letterSpacing: 1.2,
+                  shadows: isActive
+                      ? [
+                          Shadow(
+                            color: AppColors.gold.withValues(
+                              alpha: 0.4 + glowValue * 0.3,
+                            ),
+                            blurRadius: 10,
+                          ),
+                        ]
+                      : null,
+                ),
               ),
             ),
           ],
