@@ -11,6 +11,8 @@ import '../../features/battle_pass/screens/battle_pass_screen.dart';
 import '../../features/store/screens/store_screen.dart';
 import '../../features/store/screens/premium_store_screen.dart';
 import '../../features/store/screens/transaction_history_screen.dart';
+import '../../features/store/screens/package_details_screen.dart';
+import '../../features/store/screens/checkout_screen.dart';
 import '../../features/family/screens/family_screen.dart';
 import '../../features/family/screens/family_create_screen.dart';
 import '../../features/family/screens/family_search_screen.dart';
@@ -56,6 +58,26 @@ class AppRouter {
       ),
       GoRoute(path: '/store', builder: (c, s) => const StoreScreen()),
       GoRoute(path: '/premium-store', builder: (c, s) => const PremiumStoreScreen()),
+      GoRoute(
+        path: '/premium-store/details',
+        builder: (c, s) {
+          final data = s.extra as Map<String, dynamic>;
+          return PackageDetailsScreen(
+            packageId: data['id'] as String,
+            packageData: data['data'] as Map<String, dynamic>,
+          );
+        },
+      ),
+      GoRoute(
+        path: '/premium-store/checkout',
+        builder: (c, s) {
+          final data = s.extra as Map<String, dynamic>;
+          return CheckoutScreen(
+            packageId: data['id'] as String,
+            packageData: data['data'] as Map<String, dynamic>,
+          );
+        },
+      ),
       GoRoute(path: '/transaction-history', builder: (c, s) => const TransactionHistoryScreen()),
       GoRoute(path: '/family', builder: (c, s) => const FamilyScreen()),
       GoRoute(

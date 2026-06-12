@@ -46,7 +46,7 @@ class UserDB(BaseModel):
     title: str = "Rookie"
     trust_rating: int = 0
 
-    mmr: int = 1500
+    mmr: int = 0
     rank: str = "Bronze"
     influence: int = 3000
     syndicate_coins: int = 3000
