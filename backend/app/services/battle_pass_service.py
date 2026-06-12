@@ -3,10 +3,6 @@ from app.config.database import get_database
 from datetime import datetime, timedelta
 import math
 
-# Shared Battle Pass config
-SEASON_NAME = "Season 1: City of Lies"
-# Let's say season ends 30 days from now for this live-service instance
-SEASON_END_DATE = (datetime.utcnow() + timedelta(days=30)).isoformat()
 MAX_TIER = 50
 
 # Map of specific rewards for the first 10 tiers (as an example of AAA economy).
@@ -40,10 +36,26 @@ def _get_reward_for_tier(tier: int, is_premium: bool) -> dict:
     return final_reward
 
 async def get_season_info() -> dict:
+    db = get_database()
+    config_col = db["server_config"]
+    
+    season_doc = await config_col.find_one({"_id": "current_season"})
+    
+    if not season_doc:
+        # First time initializing the server database for the season
+        season_end = (datetime.utcnow() + timedelta(days=30)).isoformat()
+        season_doc = {
+            "_id": "current_season",
+            "season_name": "Season 1: City of Lies",
+            "season_end_date": season_end,
+            "max_tier": MAX_TIER
+        }
+        await config_col.insert_one(season_doc)
+        
     return {
-        "season_name": SEASON_NAME,
-        "season_end_date": SEASON_END_DATE,
-        "max_tier": MAX_TIER
+        "season_name": season_doc.get("season_name", "Season 1: City of Lies"),
+        "season_end_date": season_doc.get("season_end_date"),
+        "max_tier": season_doc.get("max_tier", MAX_TIER)
     }
 
 async def claim_tier(user_id: str, tier: int, is_premium: bool) -> dict:
