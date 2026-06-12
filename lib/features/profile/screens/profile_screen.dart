@@ -180,7 +180,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         Text(
                           (user.bio != null && user.bio!.trim().isNotEmpty)
                               ? user.bio!
-                              : '"Trust nobody in the City of Lies."',
+                              : '"Trust nobody in the MAFIA AT CITY."',
                           style: AppTextStyles.bodyMedium.copyWith(
                             color: AppColors.white70,
                             fontStyle: FontStyle.italic,

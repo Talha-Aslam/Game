@@ -1,7 +1,7 @@
 from pymongo import MongoClient
 
 # Use the existing connection string from set_coins.py
-client = MongoClient("mongodb+srv://admin:admin321@cityoflies.imqgrnk.mongodb.net/?appName=CityofLies")
+client = MongoClient("mongodb+srv://admin:admin321@MAFIA AT CITY.imqgrnk.mongodb.net/?appName=MAFIA AT CITY")
 db = client["city_of_lies"]
 
 # Increment the syndicate_coins field by 3000 for all users

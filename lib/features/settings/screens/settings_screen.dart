@@ -145,7 +145,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     const SizedBox(height: 32),
                     Center(
                       child: Text(
-                        'City Of Lies v1.0.0',
+                        'MAFIA AT CITY v1.0.0',
                         style: AppTextStyles.labelSmall,
                       ),
                     ),

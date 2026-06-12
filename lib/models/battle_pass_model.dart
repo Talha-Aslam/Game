@@ -277,7 +277,7 @@ class BattlePassModel {
   final int tierSkipCost;
 
   const BattlePassModel({
-    this.seasonName = 'Season 1: City of Lies',
+    this.seasonName = 'Season 1: MAFIA AT CITY',
     required this.seasonEndDate,
     this.currentTier = 1,
     this.maxTier = 50,

@@ -83,11 +83,27 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                       const SizedBox(height: 40),
 
                       // Logo
-                      const NeonText(
-                        text: 'CITY\nOF LIES',
-                        fontSize: 42,
-                        color: AppColors.purpleNeon,
-                        glowRadius: 30,
+                      const Column(
+                        children: [
+                          NeonText(
+                            text: 'MAFIA',
+                            fontSize: 52,
+                            color: AppColors.gold,
+                            glowRadius: 30,
+                          ),
+                          NeonText(
+                            text: 'AT',
+                            fontSize: 24,
+                            color: AppColors.gold,
+                            glowRadius: 15,
+                          ),
+                          NeonText(
+                            text: 'CITY',
+                            fontSize: 52,
+                            color: AppColors.purpleNeon,
+                            glowRadius: 30,
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 8),
                       Text(
@@ -138,7 +154,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                     _passwordController.text,
                                   );
                                 },
-                          glowColor: AppColors.purpleNeon,
+                          glowColor: AppColors.gold,
                           height: 52,
                         ),
                       ),
@@ -188,7 +204,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                               TextSpan(
                                 text: 'Sign Up',
                                 style: AppTextStyles.bodySmall.copyWith(
-                                  color: AppColors.purpleNeon,
+                                  color: AppColors.gold,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),

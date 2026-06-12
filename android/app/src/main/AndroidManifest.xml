@@ -16,7 +16,7 @@
 
     <application
         android:usesCleartextTraffic="true"
-        android:label="City Of Lies"
+        android:label="MAFIA AT CITY"
         android:name="${applicationName}"
         android:icon="@mipmap/launcher_icon">
         <activity

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'app_colors.dart';
 
-/// Cinematic gradient presets used throughout City Of Lies
+/// Cinematic gradient presets used throughout MAFIA AT CITY
 class AppGradients {
   AppGradients._();
 

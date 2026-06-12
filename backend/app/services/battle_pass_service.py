@@ -46,14 +46,14 @@ async def get_season_info() -> dict:
         season_end = (datetime.utcnow() + timedelta(days=30)).isoformat()
         season_doc = {
             "_id": "current_season",
-            "season_name": "Season 1: City of Lies",
+            "season_name": "Season 1: MAFIA AT CITY",
             "season_end_date": season_end,
             "max_tier": MAX_TIER
         }
         await config_col.insert_one(season_doc)
         
     return {
-        "season_name": season_doc.get("season_name", "Season 1: City of Lies"),
+        "season_name": season_doc.get("season_name", "Season 1: MAFIA AT CITY"),
         "season_end_date": season_doc.get("season_end_date"),
         "max_tier": season_doc.get("max_tier", MAX_TIER)
     }

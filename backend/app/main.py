@@ -4,8 +4,8 @@ from app.config.database import connect_to_mongo, close_mongo_connection
 from app.routes import auth_routes, user_routes, social_routes, family_routes, store_routes, battle_pass_routes, payment_routes
 
 app = FastAPI(
-    title="City of Lies Backend",
-    description="Backend API for City of Lies / Mafia Wars game",
+    title="MAFIA AT CITY Backend",
+    description="Backend API for MAFIA AT CITY / Mafia Wars game",
     version="1.0.0"
 )
 
@@ -78,4 +78,4 @@ async def stop_matchmaker():
 
 @app.get("/")
 async def root():
-    return {"message": "Welcome to City of Lies API"}
+    return {"message": "Welcome to MAFIA AT CITY API"}

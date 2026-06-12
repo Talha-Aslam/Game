@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'app_colors.dart';
 
-/// Full Material3 dark theme for City Of Lies
+/// Full Material3 dark theme for MAFIA AT CITY
 class AppTheme {
   AppTheme._();
 
