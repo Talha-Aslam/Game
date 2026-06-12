@@ -7,80 +7,80 @@ class AppTextStyles {
   AppTextStyles._();
 
   // ── Headings (Outfit) ──
-  static TextStyle get displayLarge => GoogleFonts.outfit(
+  static TextStyle get displayLarge => GoogleFonts.cinzel(
         fontSize: 48,
         fontWeight: FontWeight.w800,
         color: AppColors.white,
         letterSpacing: -1.5,
       );
 
-  static TextStyle get displayMedium => GoogleFonts.outfit(
+  static TextStyle get displayMedium => GoogleFonts.cinzel(
         fontSize: 36,
         fontWeight: FontWeight.w700,
         color: AppColors.white,
         letterSpacing: -1.0,
       );
 
-  static TextStyle get displaySmall => GoogleFonts.outfit(
+  static TextStyle get displaySmall => GoogleFonts.cinzel(
         fontSize: 28,
         fontWeight: FontWeight.w600,
         color: AppColors.white,
         letterSpacing: -0.5,
       );
 
-  static TextStyle get headlineLarge => GoogleFonts.outfit(
+  static TextStyle get headlineLarge => GoogleFonts.cinzel(
         fontSize: 24,
         fontWeight: FontWeight.w700,
         color: AppColors.white,
       );
 
-  static TextStyle get headlineMedium => GoogleFonts.outfit(
+  static TextStyle get headlineMedium => GoogleFonts.cinzel(
         fontSize: 20,
         fontWeight: FontWeight.w600,
         color: AppColors.white,
       );
 
-  static TextStyle get headlineSmall => GoogleFonts.outfit(
+  static TextStyle get headlineSmall => GoogleFonts.cinzel(
         fontSize: 18,
         fontWeight: FontWeight.w600,
         color: AppColors.white,
       );
 
   // ── Body (Inter) ──
-  static TextStyle get bodyLarge => GoogleFonts.inter(
+  static TextStyle get bodyLarge => GoogleFonts.cinzel(
         fontSize: 16,
         fontWeight: FontWeight.w400,
         color: AppColors.white70,
       );
 
-  static TextStyle get bodyMedium => GoogleFonts.inter(
+  static TextStyle get bodyMedium => GoogleFonts.cinzel(
         fontSize: 14,
         fontWeight: FontWeight.w400,
         color: AppColors.white70,
       );
 
-  static TextStyle get bodySmall => GoogleFonts.inter(
+  static TextStyle get bodySmall => GoogleFonts.cinzel(
         fontSize: 12,
         fontWeight: FontWeight.w400,
         color: AppColors.white50,
       );
 
   // ── Labels ──
-  static TextStyle get labelLarge => GoogleFonts.inter(
+  static TextStyle get labelLarge => GoogleFonts.cinzel(
         fontSize: 14,
         fontWeight: FontWeight.w600,
         color: AppColors.white,
         letterSpacing: 0.5,
       );
 
-  static TextStyle get labelMedium => GoogleFonts.inter(
+  static TextStyle get labelMedium => GoogleFonts.cinzel(
         fontSize: 12,
         fontWeight: FontWeight.w500,
         color: AppColors.white70,
         letterSpacing: 0.3,
       );
 
-  static TextStyle get labelSmall => GoogleFonts.inter(
+  static TextStyle get labelSmall => GoogleFonts.cinzel(
         fontSize: 10,
         fontWeight: FontWeight.w500,
         color: AppColors.white50,
@@ -88,7 +88,7 @@ class AppTextStyles {
       );
 
   // ── Special ──
-  static TextStyle get neonTitle => GoogleFonts.outfit(
+  static TextStyle get neonTitle => GoogleFonts.cinzel(
         fontSize: 32,
         fontWeight: FontWeight.w800,
         color: AppColors.purpleNeon,
@@ -105,20 +105,20 @@ class AppTextStyles {
         ],
       );
 
-  static TextStyle get timerText => GoogleFonts.outfit(
+  static TextStyle get timerText => GoogleFonts.cinzel(
         fontSize: 56,
         fontWeight: FontWeight.w800,
         color: AppColors.white,
       );
 
-  static TextStyle get phaseTitle => GoogleFonts.outfit(
+  static TextStyle get phaseTitle => GoogleFonts.cinzel(
         fontSize: 16,
         fontWeight: FontWeight.w700,
         color: AppColors.white,
         letterSpacing: 3.0,
       );
 
-  static TextStyle get goldText => GoogleFonts.outfit(
+  static TextStyle get goldText => GoogleFonts.cinzel(
         fontSize: 18,
         fontWeight: FontWeight.w700,
         color: AppColors.gold,

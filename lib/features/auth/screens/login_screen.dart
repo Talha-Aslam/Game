@@ -6,8 +6,8 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../core/theme/app_gradients.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../widgets/glass_button.dart';
-import '../../../widgets/neon_text.dart';
 import '../../../widgets/particle_field.dart';
+import '../../../widgets/textured_logo.dart';
 import '../widgets/social_login_button.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -83,28 +83,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                       const SizedBox(height: 40),
 
                       // Logo
-                      const Column(
-                        children: [
-                          NeonText(
-                            text: 'MAFIA',
-                            fontSize: 52,
-                            color: AppColors.gold,
-                            glowRadius: 30,
-                          ),
-                          NeonText(
-                            text: 'AT',
-                            fontSize: 24,
-                            color: AppColors.gold,
-                            glowRadius: 15,
-                          ),
-                          NeonText(
-                            text: 'CITY',
-                            fontSize: 52,
-                            color: AppColors.purpleNeon,
-                            glowRadius: 30,
-                          ),
-                        ],
-                      ),
+                      const TexturedLogo(),
                       const SizedBox(height: 8),
                       Text(
                         'TRUST NO ONE',

@@ -110,7 +110,7 @@ class _LobbyCountdownOverlayState extends State<LobbyCountdownOverlay>
                   scale: combinedScale,
                   child: Text(
                     '${widget.countdown}',
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.cinzel(
                       fontSize: isUrgent ? 72 : 60,
                       fontWeight: FontWeight.w900,
                       color: color,

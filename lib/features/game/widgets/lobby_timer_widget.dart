@@ -69,7 +69,7 @@ class _LobbyTimerWidgetState extends State<LobbyTimerWidget>
             size: const Size(82, 82),
             painter: _RingPainter(progress: progress, color: color, glowAlpha: isUrgent ? 0.5 + p * 0.3 : 0.4)),
           // Timer text
-          Text('${widget.seconds}', style: GoogleFonts.outfit(
+          Text('${widget.seconds}', style: GoogleFonts.cinzel(
             fontSize: 36, fontWeight: FontWeight.w800, color: color,
             shadows: [Shadow(color: color.withValues(alpha: isUrgent ? 0.6 + p * 0.3 : 0.3), blurRadius: isUrgent ? 20 : 8)])),
         ]),

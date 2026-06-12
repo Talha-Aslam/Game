@@ -208,7 +208,7 @@ class _MatchResultScreenState extends ConsumerState<MatchResultScreen>
                         winner == WinningSide.mafia
                             ? 'THE SYNDICATE PREVAILS'
                             : 'CIVILIANS TRIUMPH',
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.cinzel(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
                           color: winColor,
@@ -423,7 +423,7 @@ class _MatchResultScreenState extends ConsumerState<MatchResultScreen>
               const SizedBox(height: 2),
               Text(
                 stat.value,
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.cinzel(
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
                   color: stat.color,
