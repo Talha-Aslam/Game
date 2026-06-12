@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/battle_pass_model.dart';
 import '../services/battle_pass_api_service.dart';
 import 'auth_provider.dart';
@@ -38,13 +39,22 @@ class BattlePassNotifier extends Notifier<BattlePassModel> {
   }
 
   Future<void> _fetchSeasonInfo() async {
-    final info = await _api.getSeasonInfo();
-    if (info != null) {
-      final endStr = info['season_end_date'] as String?;
-      if (endStr != null) {
-        state = state.copyWith(seasonEndDate: DateTime.parse(endStr));
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final cached = prefs.getString('cached_season_end_date');
+      if (cached != null) {
+        state = state.copyWith(seasonEndDate: DateTime.parse(cached));
       }
-    }
+
+      final info = await _api.getSeasonInfo();
+      if (info != null) {
+        final endStr = info['season_end_date'] as String?;
+        if (endStr != null) {
+          state = state.copyWith(seasonEndDate: DateTime.parse(endStr));
+          await prefs.setString('cached_season_end_date', endStr);
+        }
+      }
+    } catch (_) {}
   }
 
   // ── Claim ──
