@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config.database import connect_to_mongo, close_mongo_connection
-from app.routes import auth_routes, user_routes, social_routes, family_routes, store_routes, battle_pass_routes
+from app.routes import auth_routes, user_routes, social_routes, family_routes, store_routes, battle_pass_routes, payment_routes
 
 app = FastAPI(
     title="City of Lies Backend",
@@ -55,6 +55,7 @@ app.include_router(social_routes.router)
 app.include_router(family_routes.router)
 app.include_router(store_routes.router, prefix="/store", tags=["Store"])
 app.include_router(battle_pass_routes.router, prefix="/battlepass", tags=["Battle Pass"])
+app.include_router(payment_routes.router, prefix="/payment", tags=["Payment"])
 
 from app.routes import voice_routes, bounty_routes
 app.include_router(voice_routes.router)
