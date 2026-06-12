@@ -85,34 +85,50 @@ class _RewardNodeWidgetState extends State<RewardNodeWidget>
             onTap: isClaimable ? widget.onClaim : widget.onTap,
             splashColor: rarity.color.withValues(alpha: 0.3),
             highlightColor: rarity.color.withValues(alpha: 0.1),
-            child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-            // Tier number
-            Text('${widget.tier}', style: TextStyle(
-              color: isLocked ? AppColors.white10 : rarity.color,
-              fontSize: 8, fontWeight: FontWeight.w700)),
-            const SizedBox(height: 2),
-            // Reward icon
-            Stack(alignment: Alignment.center, children: [
-              Icon(widget.reward.type.icon,
-                color: isLocked ? AppColors.white10 : isClaimed ? rarity.color.withValues(alpha: 0.5) : rarity.color,
-                size: 26),
-              if (isLocked) Icon(widget.claimState == ClaimState.premiumLocked
-                  ? Icons.star : Icons.lock, color: AppColors.white10, size: 14),
-              if (isClaimed) const Positioned(right: 0, bottom: 0,
-                child: Icon(Icons.check_circle, color: AppColors.online, size: 12)),
-              if (isClaimable) Positioned(bottom: 0,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                  decoration: BoxDecoration(borderRadius: BorderRadius.circular(4),
-                    color: rarity.color, boxShadow: [BoxShadow(color: rarity.color.withValues(alpha: 0.4), blurRadius: 4)]),
-                  child: const Text('CLAIM', style: TextStyle(color: Colors.white, fontSize: 6, fontWeight: FontWeight.w800)))),
-            ]),
-            const SizedBox(height: 4),
-            // Rarity indicator
-            Container(width: 20, height: 2, decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(1),
-              color: isLocked ? AppColors.white05 : rarity.color.withValues(alpha: 0.5))),
-            ]),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+              child: Column(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                // Tier number
+                Text('TIER ${widget.tier}', style: TextStyle(
+                  color: isLocked ? AppColors.white10 : rarity.color,
+                  fontSize: 7, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
+                
+                // Reward icon
+                Stack(clipBehavior: Clip.none, alignment: Alignment.center, children: [
+                  Icon(widget.reward.type.icon,
+                    color: isLocked ? AppColors.white10 : isClaimed ? rarity.color.withValues(alpha: 0.5) : rarity.color,
+                    size: 26),
+                  if (isLocked) Icon(widget.claimState == ClaimState.premiumLocked
+                      ? Icons.star : Icons.lock, color: AppColors.white10, size: 14),
+                  if (isClaimed) const Positioned(right: -6, bottom: -6,
+                    child: Icon(Icons.check_circle, color: AppColors.online, size: 12)),
+                  if (isClaimable) Positioned(bottom: -10,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                      decoration: BoxDecoration(borderRadius: BorderRadius.circular(4),
+                        color: rarity.color, boxShadow: [BoxShadow(color: rarity.color.withValues(alpha: 0.4), blurRadius: 4)]),
+                      child: const Text('CLAIM', style: TextStyle(color: Colors.white, fontSize: 6, fontWeight: FontWeight.w800)))),
+                ]),
+                
+                // Bottom Label / Rarity / Amount
+                if (widget.reward.currencyAmount != null)
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      '${widget.reward.currencyAmount} ${widget.reward.type == RewardType.syndicateCoins ? 'SC' : 'IP'}',
+                      style: TextStyle(
+                        color: isLocked ? AppColors.white30 : Colors.white,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w800,
+                      )
+                    ),
+                  )
+                else
+                  Container(width: 20, height: 2, decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(1),
+                    color: isLocked ? AppColors.white05 : rarity.color.withValues(alpha: 0.5))),
+              ]),
+            ),
           ),
         ),
       );
