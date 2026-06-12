@@ -81,8 +81,7 @@ _XP_PER_TIER = 1000
 @router.get("/rankings")
 async def get_rankings(user_id: str = Depends(get_current_user_id)):
     db = get_database()
-    # Ensure we use an aggregate to sort by the maximum of possible mmr fields if needed
-    # But usually, it's stored as 'mmr'. We will sort by 'mmr' natively, but handle fallback in python.
+    # Sort natively by mmr
     cursor = db["users"].find().sort("mmr", -1).limit(100)
     top_players = await cursor.to_list(length=100)
     
@@ -90,24 +89,32 @@ async def get_rankings(user_id: str = Depends(get_current_user_id)):
     for i, p in enumerate(top_players):
         # Resilient MMR fetch
         points = p.get("mmr") or p.get("MMR") or p.get("rank_points") or 0
+        wins = p.get("wins", 0)
         
         # Derive level from BP
         level = p.get("battle_pass_tier", 1)
         if level == 0: level = 1
         
+        # Proper avatar logic
+        avatar_url = p.get("profile_picture", "")
+        if p.get("using_premium_avatar") and p.get("premium_avatar"):
+            avatar_url = p.get("premium_avatar")
+            
         rankings.append({
-            "rank": i + 1,
             "username": p.get("username", "Unknown"),
-            "avatarUrl": p.get("profile_picture", ""),
+            "avatarUrl": avatar_url,
             "level": level,
             "mmr": points,
+            "wins": wins,
             "is_me": str(p.get("_id")) == user_id
         })
         
-    # Python-side re-sort just in case the db field wasn't purely "mmr"
-    rankings.sort(key=lambda x: x["mmr"], reverse=True)
+    # Python-side re-sort to ensure absolute deterministic order (MMR -> Wins -> Username)
+    rankings.sort(key=lambda x: (x["mmr"], x["wins"], x["username"]), reverse=True)
+    
     for i, r in enumerate(rankings):
         r["rank"] = i + 1
+        # we can remove wins from output if we want, but it's fine to leave it
         
     return rankings
 
@@ -143,13 +150,18 @@ async def get_lobby_profile(user_id: str = Depends(get_current_user_id)):
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # Parse rank tier from string rank field
-    rank_str = str(user.get("rank", "Bronze")).lower()
-    rank_tier = 0
-    for key, val in _RANK_TIERS.items():
-        if key in rank_str:
-            rank_tier = val
-            break
+    # Pure MMR to Tier calculation to guarantee sync with Global Rankings
+    mmr = user.get("mmr", 0)
+    if mmr < 1000:
+        rank_tier = 0
+    elif mmr < 2500:
+        rank_tier = 1
+    elif mmr < 5000:
+        rank_tier = 2
+    elif mmr < 10000:
+        rank_tier = 3
+    else:
+        rank_tier = 4
 
     bp_xp = user.get("battle_pass_xp", 0)
     bp_tier = user.get("battle_pass_tier", 1)
@@ -159,10 +171,14 @@ async def get_lobby_profile(user_id: str = Depends(get_current_user_id)):
     # Equipped cosmetics sub-doc (may be empty)
     cosmetics = user.get("equipped_cosmetics", {}) or {}
     banner_url = cosmetics.get("lobby_banner_url", "") or ""
+    
+    avatar_url = user.get("profile_picture", "")
+    if user.get("using_premium_avatar") and user.get("premium_avatar"):
+        avatar_url = user.get("premium_avatar")
 
     return LobbyProfileResponse(
         username=user.get("username", "Agent"),
-        avatar_url=user.get("profile_picture", ""),
+        avatar_url=avatar_url,
         equipped_frame_id=_FRAME_IDS[rank_tier],
         equipped_banner_url=banner_url,
         current_rank_title=_RANK_NAMES[rank_tier],
