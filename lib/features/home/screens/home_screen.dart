@@ -18,6 +18,7 @@ import '../widgets/daily_bounty_panel.dart';
 import '../widgets/avatar_showcase_widget.dart';
 import '../widgets/event_carousel_widget.dart';
 
+import '../../store/widgets/purchase_dialog.dart';
 import 'package:mafia_wars/providers/matchmaking_provider.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -655,40 +656,46 @@ class _CurrencyPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(10),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(10),
-            color: color.withValues(alpha: 0.07),
-            border: Border.all(
-              color: color.withValues(alpha: 0.22),
-              width: 0.5,
+    return GestureDetector(
+      onTap: () {
+        final isSC = color == AppColors.gold;
+        PurchaseDialog.show(context, currentBalance: int.tryParse(value) ?? 0, isSyndicateCoins: isSC);
+      },
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(10),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(10),
+              color: color.withValues(alpha: 0.07),
+              border: Border.all(
+                color: color.withValues(alpha: 0.22),
+                width: 0.5,
+              ),
             ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, color: color, size: 13),
-              const SizedBox(width: 4),
-              // Overflow-safe value display
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 60),
-                child: Text(
-                  value,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: color,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, color: color, size: 13),
+                const SizedBox(width: 4),
+                // Overflow-safe value display
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 60),
+                  child: Text(
+                    value,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: color,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

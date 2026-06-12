@@ -10,6 +10,7 @@ import '../../../providers/auth_provider.dart';
 import '../../../widgets/glass_button.dart';
 import '../../../models/store_item_model.dart';
 import '../../../widgets/neon_text.dart';
+import '../widgets/purchase_dialog.dart';
 
 class StoreScreen extends ConsumerStatefulWidget {
   const StoreScreen({super.key});
@@ -47,24 +48,30 @@ class _StoreScreenState extends ConsumerState<StoreScreen> {
                     const SizedBox(width: 16),
                     const Expanded(child: NeonText(text: 'STORE', fontSize: 22, color: AppColors.cyan, glowRadius: 15)),
                     // Currency
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(borderRadius: BorderRadius.circular(10), color: AppColors.cyan.withValues(alpha: 0.1), border: Border.all(color: AppColors.cyan.withValues(alpha: 0.3))),
-                      child: Row(children: [
-                        const Icon(Icons.toll, color: AppColors.cyan, size: 14),
-                        const SizedBox(width: 4),
-                        Text('${user?.influencePoints ?? 0}', style: const TextStyle(color: AppColors.cyan, fontSize: 11, fontWeight: FontWeight.w600)),
-                      ]),
+                    GestureDetector(
+                      onTap: () => PurchaseDialog.show(context, currentBalance: user?.influencePoints ?? 0, isSyndicateCoins: false),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(borderRadius: BorderRadius.circular(10), color: AppColors.cyan.withValues(alpha: 0.1), border: Border.all(color: AppColors.cyan.withValues(alpha: 0.3))),
+                        child: Row(children: [
+                          const Icon(Icons.toll, color: AppColors.cyan, size: 14),
+                          const SizedBox(width: 4),
+                          Text('${user?.influencePoints ?? 0}', style: const TextStyle(color: AppColors.cyan, fontSize: 11, fontWeight: FontWeight.w600)),
+                        ]),
+                      ),
                     ),
                     const SizedBox(width: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(borderRadius: BorderRadius.circular(10), color: AppColors.gold.withValues(alpha: 0.1), border: Border.all(color: AppColors.gold.withValues(alpha: 0.3))),
-                      child: Row(children: [
-                        const Icon(Icons.diamond, color: AppColors.gold, size: 14),
-                        const SizedBox(width: 4),
-                        Text('${user?.syndicateCoins ?? 0}', style: const TextStyle(color: AppColors.gold, fontSize: 11, fontWeight: FontWeight.w600)),
-                      ]),
+                    GestureDetector(
+                      onTap: () => PurchaseDialog.show(context, currentBalance: user?.syndicateCoins ?? 0, isSyndicateCoins: true),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(borderRadius: BorderRadius.circular(10), color: AppColors.gold.withValues(alpha: 0.1), border: Border.all(color: AppColors.gold.withValues(alpha: 0.3))),
+                        child: Row(children: [
+                          const Icon(Icons.diamond, color: AppColors.gold, size: 14),
+                          const SizedBox(width: 4),
+                          Text('${user?.syndicateCoins ?? 0}', style: const TextStyle(color: AppColors.gold, fontSize: 11, fontWeight: FontWeight.w600)),
+                        ]),
+                      ),
                     ),
                   ],
                 ),

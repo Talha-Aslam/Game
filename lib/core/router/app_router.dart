@@ -9,6 +9,8 @@ import '../../features/game/screens/match_result_screen.dart';
 import '../../features/game/screens/custom_room_screen.dart';
 import '../../features/battle_pass/screens/battle_pass_screen.dart';
 import '../../features/store/screens/store_screen.dart';
+import '../../features/store/screens/premium_store_screen.dart';
+import '../../features/store/screens/transaction_history_screen.dart';
 import '../../features/family/screens/family_screen.dart';
 import '../../features/family/screens/family_create_screen.dart';
 import '../../features/family/screens/family_search_screen.dart';
@@ -53,6 +55,8 @@ class AppRouter {
         builder: (c, s) => const BattlePassScreen(),
       ),
       GoRoute(path: '/store', builder: (c, s) => const StoreScreen()),
+      GoRoute(path: '/premium-store', builder: (c, s) => const PremiumStoreScreen()),
+      GoRoute(path: '/transaction-history', builder: (c, s) => const TransactionHistoryScreen()),
       GoRoute(path: '/family', builder: (c, s) => const FamilyScreen()),
       GoRoute(
         path: '/family/create',
