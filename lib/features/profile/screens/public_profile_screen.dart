@@ -10,6 +10,7 @@ import '../../../core/theme/app_gradients.dart';
 import '../../../models/rank_model.dart';
 import '../../../models/social/friend_model.dart';
 import '../../home/widgets/avatar_borders.dart';
+import '../../home/widgets/card_backgrounds.dart';
 import '../../../services/social_service.dart';
 
 class PublicProfileScreen extends ConsumerStatefulWidget {
@@ -102,14 +103,20 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
   Widget build(BuildContext context) {
     final rank = RankModel.fromTier(_profile.rankTier);
 
+    final cardStyleId = _profile.equippedCosmetics?['background']?.toString();
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Stack(
         children: [
           Positioned.fill(
-            child: Container(
-              decoration: const BoxDecoration(
-                gradient: AppGradients.backgroundGradient,
+            child: PremiumCardBackground(
+              cardStyleId: cardStyleId,
+              borderRadius: 0,
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: cardStyleId == null ? AppGradients.backgroundGradient : null,
+                ),
               ),
             ),
           ),

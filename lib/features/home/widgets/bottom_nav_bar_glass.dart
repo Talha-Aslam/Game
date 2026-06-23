@@ -66,7 +66,12 @@ class _BottomNavBarGlassState extends State<BottomNavBarGlass>
             ),
             shadows: [
               BoxShadow(
-                color: AppColors.gold.withValues(alpha: 0.15),
+                color: const Color.fromARGB(
+                  255,
+                  79,
+                  6,
+                  118,
+                ).withValues(alpha: 0.15),
                 blurRadius: 15,
                 spreadRadius: 1,
               ),
@@ -96,7 +101,12 @@ class _BottomNavBarGlassState extends State<BottomNavBarGlass>
                   shape: BeveledRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
                     side: BorderSide(
-                      color: AppColors.gold.withValues(alpha: 0.8),
+                      color: const Color.fromARGB(
+                        255,
+                        31,
+                        9,
+                        57,
+                      ).withValues(alpha: 0.8),
                       width: 0.8,
                     ),
                   ),
