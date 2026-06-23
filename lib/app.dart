@@ -4,13 +4,13 @@ import 'core/router/app_router.dart';
 
 import 'providers/notification_provider.dart';
 
-class CityOfLiesApp extends StatelessWidget {
-  const CityOfLiesApp({super.key});
+class MafiaAtCityApp extends StatelessWidget {
+  const MafiaAtCityApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
-      title: 'City Of Lies',
+      title: 'MAFIA AT CITY',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
       routerConfig: AppRouter.router,

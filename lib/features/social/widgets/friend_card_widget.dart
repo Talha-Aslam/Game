@@ -7,6 +7,7 @@ import '../../../widgets/rank_badge.dart';
 import '../../home/widgets/avatar_borders.dart';
 import 'online_status_indicator.dart';
 import 'popularity_badge_widget.dart';
+import '../../home/widgets/card_backgrounds.dart';
 
 /// Premium glassmorphic friend card with actions
 class FriendCardWidget extends StatelessWidget {
@@ -42,55 +43,71 @@ class FriendCardWidget extends StatelessWidget {
         ? AppColors.online.withValues(alpha: 0.3)
         : AppColors.glassBorder;
 
+    final cardStyleId = friend.equippedCosmetics?['background']?.toString();
+
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        color: AppColors.glassBackground,
-        border: Border.all(color: borderColor),
-        boxShadow: isOnline
-            ? [
-                BoxShadow(
-                  color: AppColors.online.withValues(alpha: 0.06),
-                  blurRadius: 15,
-                  spreadRadius: -2,
-                ),
-              ]
-            : null,
-      ),
-      child: Column(
-        children: [
-          // Main row: avatar + info
-          Row(
+      child: PremiumCardBackground(
+        cardStyleId: cardStyleId,
+        borderRadius: 16.0,
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            color: cardStyleId == null
+                ? AppColors.glassBackground
+                : Colors.transparent,
+            border: Border.all(
+              color: cardStyleId == null ? borderColor : Colors.transparent,
+            ),
+            boxShadow: isOnline && cardStyleId == null
+                ? [
+                    BoxShadow(
+                      color: AppColors.online.withValues(alpha: 0.06),
+                      blurRadius: 15,
+                      spreadRadius: -2,
+                    ),
+                  ]
+                : null,
+          ),
+          child: Column(
             children: [
-              _buildAvatar(),
-              const SizedBox(width: 12),
-              Expanded(child: _buildInfo()),
-              if (friend.popularityScore > 0)
-                PopularityBadgeWidget(
-                  score: friend.popularityScore,
-                  compact: true,
-                ),
+              // Main row: avatar + info
+              Row(
+                children: [
+                  _buildAvatar(),
+                  const SizedBox(width: 12),
+                  Expanded(child: _buildInfo()),
+                  if (friend.popularityScore > 0)
+                    PopularityBadgeWidget(
+                      score: friend.popularityScore,
+                      compact: true,
+                    ),
+                ],
+              ),
+              // Action buttons
+              if (showActions || showAddFriend) ...[
+                const SizedBox(height: 10),
+                _buildActions(),
+              ],
             ],
           ),
-          // Action buttons
-          if (showActions || showAddFriend) ...[
-            const SizedBox(height: 10),
-            _buildActions(),
-          ],
-        ],
+        ),
       ),
     );
   }
 
   Widget _buildAvatar() {
-    final borderId = friend.equippedCosmetics?['card_border'] ?? friend.equippedCosmetics?['cardBorder'];
+    final borderId =
+        friend.equippedCosmetics?['card_border'] ??
+        friend.equippedCosmetics?['cardBorder'];
 
     return Stack(
       children: [
         Padding(
-          padding: const EdgeInsets.all(4.0), // Padding to fit the glowing border
+          padding: const EdgeInsets.all(
+            4.0,
+          ), // Padding to fit the glowing border
           child: PremiumAvatarBorder(
             borderId: borderId,
             radius: 24,
@@ -110,11 +127,12 @@ class FriendCardWidget extends StatelessWidget {
               child: ClipOval(
                 child: friend.avatarUrl.isNotEmpty
                     ? Image.network(
-                        friend.avatarUrl.startsWith('/') 
+                        friend.avatarUrl.startsWith('/')
                             ? '${AppConstants.apiBaseUrl}${friend.avatarUrl}'
                             : friend.avatarUrl,
                         fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => _buildFallbackAvatar(),
+                        errorBuilder: (context, error, stackTrace) =>
+                            _buildFallbackAvatar(),
                       )
                     : _buildFallbackAvatar(),
               ),

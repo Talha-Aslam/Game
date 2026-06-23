@@ -1,4 +1,5 @@
 import 'avatar_borders.dart';
+import 'card_backgrounds.dart';
 import 'dart:math';
 import 'dart:ui';
 import 'package:flutter/material.dart';
@@ -8,7 +9,6 @@ import '../../../core/theme/app_colors.dart';
 import '../../../models/rank_model.dart';
 import '../../../models/user_model.dart';
 import '../../../providers/auth_provider.dart';
-import 'calling_cards.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  AVATAR SHOWCASE WIDGET  — v2
@@ -194,11 +194,13 @@ class _GlassCard extends StatelessWidget {
       ],
     );
 
-    if (backgroundId == 'cc1') return CallingCardNeonOverdrive(child: innerContent);
-    if (backgroundId == 'cc2') return CallingCardSyndicateExecutive(child: innerContent);
-    if (backgroundId == 'cc3') return CallingCardCrimsonVendetta(child: innerContent);
-    if (backgroundId == 'cc4') return CallingCardCosmicShadow(child: innerContent);
-    if (backgroundId == 'cc5') return CallingCardToxicUnderworld(child: innerContent);
+    if (backgroundId.startsWith('cc')) {
+      return PremiumCardBackground(
+        cardStyleId: backgroundId,
+        borderRadius: 22,
+        child: innerContent,
+      );
+    }
 
     List<Color> bgColors = [
       Colors.black.withValues(alpha: 0.45),

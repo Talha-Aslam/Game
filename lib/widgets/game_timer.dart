@@ -49,7 +49,7 @@ class _GameTimerState extends State<GameTimer>
           scale: scale,
           child: Text(
             '${widget.seconds}',
-            style: GoogleFonts.outfit(
+            style: GoogleFonts.cinzel(
               fontSize: 56,
               fontWeight: FontWeight.w800,
               color: color,

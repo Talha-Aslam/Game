@@ -198,7 +198,7 @@ class BattlePassNotifier extends Notifier<BattlePassModel> {
     }
 
     return BattlePassModel(
-      seasonName: 'Season 1: City of Lies',
+      seasonName: 'Season 1: MAFIA AT CITY',
       seasonEndDate: seasonEnd,
       currentTier: currentTier,
       maxTier: 50,

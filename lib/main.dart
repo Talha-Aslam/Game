@@ -29,7 +29,7 @@ void main() async {
   // Initialize cinematic audio system
   await AudioService.instance.init();
 
-  runApp(const ProviderScope(child: SplashGate(child: CityOfLiesApp())));
+  runApp(const ProviderScope(child: SplashGate(child: MafiaAtCityApp())));
 }
 
 class SplashGate extends ConsumerStatefulWidget {
@@ -82,7 +82,7 @@ class _SplashGateState extends ConsumerState<SplashGate> {
           decoration: BoxDecoration(color: Color(0xFF101320)),
           child: SizedBox.expand(
             child: Image(
-              image: AssetImage('assets/images/splash.png'),
+              image: AssetImage('assets/images/splash_1.png'),
               fit: BoxFit.cover,
             ),
           ),

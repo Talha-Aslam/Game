@@ -3,7 +3,7 @@ import 'package:audioplayers/audioplayers.dart';
 import 'audio_constants.dart';
 
 /// ══════════════════════════════════════════════════════════════════════════
-/// AUDIO SERVICE — City of Lies Cinematic Audio System
+/// AUDIO SERVICE — MAFIA AT CITY Cinematic Audio System
 /// ══════════════════════════════════════════════════════════════════════════
 ///
 /// Singleton orchestrator for the entire game audio pipeline:

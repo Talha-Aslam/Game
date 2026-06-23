@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'app_colors.dart';
 
-/// Full Material3 dark theme for City Of Lies
+/// Full Material3 dark theme for MAFIA AT CITY
 class AppTheme {
   AppTheme._();
 
@@ -27,7 +27,7 @@ class AppTheme {
         elevation: 0,
         centerTitle: true,
         systemOverlayStyle: SystemUiOverlayStyle.light,
-        titleTextStyle: GoogleFonts.outfit(
+        titleTextStyle: GoogleFonts.cinzel(
           fontSize: 20,
           fontWeight: FontWeight.w600,
           color: AppColors.white,
@@ -35,60 +35,60 @@ class AppTheme {
         iconTheme: const IconThemeData(color: AppColors.white),
       ),
       textTheme: TextTheme(
-        displayLarge: GoogleFonts.outfit(
+        displayLarge: GoogleFonts.cinzel(
           fontSize: 48,
           fontWeight: FontWeight.w800,
           color: AppColors.white,
         ),
-        displayMedium: GoogleFonts.outfit(
+        displayMedium: GoogleFonts.cinzel(
           fontSize: 36,
           fontWeight: FontWeight.w700,
           color: AppColors.white,
         ),
-        displaySmall: GoogleFonts.outfit(
+        displaySmall: GoogleFonts.cinzel(
           fontSize: 28,
           fontWeight: FontWeight.w600,
           color: AppColors.white,
         ),
-        headlineLarge: GoogleFonts.outfit(
+        headlineLarge: GoogleFonts.cinzel(
           fontSize: 24,
           fontWeight: FontWeight.w700,
           color: AppColors.white,
         ),
-        headlineMedium: GoogleFonts.outfit(
+        headlineMedium: GoogleFonts.cinzel(
           fontSize: 20,
           fontWeight: FontWeight.w600,
           color: AppColors.white,
         ),
-        headlineSmall: GoogleFonts.outfit(
+        headlineSmall: GoogleFonts.cinzel(
           fontSize: 18,
           fontWeight: FontWeight.w600,
           color: AppColors.white,
         ),
-        bodyLarge: GoogleFonts.inter(
+        bodyLarge: GoogleFonts.cinzel(
           fontSize: 16,
           fontWeight: FontWeight.w400,
           color: AppColors.white70,
         ),
-        bodyMedium: GoogleFonts.inter(
+        bodyMedium: GoogleFonts.cinzel(
           fontSize: 14,
           color: AppColors.white70,
         ),
-        bodySmall: GoogleFonts.inter(
+        bodySmall: GoogleFonts.cinzel(
           fontSize: 12,
           color: AppColors.white50,
         ),
-        labelLarge: GoogleFonts.inter(
+        labelLarge: GoogleFonts.cinzel(
           fontSize: 14,
           fontWeight: FontWeight.w600,
           color: AppColors.white,
         ),
-        labelMedium: GoogleFonts.inter(
+        labelMedium: GoogleFonts.cinzel(
           fontSize: 12,
           fontWeight: FontWeight.w500,
           color: AppColors.white70,
         ),
-        labelSmall: GoogleFonts.inter(
+        labelSmall: GoogleFonts.cinzel(
           fontSize: 10,
           fontWeight: FontWeight.w500,
           color: AppColors.white50,
@@ -102,7 +102,7 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
-          textStyle: GoogleFonts.outfit(
+          textStyle: GoogleFonts.cinzel(
             fontSize: 16,
             fontWeight: FontWeight.w600,
           ),
@@ -123,8 +123,8 @@ class AppTheme {
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: AppColors.purpleNeon, width: 1.5),
         ),
-        labelStyle: GoogleFonts.inter(color: AppColors.white50),
-        hintStyle: GoogleFonts.inter(color: AppColors.white30),
+        labelStyle: GoogleFonts.cinzel(color: AppColors.white50),
+        hintStyle: GoogleFonts.cinzel(color: AppColors.white30),
         prefixIconColor: AppColors.white50,
       ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
@@ -146,7 +146,7 @@ class AppTheme {
       ),
       snackBarTheme: SnackBarThemeData(
         backgroundColor: AppColors.surface,
-        contentTextStyle: GoogleFonts.inter(color: AppColors.white),
+        contentTextStyle: GoogleFonts.cinzel(color: AppColors.white),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),

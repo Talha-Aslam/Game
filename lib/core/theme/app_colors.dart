@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Core color palette for City Of Lies
+/// Core color palette for MAFIA AT CITY
 /// Dark futuristic aesthetic with neon accents
 class AppColors {
   AppColors._();

@@ -88,6 +88,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                             _usernameController.text, _emailController.text, _passwordController.text,
                           );
                         },
+                        glowColor: AppColors.gold,
                         height: 52,
                       ),
                     ),
@@ -103,7 +104,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                           text: 'Already have an account? ',
                           style: AppTextStyles.bodySmall,
                           children: [
-                            TextSpan(text: 'Sign In', style: AppTextStyles.bodySmall.copyWith(color: AppColors.purpleNeon, fontWeight: FontWeight.w600)),
+                            TextSpan(text: 'Sign In', style: AppTextStyles.bodySmall.copyWith(color: AppColors.gold, fontWeight: FontWeight.w600)),
                           ],
                         ),
                       ),
